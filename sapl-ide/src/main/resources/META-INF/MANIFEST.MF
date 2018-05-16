@@ -1,0 +1,11 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: sapl-ide
+Bundle-SymbolicName: sapl-ide;singleton:=true
+Bundle-Version: 0.0.1.qualifier
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-ActivationPolicy: lazy
+Export-Package: io.sapl.grammar.ide.contentassist.antlr,
+ io.sapl.grammar.ide.contentassist.antlr.internal
+Require-Bundle: org.antlr.runtime
+
