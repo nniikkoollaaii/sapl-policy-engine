@@ -9,6 +9,7 @@ Export-Package: io.sapl.grammar.ui.contentassist,
  io.sapl.grammar.ui.quickfix,
  sapl.eclipse.internal
 Require-Bundle: 
+ sapl.eclipse.libs,
  org.eclipse.compare,
  org.eclipse.ui,
  org.eclipse.ui.editors,
