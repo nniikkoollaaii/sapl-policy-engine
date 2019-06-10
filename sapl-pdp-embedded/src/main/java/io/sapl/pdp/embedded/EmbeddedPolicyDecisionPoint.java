@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -70,7 +71,7 @@ public class EmbeddedPolicyDecisionPoint implements PolicyDecisionPoint, Disposa
 		final Flux<Map<String, JsonNode>> variablesFlux = configurationProvider
 				.getVariables();
 
-		return Flux.combineLatest(combinatorFlux, variablesFlux,
+		return Flux.<DocumentsCombinator, Map<String, JsonNode>, Flux<Response>>combineLatest(combinatorFlux, variablesFlux,
 				(combinator, variables) -> prp
 						.retrievePolicies(request, functionCtx, variables)
 						.switchMap(result -> {
@@ -82,7 +83,7 @@ public class EmbeddedPolicyDecisionPoint implements PolicyDecisionPoint, Disposa
 									errorsInTarget, request, attributeCtx, functionCtx,
 									variables);
 						}))
-				.flatMap(responseFlux -> responseFlux).distinctUntilChanged();
+				.flatMap(Function.identity()).distinctUntilChanged();
 	}
 
 	@Override
