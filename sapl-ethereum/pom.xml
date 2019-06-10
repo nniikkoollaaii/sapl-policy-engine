@@ -10,6 +10,24 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>sapl-ethereum</artifactId>
+    <name>SAPL Ethereum</name>
+	<organization>
+		<name>Dominic Heutelbeck</name>
+	</organization>
+	
+	<dependencies>
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>sapl-api</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		
+		<dependency>
+  			<groupId>org.web3j</groupId>
+  			<artifactId>core</artifactId>
+  			<version>4.2.0</version>
+		</dependency>
+	</dependencies>
 
 
 </project>
