@@ -18,7 +18,15 @@ public class EthereumPolicyInformationPoint {
     public Flux<JsonNode> verifyTransaction(JsonNode accounts, Map<String, JsonNode> variables) {
 	Credentials credentials = EthereumPipFunctions.loadCredentials(accounts, variables);
 
-	return Flux.just(null);
+	JsonNode node = null;
+	return Flux.just(node);
+    }
+
+    @Attribute(name = "loadContractInformation", docs = "Load information from a contract.")
+    public Flux<JsonNode> loadContractInformation(JsonNode contract, Map<String, JsonNode> variables) {
+
+	JsonNode node = null;
+	return Flux.just(node);
     }
 
 }

@@ -17,6 +17,10 @@ public class EthereumPipFunctions {
 
     private static final String ETHEREUM_WALLET = "ethereumWallet";
 
+    private static final String WALLET_PASSOWRD = "walletPassword";
+
+    private static final String WALLET_FILE = "walletFile";
+
     public static Credentials loadCredentials(JsonNode saplObject, Map<String, JsonNode> variables) {
 
 	// First trying to load Credentials that only apply with the given policy.
@@ -32,13 +36,14 @@ public class EthereumPipFunctions {
     }
 
     private static Credentials retrieveCredentials(JsonNode ethereumWallet) {
-	String walletPassword = ethereumWallet.get("walletPassword").textValue();
-	String walletFile = ethereumWallet.get("walletFile").textValue();
-	Credentials credentials;
+	String walletPassword = ethereumWallet.get(WALLET_PASSOWRD).textValue();
+	String walletFile = ethereumWallet.get(WALLET_FILE).textValue();
 	try {
-	    credentials = WalletUtils.loadCredentials(walletPassword, walletFile);
+	    Credentials credentials = WalletUtils.loadCredentials(walletPassword, walletFile);
 	    return credentials;
 	} catch (IOException | CipherException e) {
+	    logger.warn("Could not load Credentials. Please ensure that your "
+		    + "credentials are annotated correctly either in the policy or in the " + "pdp.json file.");
 
 	}
 
