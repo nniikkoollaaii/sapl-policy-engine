@@ -7,6 +7,7 @@ import java.util.Map;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.Web3jService;
 import org.web3j.protocol.core.DefaultBlockParameter;
+import org.web3j.protocol.core.methods.request.EthFilter;
 import org.web3j.protocol.core.methods.response.EthTransaction;
 import org.web3j.protocol.core.methods.response.Transaction;
 
@@ -386,7 +387,7 @@ public class EthereumPolicyInformationPoint {
     public Flux<JsonNode> ethGetTransactionByBlockHashAndIndex(JsonNode saplObject, Map<String, JsonNode> variables) {
 	try {
 	    return convertToFlux(web3j.ethGetTransactionByBlockHashAndIndex(saplObject.get("blockHash").textValue(),
-		    saplObject.get("transactionIndex").bigIntegerValue()).send());
+		    getBigIntFrom(saplObject, "transactionIndex")).send());
 	} catch (IOException e) {
 
 	}
@@ -398,7 +399,7 @@ public class EthereumPolicyInformationPoint {
     public Flux<JsonNode> ethGetTransactionByBlockNumberAndIndex(JsonNode saplObject, Map<String, JsonNode> variables) {
 	try {
 	    return convertToFlux(web3j.ethGetTransactionByBlockNumberAndIndex(extractDefaultBlockParameter(saplObject),
-		    saplObject.get("transactionIndex").bigIntegerValue()).send());
+		    getBigIntFrom(saplObject, "transactionIndex")).send());
 	} catch (IOException e) {
 
 	}
@@ -407,71 +408,150 @@ public class EthereumPolicyInformationPoint {
 
     @Attribute(name = "eth_getTransactionReceipt", docs = "Returns the receipt of a transaction by transaction hash.")
     public Flux<JsonNode> ethGetTransactionReceipt(JsonNode saplObject, Map<String, JsonNode> variables) {
+	try {
+	    return convertToFlux(web3j.ethGetTransactionReceipt(saplObject.textValue()).send());
+	} catch (IOException e) {
+
+	}
+
 	return convertToFlux(null);
     }
 
     @Attribute(name = "eth_pendingTransactions", docs = "Returns the pending transactions list.")
     public Flux<JsonNode> ethPendingTransactions(JsonNode saplObject, Map<String, JsonNode> variables) {
-	return convertToFlux(null);
+
+	return Flux.from(web3j.ethPendingTransactionHashFlowable().cast(JsonNode.class));
+
     }
 
     @Attribute(name = "eth_getUncleByBlockHashAndIndex", docs = "Returns information about a uncle of a block by hash and uncle index position.")
     public Flux<JsonNode> ethGetUncleByBlockHashAndIndex(JsonNode saplObject, Map<String, JsonNode> variables) {
+	try {
+	    return convertToFlux(web3j.ethGetUncleByBlockHashAndIndex(saplObject.get("blockHash").textValue(),
+		    getBigIntFrom(saplObject, "transactionIndex")).send());
+	} catch (IOException e) {
+
+	}
 	return convertToFlux(null);
     }
 
     @Attribute(name = "eth_getUncleByBlockNumberAndIndex", docs = "Returns information about a uncle of a block by number and uncle index position.")
     public Flux<JsonNode> ethGetUncleByBlockNumberAndIndex(JsonNode saplObject, Map<String, JsonNode> variables) {
+	try {
+	    return convertToFlux(web3j.ethGetUncleByBlockNumberAndIndex(extractDefaultBlockParameter(saplObject),
+		    getBigIntFrom(saplObject, "transactionIndex")).send());
+	} catch (IOException e) {
+
+	}
+
 	return convertToFlux(null);
     }
 
     @Attribute(name = "eth_newBlockFilter", docs = "Creates a filter in the node, to notify when a new block arrives. To check if the state has changed, call eth_getFilterChanges.")
     public Flux<JsonNode> ethNewBlockFilter(JsonNode saplObject, Map<String, JsonNode> variables) {
+	try {
+	    return convertToFlux(web3j.ethNewBlockFilter().send());
+	} catch (IOException e) {
+
+	}
+
 	return convertToFlux(null);
     }
 
     @Attribute(name = "eth_newPendingTransactionFilter", docs = "Creates a filter in the node, to notify when new pending transactions arrive. To check if the state has changed, call eth_getFilterChanges.")
     public Flux<JsonNode> ethNewPendingTransactionFilter(JsonNode saplObject, Map<String, JsonNode> variables) {
+	try {
+	    return convertToFlux(web3j.ethNewPendingTransactionFilter().send());
+	} catch (IOException e) {
+
+	}
+
 	return convertToFlux(null);
     }
 
     @Attribute(name = "eth_uninstallFilter", docs = "Uninstalls a filter with given id. Should always be called when watch is no longer needed. Additonally Filters timeout when they aren't requested with eth_getFilterChanges for a period of time.")
     public Flux<JsonNode> ethUninstallFilter(JsonNode saplObject, Map<String, JsonNode> variables) {
+	try {
+	    return convertToFlux(web3j.ethUninstallFilter(getBigIntFrom(saplObject, "filterId")).send());
+	} catch (IOException e) {
+
+	}
+
 	return convertToFlux(null);
     }
 
     @Attribute(name = "eth_getFilterChanges", docs = "Polling method for a filter, which returns an array of logs which occurred since last poll.")
     public Flux<JsonNode> ethGetFilterChanges(JsonNode saplObject, Map<String, JsonNode> variables) {
+	try {
+	    return convertToFlux(web3j.ethGetFilterChanges(getBigIntFrom(saplObject, "filterId")).send());
+	} catch (IOException e) {
+
+	}
+
 	return convertToFlux(null);
     }
 
     @Attribute(name = "eth_getFilterLogs", docs = "Returns an array of all logs matching filter with given id.")
     public Flux<JsonNode> ethGetFilterLogs(JsonNode saplObject, Map<String, JsonNode> variables) {
+	try {
+	    return convertToFlux(web3j.ethGetFilterLogs(getBigIntFrom(saplObject, "filterId")).send());
+	} catch (IOException e) {
+
+	}
+
 	return convertToFlux(null);
     }
 
     @Attribute(name = "eth_getLogs", docs = "Returns an array of all logs matching a given filter object.")
     public Flux<JsonNode> ethGetLogs(JsonNode saplObject, Map<String, JsonNode> variables) {
+	try {
+	    return convertToFlux(web3j.ethGetLogs(mapper.convertValue(saplObject, EthFilter.class)).send());
+	} catch (IOException e) {
+
+	}
+
 	return convertToFlux(null);
     }
 
     @Attribute(name = "eth_getWork", docs = "Returns the hash of the current block, the seedHash, and the boundary condition to be met (\"target\").")
     public Flux<JsonNode> ethGetWork(JsonNode saplObject, Map<String, JsonNode> variables) {
+	try {
+	    return convertToFlux(web3j.ethGetWork().send());
+	} catch (IOException e) {
+
+	}
+
 	return convertToFlux(null);
     }
 
     @Attribute(name = "eth_submitWork", docs = "Used for submitting a proof-of-work solution.")
     public Flux<JsonNode> ethSubmitWork(JsonNode saplObject, Map<String, JsonNode> variables) {
+	try {
+	    return convertToFlux(web3j.ethSubmitWork(getStringFrom(saplObject, "nonce"),
+		    getStringFrom(saplObject, "headerPowHash"), getStringFrom(saplObject, "mixDigest")).send());
+	} catch (IOException e) {
+
+	}
+
 	return convertToFlux(null);
     }
 
     @Attribute(name = "eth_submitHashrate", docs = "Used for submitting mining hashrate.")
     public Flux<JsonNode> ethSubmitHashrate(JsonNode saplObject, Map<String, JsonNode> variables) {
+	try {
+	    return convertToFlux(web3j
+		    .ethSubmitHashrate(getStringFrom(saplObject, "hashrate"), getStringFrom(saplObject, "clientId"))
+		    .send());
+	} catch (IOException e) {
+
+	}
+
 	return convertToFlux(null);
     }
 
     @Attribute(name = "eth_getProof", docs = "Returns the account- and storage-values of the specified account including the Merkle-proof.")
     public Flux<JsonNode> ethGetProof(JsonNode saplObject, Map<String, JsonNode> variables) {
+
 	return convertToFlux(null);
     }
 
@@ -527,6 +607,14 @@ public class EthereumPolicyInformationPoint {
 
     private static Flux<JsonNode> convertToFlux(Object o) {
 	return Flux.just(mapper.convertValue(o, JsonNode.class));
+    }
+
+    private static String getStringFrom(JsonNode saplObject, String stringName) {
+	return saplObject.get(stringName).textValue();
+    }
+
+    private static BigInteger getBigIntFrom(JsonNode saplObject, String bigIntegerName) {
+	return saplObject.get(bigIntegerName).bigIntegerValue();
     }
 
     /**
