@@ -8,6 +8,8 @@ import org.web3j.protocol.Web3j;
 import org.web3j.protocol.Web3jService;
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.methods.request.EthFilter;
+import org.web3j.protocol.core.methods.request.ShhFilter;
+import org.web3j.protocol.core.methods.request.ShhPost;
 import org.web3j.protocol.core.methods.response.EthTransaction;
 import org.web3j.protocol.core.methods.response.Transaction;
 
@@ -549,6 +551,10 @@ public class EthereumPolicyInformationPoint {
 	return convertToFlux(null);
     }
 
+    /**
+     * Method was not implemented because it is not available in the Web3j API.
+     */
+
     @Attribute(name = "eth_getProof", docs = "Returns the account- and storage-values of the specified account including the Merkle-proof.")
     public Flux<JsonNode> ethGetProof(JsonNode saplObject, Map<String, JsonNode> variables) {
 
@@ -557,51 +563,113 @@ public class EthereumPolicyInformationPoint {
 
     @Attribute(name = "shh_version", docs = "Returns the current whisper protocol version.")
     public Flux<JsonNode> shhVersion(JsonNode saplObject, Map<String, JsonNode> variables) {
+	try {
+	    return convertToFlux(web3j.shhVersion().send());
+	} catch (IOException e) {
+
+	}
+
 	return convertToFlux(null);
     }
 
     @Attribute(name = "shh_post", docs = "Sends a whisper message.")
     public Flux<JsonNode> shhPost(JsonNode saplObject, Map<String, JsonNode> variables) {
+
+	try {
+	    return convertToFlux(web3j.shhPost(mapper.convertValue(saplObject, ShhPost.class)).send());
+	} catch (IllegalArgumentException | IOException e) {
+
+	}
+
 	return convertToFlux(null);
+
     }
 
     @Attribute(name = "shh_newIdentity", docs = "Creates new whisper identity in the client.")
     public Flux<JsonNode> shhNewIdentity(JsonNode saplObject, Map<String, JsonNode> variables) {
+	try {
+	    return convertToFlux(web3j.shhNewIdentity().send());
+	} catch (IOException e) {
+
+	}
+
 	return convertToFlux(null);
     }
 
     @Attribute(name = "shh_hasIdentity", docs = "Checks if the client hold the private keys for a given identity.")
     public Flux<JsonNode> shhHasIdentity(JsonNode saplObject, Map<String, JsonNode> variables) {
+	try {
+	    return convertToFlux(web3j.shhHasIdentity(saplObject.textValue()).send());
+	} catch (IOException e) {
+
+	}
+
 	return convertToFlux(null);
     }
 
     @Attribute(name = "shh_newGroup", docs = "Creates a new group.")
     public Flux<JsonNode> shhNewGroup(JsonNode saplObject, Map<String, JsonNode> variables) {
+	try {
+	    return convertToFlux(web3j.shhNewGroup().send());
+	} catch (IOException e) {
+
+	}
+
 	return convertToFlux(null);
     }
 
     @Attribute(name = "shh_addToGroup", docs = "Adds a whisper identity to the group.")
     public Flux<JsonNode> shhAddToGroup(JsonNode saplObject, Map<String, JsonNode> variables) {
+	try {
+	    return convertToFlux(web3j.shhAddToGroup(saplObject.textValue()).send());
+	} catch (IOException e) {
+
+	}
+
 	return convertToFlux(null);
     }
 
     @Attribute(name = "shh_newFilter", docs = "Creates filter to notify, when client receives whisper message matching the filter options.")
     public Flux<JsonNode> shhNewFilter(JsonNode saplObject, Map<String, JsonNode> variables) {
+	try {
+	    return convertToFlux(web3j.shhNewFilter(mapper.convertValue(saplObject, ShhFilter.class)).send());
+	} catch (IOException e) {
+
+	}
+
 	return convertToFlux(null);
     }
 
     @Attribute(name = "shh_uninstallFilter", docs = "Uninstalls a filter with given id. Should always be called when watch is no longer needed. Additonally Filters timeout when they aren't requested with shh_getFilterChanges for a period of time.")
     public Flux<JsonNode> shhUninstallFilter(JsonNode saplObject, Map<String, JsonNode> variables) {
+	try {
+	    return convertToFlux(web3j.shhUninstallFilter(saplObject.bigIntegerValue()).send());
+	} catch (IOException e) {
+
+	}
+
 	return convertToFlux(null);
     }
 
     @Attribute(name = "shh_getFilterChanges", docs = "Polling method for whisper filters. Returns new messages since the last call of this method.")
     public Flux<JsonNode> shhGetFilterChanges(JsonNode saplObject, Map<String, JsonNode> variables) {
+	try {
+	    return convertToFlux(web3j.shhGetFilterChanges(saplObject.bigIntegerValue()).send());
+	} catch (IOException e) {
+
+	}
+
 	return convertToFlux(null);
     }
 
     @Attribute(name = "shh_getMessages", docs = "Get all messages matching a filter. Unlike shh_getFilterChanges this returns all messages.")
     public Flux<JsonNode> shhGetMessages(JsonNode saplObject, Map<String, JsonNode> variables) {
+	try {
+	    return convertToFlux(web3j.shhGetMessages(saplObject.bigIntegerValue()).send());
+	} catch (IOException e) {
+
+	}
+
 	return convertToFlux(null);
     }
 
