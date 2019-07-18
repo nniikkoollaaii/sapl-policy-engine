@@ -21,6 +21,20 @@ import io.sapl.api.pip.PolicyInformationPoint;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 
+/**
+ * The Ethereum Policy Information Point gives access to most methods of the
+ * JSON-RPC Ethereum API (https://github.com/ethereum/wiki/wiki/JSON-RPC)
+ *
+ * Excluded are the deprecated methods eth_getCompilers, eth_compileSolidity,
+ * eth_compileLLL and eth_compileSerpent. Further excluded are all db_ methods
+ * as they are deprecated and will be removed. Also excluded is the eth_getProof
+ * method as up to now there doesn't exist an implementation in the Web3j API.
+ *
+ * Furthermore the methods verifyTransaction and loadContractInformation are not
+ * part of the JSON RPC API but are considered to be a more user friendly
+ * implementation of the most common use cases.
+ */
+
 @Slf4j
 @PolicyInformationPoint(name = "EthereumPIP", description = "Connects to the Ethereum Blockchain.")
 public class EthereumPolicyInformationPoint {
@@ -56,6 +70,12 @@ public class EthereumPolicyInformationPoint {
 	} catch (IOException e) {
 
 	}
+
+	return convertToFlux(false);
+    }
+
+    @Attribute(name = "loadContractInformation", docs = "Returns the result of a Method call of a specified contract.")
+    public Flux<JsonNode> loadContractInformation(JsonNode transactionToVerify, Map<String, JsonNode> variables) {
 
 	return convertToFlux(false);
     }
