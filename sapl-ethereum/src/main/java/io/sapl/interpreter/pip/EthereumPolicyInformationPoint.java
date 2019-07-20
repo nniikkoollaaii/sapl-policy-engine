@@ -10,6 +10,7 @@ import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.methods.request.EthFilter;
 import org.web3j.protocol.core.methods.request.ShhFilter;
 import org.web3j.protocol.core.methods.request.ShhPost;
+import org.web3j.protocol.core.methods.response.EthCall;
 import org.web3j.protocol.core.methods.response.EthTransaction;
 import org.web3j.protocol.core.methods.response.Transaction;
 
@@ -75,7 +76,24 @@ public class EthereumPolicyInformationPoint {
     }
 
     @Attribute(name = "loadContractInformation", docs = "Returns the result of a Method call of a specified contract.")
-    public Flux<JsonNode> loadContractInformation(JsonNode transactionToVerify, Map<String, JsonNode> variables) {
+    public Flux<JsonNode> loadContractInformation(JsonNode saplObject, Map<String, JsonNode> variables) {
+	try {
+	    String from = getStringFrom(saplObject, "from");
+	    BigInteger nonce = getBigIntFrom(saplObject, "nonce");
+	    BigInteger gasPrice = getBigIntFrom(saplObject, "gasPrice");
+	    BigInteger gasLimit = getBigIntFrom(saplObject, "gasLimit");
+	    String to = getStringFrom(saplObject, "to");
+	    BigInteger value = getBigIntFrom(saplObject, "value");
+	    String data = getStringFrom(saplObject, "data");
+
+	    org.web3j.protocol.core.methods.request.Transaction transaction = org.web3j.protocol.core.methods.request.Transaction
+		    .createFunctionCallTransaction(from, nonce, gasPrice, gasLimit, to, value, data);
+	    EthCall ethCall = web3j.ethCall(transaction, extractDefaultBlockParameter(saplObject)).send();
+	    return convertToFlux(ethCall.getResult());
+
+	} catch (IOException e) {
+
+	}
 
 	return convertToFlux(false);
     }
