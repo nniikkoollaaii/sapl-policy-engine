@@ -64,11 +64,11 @@ public class EthereumPolicyInformationPoint {
 	    Transaction transactionFromChain = ethTransaction.getTransaction().get();
 	    if (transactionFromChain.getFrom().equals(transactionToVerify.get("fromAccount").textValue())
 		    && transactionFromChain.getTo().equals(transactionToVerify.get("toAccount").textValue())
-		    && transactionFromChain.getValue().toString()
-			    .equals(transactionToVerify.get("transactionValue").textValue())) {
+		    && transactionFromChain.getValue()
+			    .equals(transactionToVerify.get("transactionValue").bigIntegerValue())) {
 		return convertToFlux(true);
 	    }
-	} catch (IOException e) {
+	} catch (IOException | NullPointerException e) {
 
 	}
 
