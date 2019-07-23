@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.Web3jService;
 import org.web3j.protocol.core.DefaultBlockParameter;
@@ -41,6 +43,7 @@ import reactor.core.publisher.Flux;
 public class EthereumPolicyInformationPoint {
 
     private static final ObjectMapper mapper = new ObjectMapper();
+    private static final Logger logger = LoggerFactory.getLogger(EthereumPolicyInformationPoint.class);
 
     private Web3j web3j;
 
@@ -50,26 +53,42 @@ public class EthereumPolicyInformationPoint {
     private static final String EARLIEST = "earliest";
     private static final String PENDING = "pending";
     private static final String NO_DBP_WARNING = "The DefaultBlockParameter was not correctly provided. By default the latest Block is used.";
+    private static final String VERIFY_TRANSACTION_WARNING = "There was an error during verifyTransaction. By default false is returned but the transaction could have taken place.";
 
     public EthereumPolicyInformationPoint(Web3jService web3jService) {
 	web3j = Web3j.build(web3jService);
     }
 
+    /**
+     *
+     * @param saplObject needs to have the following values: <br>
+     *                   "transactionHash" : The hash of the transaction that should
+     *                   be verified <br>
+     *                   "fromAccount" : The adress of the account the transaction
+     *                   is send from <br>
+     *                   "toAccount" : The adress of the account that receives the
+     *                   transaction <br>
+     *                   "transactionValue" : A BigInteger that represents the value
+     *                   of the transaction in Wei
+     *
+     * @param variables  is unused here
+     * @return A single JsonNode that has boolean value true if the transaction has
+     *         taken place and false otherwise
+     */
     @Attribute(name = "verifyTransaction", docs = "Returns true, if a transaction has taken place and false otherwise.")
-    public Flux<JsonNode> verifyTransaction(JsonNode transactionToVerify, Map<String, JsonNode> variables) {
+    public Flux<JsonNode> verifyTransaction(JsonNode saplObject, Map<String, JsonNode> variables) {
 	try {
 
-	    EthTransaction ethTransaction = web3j
-		    .ethGetTransactionByHash(transactionToVerify.get("transactionHash").textValue()).send();
+	    EthTransaction ethTransaction = web3j.ethGetTransactionByHash(saplObject.get("transactionHash").textValue())
+		    .send();
 	    Transaction transactionFromChain = ethTransaction.getTransaction().get();
-	    if (transactionFromChain.getFrom().equals(transactionToVerify.get("fromAccount").textValue())
-		    && transactionFromChain.getTo().equals(transactionToVerify.get("toAccount").textValue())
-		    && transactionFromChain.getValue()
-			    .equals(transactionToVerify.get("transactionValue").bigIntegerValue())) {
+	    if (transactionFromChain.getFrom().equals(saplObject.get("fromAccount").textValue())
+		    && transactionFromChain.getTo().equals(saplObject.get("toAccount").textValue())
+		    && transactionFromChain.getValue().equals(saplObject.get("transactionValue").bigIntegerValue())) {
 		return convertToFlux(true);
 	    }
 	} catch (IOException | NullPointerException e) {
-
+	    logger.warn(VERIFY_TRANSACTION_WARNING);
 	}
 
 	return convertToFlux(false);
