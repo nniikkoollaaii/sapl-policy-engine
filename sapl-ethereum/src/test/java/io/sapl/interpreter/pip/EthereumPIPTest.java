@@ -48,7 +48,7 @@ public class EthereumPIPTest {
 	web3j = Web3j.build(new HttpService());
 	ethPip = new EthereumPolicyInformationPoint(new HttpService());
 
-	// TODO Automatically start an Ethereum Blockchain
+	// TODO Automatically start a local Ethereum private testnet
 
 	// In this first section we load the accounts from the blockchain
 	List<String> accounts;

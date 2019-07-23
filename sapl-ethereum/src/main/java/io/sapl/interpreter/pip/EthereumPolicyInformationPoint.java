@@ -105,6 +105,12 @@ public class EthereumPolicyInformationPoint {
 	    BigInteger value = getBigIntFrom(saplObject, "value");
 	    String data = getStringFrom(saplObject, "data");
 
+	    /*
+	     * Function function = new Function( "functionName", // function we're calling
+	     * Arrays.asList(new Type(value), ...), // Parameters to pass as Solidity Types
+	     * Arrays.asList(new TypeReference<Type>() {}, ...));
+	     */
+
 	    org.web3j.protocol.core.methods.request.Transaction transaction = org.web3j.protocol.core.methods.request.Transaction
 		    .createFunctionCallTransaction(from, nonce, gasPrice, gasLimit, to, value, data);
 	    EthCall ethCall = web3j.ethCall(transaction, extractDefaultBlockParameter(saplObject)).send();
