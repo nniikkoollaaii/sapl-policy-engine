@@ -43,6 +43,22 @@ public class EthereumPIPTest {
     private TransactionReceipt transactionReceiptUser3;
     private TransactionReceipt transactionReceiptUser4;
 
+    // TEST INFORMATION: Before launching the test please start the local Ethereum
+    // private testnet via one of the startChain scripts
+    // inside the folder ethereum-testnet.
+    // For the scripts to work properly please follow these steps:
+    // 1. Download and install Geth (https://geth.ethereum.org/downloads/) (This has
+    // been tested with version 1.8.27-stable).
+    // 2. Navigate to the ethereum-testnet folder inside the project in a terminal
+    // or the PowerShell.
+    // 3. Execute the startChain.ps1 script in Windows or the startChain script in
+    // Linux to initialize and start a private, local version of the Ethereum
+    // blockchain.
+    // 4. Run the test.
+    // 5. After the test has finished, type exit in the Geth console to stop the
+    // blockchain. If you used the script, the leftovers of the blockchain should be
+    // automatically deleted.
+
     @Before
     public void init() throws InterruptedException, TransactionException, Exception {
 	web3j = Web3j.build(new HttpService());
