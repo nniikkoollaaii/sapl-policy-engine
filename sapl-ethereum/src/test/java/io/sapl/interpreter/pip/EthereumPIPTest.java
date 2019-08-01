@@ -1,14 +1,18 @@
 package io.sapl.interpreter.pip;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.WalletUtils;
 import org.web3j.protocol.Web3j;
@@ -33,6 +37,7 @@ public class EthereumPIPTest {
     private Web3j web3j;
     private EthereumPolicyInformationPoint ethPip;
     private static final JsonNodeFactory factory = new JsonNodeFactory(true);
+    private static final Logger logger = LoggerFactory.getLogger(EthereumPIPTest.class);
 
     private String user1Adress;
     private String user2Adress;
@@ -86,6 +91,8 @@ public class EthereumPIPTest {
 
     }
 
+    // verifyTransaction
+
     @Test
     public void verifyTransactionShouldReturnTrueWithCorrectTransaction() {
 	ObjectNode saplObject = factory.objectNode();
@@ -94,7 +101,7 @@ public class EthereumPIPTest {
 	saplObject.put("toAccount", user2Adress);
 	saplObject.put("transactionValue", new BigInteger("2000000000000000000"));
 	boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
-	assertTrue("Transaction was not validated as correct although it is correct.", result);
+	assertTrue("Transaction was not validated as true although it is correct.", result);
 
     }
 
@@ -163,6 +170,16 @@ public class EthereumPIPTest {
 	boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
 	assertFalse("Transaction was not validated as false although the input was erroneous.", result);
 
+    }
+
+    // web3_clientVersion
+
+    @Test
+    public void web3ClientVersionShouldReturnTheClientVersion() throws IOException {
+	String pipClientVersion = ethPip.web3ClientVersion(null, null).blockFirst().asText();
+	String web3jClientVersion = web3j.web3ClientVersion().send().getWeb3ClientVersion();
+	assertEquals("The web3ClientVersion from the PIP was not loaded correctly.", pipClientVersion,
+		web3jClientVersion);
     }
 
 }

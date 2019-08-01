@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.sapl.api.pip.Attribute;
+import io.sapl.api.pip.AttributeException;
 import io.sapl.api.pip.PolicyInformationPoint;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
@@ -74,6 +75,7 @@ public class EthereumPolicyInformationPoint {
      * @param variables  is unused here
      * @return A single JsonNode that has boolean value true if the transaction has
      *         taken place and false otherwise
+     * @throws AttributeException
      */
     @Attribute(name = "verifyTransaction", docs = "Returns true, if a transaction has taken place and false otherwise.")
     public Flux<JsonNode> verifyTransaction(JsonNode saplObject, Map<String, JsonNode> variables) {
@@ -94,7 +96,7 @@ public class EthereumPolicyInformationPoint {
 	return convertToFlux(false);
     }
 
-    @Attribute(name = "loadContractInformation", docs = "Returns the result of a Method call of a specified contract.")
+    @Attribute(name = "loadContractInformation", docs = "Returns the result of a function call of a specified contract.")
     public Flux<JsonNode> loadContractInformation(JsonNode saplObject, Map<String, JsonNode> variables) {
 	try {
 	    String from = getStringFrom(saplObject, "from");
@@ -106,15 +108,23 @@ public class EthereumPolicyInformationPoint {
 	    String data = getStringFrom(saplObject, "data");
 
 	    /*
-	     * Function function = new Function( "functionName", // function we're calling
-	     * Arrays.asList(new Type(value), ...), // Parameters to pass as Solidity Types
-	     * Arrays.asList(new TypeReference<Type>() {}, ...));
+	     * Function function = new Function( getStringFrom(saplObject, "functionName"),
+	     * Arrays.asList(new Type(value)), // Solidity Types in smart contract functions
+	     * Arrays.asList(new TypeReference<Type>() {}));
+	     *
+	     * String encodedFunction = FunctionEncoder.encode(function)
+	     * org.web3j.protocol.core.methods.response.EthCall response = web3j.ethCall(
+	     * Transaction.createEthCallTransaction(<from>, contractAddress,
+	     * encodedFunction), DefaultBlockParameterName.LATEST) .sendAsync().get();
+	     *
+	     * List<Type> someTypes = FunctionReturnDecoder.decode( response.getValue(),
+	     * function.getOutputParameters());
 	     */
 
 	    org.web3j.protocol.core.methods.request.Transaction transaction = org.web3j.protocol.core.methods.request.Transaction
 		    .createFunctionCallTransaction(from, nonce, gasPrice, gasLimit, to, value, data);
 	    EthCall ethCall = web3j.ethCall(transaction, extractDefaultBlockParameter(saplObject)).send();
-	    return convertToFlux(ethCall.getResult());
+	    return convertToFlux(ethCall.getValue());
 
 	} catch (IOException e) {
 
@@ -126,7 +136,7 @@ public class EthereumPolicyInformationPoint {
     @Attribute(name = "web3_clientVersion", docs = "Returns the current client version.")
     public Flux<JsonNode> web3ClientVersion(JsonNode saplObject, Map<String, JsonNode> variables) {
 	try {
-	    return convertToFlux(web3j.web3ClientVersion().send());
+	    return convertToFlux(web3j.web3ClientVersion().send().getWeb3ClientVersion());
 	} catch (IOException e) {
 
 	}
