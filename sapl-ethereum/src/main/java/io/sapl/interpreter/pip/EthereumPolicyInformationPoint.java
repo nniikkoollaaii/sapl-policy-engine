@@ -2,17 +2,24 @@ package io.sapl.interpreter.pip;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.web3j.abi.FunctionEncoder;
+import org.web3j.abi.FunctionReturnDecoder;
+import org.web3j.abi.TypeReference;
+import org.web3j.abi.datatypes.Bool;
+import org.web3j.abi.datatypes.Function;
+import org.web3j.abi.datatypes.Type;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.Web3jService;
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.methods.request.EthFilter;
 import org.web3j.protocol.core.methods.request.ShhFilter;
 import org.web3j.protocol.core.methods.request.ShhPost;
-import org.web3j.protocol.core.methods.response.EthCall;
 import org.web3j.protocol.core.methods.response.EthTransaction;
 import org.web3j.protocol.core.methods.response.Transaction;
 
@@ -100,31 +107,29 @@ public class EthereumPolicyInformationPoint {
     public Flux<JsonNode> loadContractInformation(JsonNode saplObject, Map<String, JsonNode> variables) {
 	try {
 	    String from = getStringFrom(saplObject, "from");
-	    BigInteger nonce = getBigIntFrom(saplObject, "nonce");
-	    BigInteger gasPrice = getBigIntFrom(saplObject, "gasPrice");
-	    BigInteger gasLimit = getBigIntFrom(saplObject, "gasLimit");
 	    String to = getStringFrom(saplObject, "to");
-	    BigInteger value = getBigIntFrom(saplObject, "value");
-	    String data = getStringFrom(saplObject, "data");
 
-	    /*
-	     * Function function = new Function( getStringFrom(saplObject, "functionName"),
-	     * Arrays.asList(new Type(value)), // Solidity Types in smart contract functions
-	     * Arrays.asList(new TypeReference<Type>() {}));
-	     *
-	     * String encodedFunction = FunctionEncoder.encode(function)
-	     * org.web3j.protocol.core.methods.response.EthCall response = web3j.ethCall(
-	     * Transaction.createEthCallTransaction(<from>, contractAddress,
-	     * encodedFunction), DefaultBlockParameterName.LATEST) .sendAsync().get();
-	     *
-	     * List<Type> someTypes = FunctionReturnDecoder.decode( response.getValue(),
-	     * function.getOutputParameters());
-	     */
+	    List<Type> inputParameters = new ArrayList<>();
+	    JsonNode inputNode = saplObject.get("inputParams");
+	    if (inputNode.isArray()) {
+		for (JsonNode inputParam : inputNode) {
+		    inputParameters.add(convertToType(inputParam));
+		}
+	    }
 
-	    org.web3j.protocol.core.methods.request.Transaction transaction = org.web3j.protocol.core.methods.request.Transaction
-		    .createFunctionCallTransaction(from, nonce, gasPrice, gasLimit, to, value, data);
-	    EthCall ethCall = web3j.ethCall(transaction, extractDefaultBlockParameter(saplObject)).send();
-	    return convertToFlux(ethCall.getValue());
+	    List<TypeReference<?>> outputParameters = new ArrayList<>();
+	    Function function = new Function(getStringFrom(saplObject, "functionName"), inputParameters,
+		    outputParameters);
+
+	    String encodedFunction = FunctionEncoder.encode(function);
+	    org.web3j.protocol.core.methods.response.EthCall response = web3j
+		    .ethCall(org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction(from, to,
+			    encodedFunction), extractDefaultBlockParameter(saplObject))
+		    .send();
+
+	    List<Type> someTypes = FunctionReturnDecoder.decode(response.getValue(), function.getOutputParameters());
+
+	    return convertToFlux(response.getValue());
 
 	} catch (IOException e) {
 
@@ -156,7 +161,7 @@ public class EthereumPolicyInformationPoint {
     @Attribute(name = "net_version", docs = "Returns the current network id.")
     public Flux<JsonNode> netVersion(JsonNode saplObject, Map<String, JsonNode> variables) {
 	try {
-	    return convertToFlux(web3j.netVersion().send());
+	    return convertToFlux(web3j.netVersion().send().getNetVersion());
 	} catch (IOException e) {
 
 	}
@@ -166,7 +171,7 @@ public class EthereumPolicyInformationPoint {
     @Attribute(name = "net_listening", docs = "Returns true if client is actively listening for network connections.")
     public Flux<JsonNode> netListening(JsonNode saplObject, Map<String, JsonNode> variables) {
 	try {
-	    return convertToFlux(web3j.netListening().send());
+	    return convertToFlux(web3j.netListening().send().isListening());
 	} catch (IOException e) {
 
 	}
@@ -176,7 +181,7 @@ public class EthereumPolicyInformationPoint {
     @Attribute(name = "net_peerCount", docs = "Returns number of peers currently connected to the client.")
     public Flux<JsonNode> netPeerCount(JsonNode saplObject, Map<String, JsonNode> variables) {
 	try {
-	    return convertToFlux(web3j.netPeerCount().send());
+	    return convertToFlux(web3j.netPeerCount().send().getQuantity());
 	} catch (IOException e) {
 
 	}
@@ -786,6 +791,12 @@ public class EthereumPolicyInformationPoint {
 	LOGGER.warn(NO_DBP_WARNING);
 	return DefaultBlockParameter.valueOf(LATEST);
 
+    }
+
+    private static Type convertToType(JsonNode inputParam) {
+	String type = inputParam.get("type").textValue();
+	String value = inputParam.get("value").textValue();
+	return new Bool(false);
     }
 
 }
