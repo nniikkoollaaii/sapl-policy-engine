@@ -1,6 +1,8 @@
 package io.sapl.interpreter.pip;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,9 +13,9 @@ import org.slf4j.LoggerFactory;
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.TypeReference;
-import org.web3j.abi.datatypes.Bool;
 import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.Type;
+import org.web3j.abi.datatypes.generated.AbiTypes;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.Web3jService;
 import org.web3j.protocol.core.DefaultBlockParameter;
@@ -47,7 +49,7 @@ import reactor.core.publisher.Flux;
  */
 
 @Slf4j
-@PolicyInformationPoint(name = "EthereumPIP", description = "Connects to the Ethereum Blockchain.")
+@PolicyInformationPoint(name = "ethereum", description = "Connects to the Ethereum Blockchain.")
 public class EthereumPolicyInformationPoint {
 
     private static final ObjectMapper mapper = new ObjectMapper();
@@ -68,6 +70,7 @@ public class EthereumPolicyInformationPoint {
     }
 
     /**
+     * Method for verifying if a given transaction has taken place.
      *
      * @param saplObject needs to have the following values: <br>
      *                   "transactionHash" : The hash of the transaction that should
@@ -84,7 +87,7 @@ public class EthereumPolicyInformationPoint {
      *         taken place and false otherwise
      * @throws AttributeException
      */
-    @Attribute(name = "verifyTransaction", docs = "Returns true, if a transaction has taken place and false otherwise.")
+    @Attribute(name = "isValid", docs = "Returns true, if a transaction has taken place and false otherwise.")
     public Flux<JsonNode> verifyTransaction(JsonNode saplObject, Map<String, JsonNode> variables) {
 	try {
 
@@ -102,12 +105,27 @@ public class EthereumPolicyInformationPoint {
 
 	return convertToFlux(false);
     }
-
-    @Attribute(name = "loadContractInformation", docs = "Returns the result of a function call of a specified contract.")
-    public Flux<JsonNode> loadContractInformation(JsonNode saplObject, Map<String, JsonNode> variables) {
+    
+    
+    /**
+     * Method for querying the state of a contract.
+     * @param saplObject needs to have the following values <br>
+     * 	"fromAccount" : The account that makes the request <br>
+     *  "toAccount" : The address of the called contract <br>
+     *  "functionName" : The name of the called function. <br>
+     *  "inputParams" : A Json ArrayNode that contains a tuple of "type" and "value" for each input parameter. 
+     *                  Example: [{"type" : "uint32", "value" : 45},{"type" : "bool", "value" : "true"}] <br>
+     *  "outputParams" : A Json ArrayNode that contains the return types. Example: ["address","bool"] <br>
+     *  All types that can be used are listed in the getType-method of the <a href="https://github.com/web3j/web3j/blob/master/abi/src/main/java/org/web3j/abi/datatypes/AbiTypes.java">AbiTypes</a>
+     * @param variables is unused here
+     * @return The return value(s) of the called contract function
+     * @throws AttributeException
+     */
+    @Attribute(name = "contract", docs = "Returns the result of a function call of a specified contract.")
+    public Flux<JsonNode> loadContractInformation(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
 	try {
-	    String from = getStringFrom(saplObject, "from");
-	    String to = getStringFrom(saplObject, "to");
+	    String from = getStringFrom(saplObject, "fromAccount");
+	    String to = getStringFrom(saplObject, "toAccount");
 
 	    List<Type> inputParameters = new ArrayList<>();
 	    JsonNode inputNode = saplObject.get("inputParams");
@@ -118,6 +136,12 @@ public class EthereumPolicyInformationPoint {
 	    }
 
 	    List<TypeReference<?>> outputParameters = new ArrayList<>();
+	    JsonNode outputNode = saplObject.get("outputParams");
+	    if(outputNode.isArray()) {
+	    	for (JsonNode outputParam : outputNode) {
+	    		outputParameters.add(convertToTypeReference(outputParam));
+	    	}
+	    }
 	    Function function = new Function(getStringFrom(saplObject, "functionName"), inputParameters,
 		    outputParameters);
 
@@ -127,7 +151,7 @@ public class EthereumPolicyInformationPoint {
 			    encodedFunction), extractDefaultBlockParameter(saplObject))
 		    .send();
 
-	    List<Type> someTypes = FunctionReturnDecoder.decode(response.getValue(), function.getOutputParameters());
+	    List<Type> output = FunctionReturnDecoder.decode(response.getValue(), function.getOutputParameters());
 
 	    return convertToFlux(response.getValue());
 
@@ -793,10 +817,22 @@ public class EthereumPolicyInformationPoint {
 
     }
 
-    private static Type convertToType(JsonNode inputParam) {
+    private static Type convertToType(JsonNode inputParam) throws AttributeException {
 	String type = inputParam.get("type").textValue();
-	String value = inputParam.get("value").textValue();
-	return new Bool(false);
+	byte[] value = inputParam.get("value").textValue().getBytes();
+	
+	Constructor<? extends Type> constructor;
+	try {
+		constructor = AbiTypes.getType(type).getConstructor(String.class);
+		Type returnType = constructor.newInstance(value);
+		return returnType;
+	} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+		throw new AttributeException();
+	} 
+    }
+    
+    private static TypeReference<? extends Type> convertToTypeReference(JsonNode outputParam) {
+    	return TypeReference.create(AbiTypes.getType(outputParam.textValue()));
     }
 
 }
