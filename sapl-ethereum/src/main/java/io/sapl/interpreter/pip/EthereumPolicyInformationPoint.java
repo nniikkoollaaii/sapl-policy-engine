@@ -1,7 +1,6 @@
 package io.sapl.interpreter.pip;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -12,10 +11,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.FunctionReturnDecoder;
+import org.web3j.abi.TypeDecoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.Type;
-import org.web3j.abi.datatypes.generated.AbiTypes;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.Web3jService;
 import org.web3j.protocol.core.DefaultBlockParameter;
@@ -105,24 +104,30 @@ public class EthereumPolicyInformationPoint {
 
 	return convertToFlux(false);
     }
-    
-    
+
     /**
      * Method for querying the state of a contract.
+     *
      * @param saplObject needs to have the following values <br>
-     * 	"fromAccount" : The account that makes the request <br>
-     *  "toAccount" : The address of the called contract <br>
-     *  "functionName" : The name of the called function. <br>
-     *  "inputParams" : A Json ArrayNode that contains a tuple of "type" and "value" for each input parameter. 
-     *                  Example: [{"type" : "uint32", "value" : 45},{"type" : "bool", "value" : "true"}] <br>
-     *  "outputParams" : A Json ArrayNode that contains the return types. Example: ["address","bool"] <br>
-     *  All types that can be used are listed in the getType-method of the <a href="https://github.com/web3j/web3j/blob/master/abi/src/main/java/org/web3j/abi/datatypes/AbiTypes.java">AbiTypes</a>
-     * @param variables is unused here
+     *                   "fromAccount" : The account that makes the request <br>
+     *                   "toAccount" : The address of the called contract <br>
+     *                   "functionName" : The name of the called function. <br>
+     *                   "inputParams" : A Json ArrayNode that contains a tuple of
+     *                   "type" and "value" for each input parameter. Example:
+     *                   [{"type" : "uint32", "value" : 45},{"type" : "bool",
+     *                   "value" : "true"}] <br>
+     *                   "outputParams" : A Json ArrayNode that contains the return
+     *                   types. Example: ["address","bool"] <br>
+     *                   All types that can be used are listed in the getType-method
+     *                   of the <a href=
+     *                   "https://github.com/web3j/web3j/blob/master/abi/src/main/java/org/web3j/abi/datatypes/AbiTypes.java">AbiTypes</a>.
+     * @param variables  is unused here
      * @return The return value(s) of the called contract function
      * @throws AttributeException
      */
     @Attribute(name = "contract", docs = "Returns the result of a function call of a specified contract.")
-    public Flux<JsonNode> loadContractInformation(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
+    public Flux<JsonNode> loadContractInformation(JsonNode saplObject, Map<String, JsonNode> variables)
+	    throws AttributeException {
 	try {
 	    String from = getStringFrom(saplObject, "fromAccount");
 	    String to = getStringFrom(saplObject, "toAccount");
@@ -137,10 +142,10 @@ public class EthereumPolicyInformationPoint {
 
 	    List<TypeReference<?>> outputParameters = new ArrayList<>();
 	    JsonNode outputNode = saplObject.get("outputParams");
-	    if(outputNode.isArray()) {
-	    	for (JsonNode outputParam : outputNode) {
-	    		outputParameters.add(convertToTypeReference(outputParam));
-	    	}
+	    if (outputNode.isArray()) {
+		for (JsonNode solidityType : outputNode) {
+		    outputParameters.add(TypeReference.makeTypeReference(solidityType.textValue()));
+		}
 	    }
 	    Function function = new Function(getStringFrom(saplObject, "functionName"), inputParameters,
 		    outputParameters);
@@ -153,13 +158,11 @@ public class EthereumPolicyInformationPoint {
 
 	    List<Type> output = FunctionReturnDecoder.decode(response.getValue(), function.getOutputParameters());
 
-	    return convertToFlux(response.getValue());
+	    return convertToFlux(output);
 
-	} catch (IOException e) {
-
+	} catch (IOException | ClassNotFoundException e) {
+	    throw new AttributeException(e);
 	}
-
-	return convertToFlux(false);
     }
 
     @Attribute(name = "web3_clientVersion", docs = "Returns the current client version.")
@@ -818,21 +821,15 @@ public class EthereumPolicyInformationPoint {
     }
 
     private static Type convertToType(JsonNode inputParam) throws AttributeException {
-	String type = inputParam.get("type").textValue();
-	byte[] value = inputParam.get("value").textValue().getBytes();
-	
-	Constructor<? extends Type> constructor;
+	String solidityType = inputParam.get("type").textValue();
+	Object value = inputParam.get("value");
+
 	try {
-		constructor = AbiTypes.getType(type).getConstructor(String.class);
-		Type returnType = constructor.newInstance(value);
-		return returnType;
-	} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
-		throw new AttributeException();
-	} 
-    }
-    
-    private static TypeReference<? extends Type> convertToTypeReference(JsonNode outputParam) {
-    	return TypeReference.create(AbiTypes.getType(outputParam.textValue()));
+	    return TypeDecoder.instantiateType(solidityType, value);
+	} catch (InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException
+		| ClassNotFoundException e) {
+	    throw new AttributeException(e);
+	}
     }
 
 }
