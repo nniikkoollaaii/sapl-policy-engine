@@ -10,6 +10,7 @@ import java.math.BigInteger;
 import java.util.List;
 
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,21 +42,21 @@ public class EthereumIntegrationTest {
     private static final String USER4WALLET = "UTC--2019-05-10T11-33-10.665000000Z--23a28c4cbad79cf61c8ad2e47d5134b06ef0bb73.json";
     private static final String TEST_VALUE = "testValue";
 
-    private Web3j web3j;
-    private EthereumPolicyInformationPoint ethPip;
+    private static Web3j web3j;
+    private static EthereumPolicyInformationPoint ethPip;
     private static final JsonNodeFactory factory = new JsonNodeFactory(true);
     private static final Logger logger = LoggerFactory.getLogger(EthereumIntegrationTest.class);
 
-    private String user1Address;
-    private String user2Address;
-    private String user3Address;
-    private String user4Address;
+    private static String user1Address;
+    private static String user2Address;
+    private static String user3Address;
+    private static String user4Address;
 
-    private String authContractAddress;
+    private static String authContractAddress;
 
-    private TransactionReceipt transactionReceiptUser2;
-    private TransactionReceipt transactionReceiptUser3;
-    private TransactionReceipt transactionReceiptUser4;
+    private static TransactionReceipt transactionReceiptUser2;
+    private static TransactionReceipt transactionReceiptUser3;
+    private static TransactionReceipt transactionReceiptUser4;
 
     // TEST INFORMATION: Before launching the test please start the local Ethereum
     // private testnet via one of the startChain scripts
@@ -73,8 +74,8 @@ public class EthereumIntegrationTest {
     // blockchain. If you used the script, the leftovers of the blockchain should be
     // automatically deleted.
 
-    @Before
-    public void init() throws InterruptedException, TransactionException, Exception {
+    @BeforeClass
+    public static void init() throws InterruptedException, TransactionException, Exception {
 	web3j = Web3j.build(new HttpService());
 	ethPip = new EthereumPolicyInformationPoint(new HttpService());
 
