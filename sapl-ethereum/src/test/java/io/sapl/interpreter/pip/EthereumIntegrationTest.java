@@ -63,8 +63,8 @@ public class EthereumIntegrationTest {
     // private testnet via one of the startChain scripts
     // inside the folder ethereum-testnet.
     // For the scripts to work properly please follow these steps:
-    // 1. Download and install Geth (https://geth.ethereum.org/downloads/) (This has
-    // been tested with version 1.9.3).
+    // 1. On Windows: Download and install Geth (https://geth.ethereum.org/downloads/) (This has
+    // been tested with version 1.9.3). For Linux Geth is automatically provided.
     // 2. Navigate to the ethereum-testnet folder inside the project in a terminal
     // or the PowerShell.
     // 3. Execute the startChain.ps1 script in Windows or the startChain script in
