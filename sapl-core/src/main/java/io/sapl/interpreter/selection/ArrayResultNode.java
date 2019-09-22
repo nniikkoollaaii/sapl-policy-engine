@@ -91,7 +91,7 @@ public class ArrayResultNode implements ResultNode, Iterable<AbstractAnnotatedJs
 			throws PolicyEvaluationException {
 		if (each) {
 			for (AbstractAnnotatedJsonNode node : nodes) {
-				node.applyFunctionWithRelativeNode(function, arguments, false, ctx, node.getNode());
+				node.applyFunctionWithRelativeNode(function, arguments, false, ctx, node.getParent());
 			}
 		} else {
 			throw new PolicyEvaluationException(FILTER_HELPER_ARRAY);
