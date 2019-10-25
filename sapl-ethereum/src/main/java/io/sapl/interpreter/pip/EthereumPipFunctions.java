@@ -1,15 +1,121 @@
 package io.sapl.interpreter.pip;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.web3j.abi.datatypes.Address;
+import org.web3j.abi.datatypes.Bool;
+import org.web3j.abi.datatypes.DynamicBytes;
+import org.web3j.abi.datatypes.Type;
+import org.web3j.abi.datatypes.Uint;
+import org.web3j.abi.datatypes.Utf8String;
+import org.web3j.abi.datatypes.generated.Bytes1;
+import org.web3j.abi.datatypes.generated.Bytes10;
+import org.web3j.abi.datatypes.generated.Bytes11;
+import org.web3j.abi.datatypes.generated.Bytes12;
+import org.web3j.abi.datatypes.generated.Bytes13;
+import org.web3j.abi.datatypes.generated.Bytes14;
+import org.web3j.abi.datatypes.generated.Bytes15;
+import org.web3j.abi.datatypes.generated.Bytes16;
+import org.web3j.abi.datatypes.generated.Bytes17;
+import org.web3j.abi.datatypes.generated.Bytes18;
+import org.web3j.abi.datatypes.generated.Bytes19;
+import org.web3j.abi.datatypes.generated.Bytes2;
+import org.web3j.abi.datatypes.generated.Bytes20;
+import org.web3j.abi.datatypes.generated.Bytes21;
+import org.web3j.abi.datatypes.generated.Bytes22;
+import org.web3j.abi.datatypes.generated.Bytes23;
+import org.web3j.abi.datatypes.generated.Bytes24;
+import org.web3j.abi.datatypes.generated.Bytes25;
+import org.web3j.abi.datatypes.generated.Bytes26;
+import org.web3j.abi.datatypes.generated.Bytes27;
+import org.web3j.abi.datatypes.generated.Bytes28;
+import org.web3j.abi.datatypes.generated.Bytes29;
+import org.web3j.abi.datatypes.generated.Bytes3;
+import org.web3j.abi.datatypes.generated.Bytes30;
+import org.web3j.abi.datatypes.generated.Bytes31;
+import org.web3j.abi.datatypes.generated.Bytes32;
+import org.web3j.abi.datatypes.generated.Bytes4;
+import org.web3j.abi.datatypes.generated.Bytes5;
+import org.web3j.abi.datatypes.generated.Bytes6;
+import org.web3j.abi.datatypes.generated.Bytes7;
+import org.web3j.abi.datatypes.generated.Bytes8;
+import org.web3j.abi.datatypes.generated.Bytes9;
+import org.web3j.abi.datatypes.generated.Int104;
+import org.web3j.abi.datatypes.generated.Int112;
+import org.web3j.abi.datatypes.generated.Int120;
+import org.web3j.abi.datatypes.generated.Int128;
+import org.web3j.abi.datatypes.generated.Int136;
+import org.web3j.abi.datatypes.generated.Int144;
+import org.web3j.abi.datatypes.generated.Int152;
+import org.web3j.abi.datatypes.generated.Int16;
+import org.web3j.abi.datatypes.generated.Int160;
+import org.web3j.abi.datatypes.generated.Int168;
+import org.web3j.abi.datatypes.generated.Int176;
+import org.web3j.abi.datatypes.generated.Int184;
+import org.web3j.abi.datatypes.generated.Int192;
+import org.web3j.abi.datatypes.generated.Int200;
+import org.web3j.abi.datatypes.generated.Int208;
+import org.web3j.abi.datatypes.generated.Int216;
+import org.web3j.abi.datatypes.generated.Int224;
+import org.web3j.abi.datatypes.generated.Int232;
+import org.web3j.abi.datatypes.generated.Int24;
+import org.web3j.abi.datatypes.generated.Int240;
+import org.web3j.abi.datatypes.generated.Int248;
+import org.web3j.abi.datatypes.generated.Int256;
+import org.web3j.abi.datatypes.generated.Int32;
+import org.web3j.abi.datatypes.generated.Int40;
+import org.web3j.abi.datatypes.generated.Int48;
+import org.web3j.abi.datatypes.generated.Int56;
+import org.web3j.abi.datatypes.generated.Int64;
+import org.web3j.abi.datatypes.generated.Int72;
+import org.web3j.abi.datatypes.generated.Int8;
+import org.web3j.abi.datatypes.generated.Int80;
+import org.web3j.abi.datatypes.generated.Int88;
+import org.web3j.abi.datatypes.generated.Int96;
+import org.web3j.abi.datatypes.generated.Uint104;
+import org.web3j.abi.datatypes.generated.Uint112;
+import org.web3j.abi.datatypes.generated.Uint120;
+import org.web3j.abi.datatypes.generated.Uint128;
+import org.web3j.abi.datatypes.generated.Uint136;
+import org.web3j.abi.datatypes.generated.Uint144;
+import org.web3j.abi.datatypes.generated.Uint152;
+import org.web3j.abi.datatypes.generated.Uint16;
+import org.web3j.abi.datatypes.generated.Uint160;
+import org.web3j.abi.datatypes.generated.Uint168;
+import org.web3j.abi.datatypes.generated.Uint176;
+import org.web3j.abi.datatypes.generated.Uint184;
+import org.web3j.abi.datatypes.generated.Uint192;
+import org.web3j.abi.datatypes.generated.Uint200;
+import org.web3j.abi.datatypes.generated.Uint208;
+import org.web3j.abi.datatypes.generated.Uint216;
+import org.web3j.abi.datatypes.generated.Uint224;
+import org.web3j.abi.datatypes.generated.Uint232;
+import org.web3j.abi.datatypes.generated.Uint24;
+import org.web3j.abi.datatypes.generated.Uint240;
+import org.web3j.abi.datatypes.generated.Uint248;
+import org.web3j.abi.datatypes.generated.Uint256;
+import org.web3j.abi.datatypes.generated.Uint32;
+import org.web3j.abi.datatypes.generated.Uint40;
+import org.web3j.abi.datatypes.generated.Uint48;
+import org.web3j.abi.datatypes.generated.Uint56;
+import org.web3j.abi.datatypes.generated.Uint64;
+import org.web3j.abi.datatypes.generated.Uint72;
+import org.web3j.abi.datatypes.generated.Uint8;
+import org.web3j.abi.datatypes.generated.Uint80;
+import org.web3j.abi.datatypes.generated.Uint88;
+import org.web3j.abi.datatypes.generated.Uint96;
+import org.web3j.abi.datatypes.primitive.Char;
 import org.web3j.crypto.CipherException;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.WalletUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
+
+import io.sapl.api.pip.AttributeException;
 
 public class EthereumPipFunctions {
 
@@ -61,231 +167,234 @@ public class EthereumPipFunctions {
 
     }
 
-//    public static Type convertToType(JsonNode inputParam) {
-//	String solidityType = inputParam.get("type").textValue();
-//	JsonNode value = inputParam.get("value");
-//
-//	switch (solidityType) {
-//	case "address":
-//	    return new Address(value.textValue());
-//	case "bool":
-//	case "boolean":
-//	    return new Bool(value.asBoolean());
-//	case "string":
-//	    return new Utf8String(value.textValue());
-//	case "bytes":
-//	    return new DynamicBytes(value.binaryValue());
-//	case "byte":
-//	    return new Byte(new java.lang.Byte(value.textValue()));
-//	case "char":
-//	    return Char.class;
-//	case "double":
-//	    return Double.class;
-//	case "float":
-//	    return Float.class;
-//	case "uint":
-//	    return Uint.class;
-//	case "int":
-//	    return primitives ? Int.class : org.web3j.abi.datatypes.Int.class;
-//	case "long":
-//	    return Long.class;
-//	case "short":
-//	    return Short.class;
-//	case "uint8":
-//	    return Uint8.class;
-//	case "int8":
-//	    return primitives ? Short.class : Int8.class;
-//	case "uint16":
-//	    return primitives ? Int.class : Uint16.class;
-//	case "int16":
-//	    return primitives ? Int.class : Int16.class;
-//	case "uint24":
-//	    return primitives ? Int.class : Uint24.class;
-//	case "int24":
-//	    return primitives ? Int.class : Int24.class;
-//	case "uint32":
-//	    return primitives ? Long.class : Uint32.class;
-//	case "int32":
-//	    return primitives ? Int.class : Int32.class;
-//	case "uint40":
-//	    return primitives ? Long.class : Int40.class;
-//	case "int40":
-//	    return primitives ? Long.class : Uint40.class;
-//	case "uint48":
-//	    return primitives ? Long.class : Uint48.class;
-//	case "int48":
-//	    return primitives ? Long.class : Int48.class;
-//	case "uint56":
-//	    return primitives ? Long.class : Uint56.class;
-//	case "int56":
-//	    return primitives ? Long.class : Int56.class;
-//	case "uint64":
-//	    return Uint64.class;
-//	case "int64":
-//	    return primitives ? Long.class : Int64.class;
-//	case "uint72":
-//	    return Uint72.class;
-//	case "int72":
-//	    return Int72.class;
-//	case "uint80":
-//	    return Uint80.class;
-//	case "int80":
-//	    return Int80.class;
-//	case "uint88":
-//	    return Uint88.class;
-//	case "int88":
-//	    return Int88.class;
-//	case "uint96":
-//	    return Uint96.class;
-//	case "int96":
-//	    return Int96.class;
-//	case "uint104":
-//	    return Uint104.class;
-//	case "int104":
-//	    return Int104.class;
-//	case "uint112":
-//	    return Uint112.class;
-//	case "int112":
-//	    return Int112.class;
-//	case "uint120":
-//	    return Uint120.class;
-//	case "int120":
-//	    return Int120.class;
-//	case "uint128":
-//	    return Uint128.class;
-//	case "int128":
-//	    return Int128.class;
-//	case "uint136":
-//	    return Uint136.class;
-//	case "int136":
-//	    return Int136.class;
-//	case "uint144":
-//	    return Uint144.class;
-//	case "int144":
-//	    return Int144.class;
-//	case "uint152":
-//	    return Uint152.class;
-//	case "int152":
-//	    return Int152.class;
-//	case "uint160":
-//	    return Uint160.class;
-//	case "int160":
-//	    return Int160.class;
-//	case "uint168":
-//	    return Uint168.class;
-//	case "int168":
-//	    return Int168.class;
-//	case "uint176":
-//	    return Uint176.class;
-//	case "int176":
-//	    return Int176.class;
-//	case "uint184":
-//	    return Uint184.class;
-//	case "int184":
-//	    return Int184.class;
-//	case "uint192":
-//	    return Uint192.class;
-//	case "int192":
-//	    return Int192.class;
-//	case "uint200":
-//	    return Uint200.class;
-//	case "int200":
-//	    return Int200.class;
-//	case "uint208":
-//	    return Uint208.class;
-//	case "int208":
-//	    return Int208.class;
-//	case "uint216":
-//	    return Uint216.class;
-//	case "int216":
-//	    return Int216.class;
-//	case "uint224":
-//	    return Uint224.class;
-//	case "int224":
-//	    return Int224.class;
-//	case "uint232":
-//	    return Uint232.class;
-//	case "int232":
-//	    return Int232.class;
-//	case "uint240":
-//	    return Uint240.class;
-//	case "int240":
-//	    return Int240.class;
-//	case "uint248":
-//	    return Uint248.class;
-//	case "int248":
-//	    return Int248.class;
-//	case "uint256":
-//	    return Uint256.class;
-//	case "int256":
-//	    return Int256.class;
-//	case "bytes1":
-//	    return Bytes1.class;
-//	case "bytes2":
-//	    return Bytes2.class;
-//	case "bytes3":
-//	    return Bytes3.class;
-//	case "bytes4":
-//	    return Bytes4.class;
-//	case "bytes5":
-//	    return Bytes5.class;
-//	case "bytes6":
-//	    return Bytes6.class;
-//	case "bytes7":
-//	    return Bytes7.class;
-//	case "bytes8":
-//	    return Bytes8.class;
-//	case "bytes9":
-//	    return Bytes9.class;
-//	case "bytes10":
-//	    return Bytes10.class;
-//	case "bytes11":
-//	    return Bytes11.class;
-//	case "bytes12":
-//	    return Bytes12.class;
-//	case "bytes13":
-//	    return Bytes13.class;
-//	case "bytes14":
-//	    return Bytes14.class;
-//	case "bytes15":
-//	    return Bytes15.class;
-//	case "bytes16":
-//	    return Bytes16.class;
-//	case "bytes17":
-//	    return Bytes17.class;
-//	case "bytes18":
-//	    return Bytes18.class;
-//	case "bytes19":
-//	    return Bytes19.class;
-//	case "bytes20":
-//	    return Bytes20.class;
-//	case "bytes21":
-//	    return Bytes21.class;
-//	case "bytes22":
-//	    return Bytes22.class;
-//	case "bytes23":
-//	    return Bytes23.class;
-//	case "bytes24":
-//	    return Bytes24.class;
-//	case "bytes25":
-//	    return Bytes25.class;
-//	case "bytes26":
-//	    return Bytes26.class;
-//	case "bytes27":
-//	    return Bytes27.class;
-//	case "bytes28":
-//	    return Bytes28.class;
-//	case "bytes29":
-//	    return Bytes29.class;
-//	case "bytes30":
-//	    return Bytes30.class;
-//	case "bytes31":
-//	    return Bytes31.class;
-//	case "bytes32":
-//	    return Bytes32.class;
-//	default:
-//	    throw new UnsupportedOperationException("Unsupported type encountered: " + type);
-//	}
-//    }
+    public static Type convertToType(JsonNode inputParam) throws IOException, AttributeException {
+	String solidityType = inputParam.get("type").textValue();
+	JsonNode value = inputParam.get("value");
+	String textValue = value.textValue();
+	BigInteger bigIntegerValue = value.bigIntegerValue();
+	byte[] binaryValue = value.binaryValue();
+
+	switch (solidityType) {
+	case "address":
+	    return new Address(textValue);
+	case "bool":
+	case "boolean":
+	    return new Bool(value.asBoolean());
+	case "string":
+	    return new Utf8String(textValue);
+	case "bytes":
+	    return new DynamicBytes(binaryValue);
+	case "byte":
+	    return new org.web3j.abi.datatypes.primitive.Byte(new java.lang.Byte(textValue));
+	case "char":
+	    return new Char(new java.lang.Character(textValue.charAt(0)));
+	case "double":
+	    return new org.web3j.abi.datatypes.primitive.Double(new java.lang.Double(textValue));
+	case "float":
+	    return new org.web3j.abi.datatypes.primitive.Float(new java.lang.Float(textValue));
+	case "uint":
+	    return new Uint(bigIntegerValue);
+	case "int":
+	    return new org.web3j.abi.datatypes.Int(bigIntegerValue);
+	case "long":
+	    return new org.web3j.abi.datatypes.primitive.Long(value.asLong());
+	case "short":
+	    return new org.web3j.abi.datatypes.primitive.Short(value.shortValue());
+	case "uint8":
+	    return new Uint8(bigIntegerValue);
+	case "int8":
+	    return new Int8(bigIntegerValue);
+	case "uint16":
+	    return new Uint16(bigIntegerValue);
+	case "int16":
+	    return new Int16(bigIntegerValue);
+	case "uint24":
+	    return new Uint24(bigIntegerValue);
+	case "int24":
+	    return new Int24(bigIntegerValue);
+	case "uint32":
+	    return new Uint32(bigIntegerValue);
+	case "int32":
+	    return new Int32(bigIntegerValue);
+	case "uint40":
+	    return new Int40(bigIntegerValue);
+	case "int40":
+	    return new Uint40(bigIntegerValue);
+	case "uint48":
+	    return new Uint48(bigIntegerValue);
+	case "int48":
+	    return new Int48(bigIntegerValue);
+	case "uint56":
+	    return new Uint56(bigIntegerValue);
+	case "int56":
+	    return new Int56(bigIntegerValue);
+	case "uint64":
+	    return new Uint64(bigIntegerValue);
+	case "int64":
+	    return new Int64(bigIntegerValue);
+	case "uint72":
+	    return new Uint72(bigIntegerValue);
+	case "int72":
+	    return new Int72(bigIntegerValue);
+	case "uint80":
+	    return new Uint80(bigIntegerValue);
+	case "int80":
+	    return new Int80(bigIntegerValue);
+	case "uint88":
+	    return new Uint88(bigIntegerValue);
+	case "int88":
+	    return new Int88(bigIntegerValue);
+	case "uint96":
+	    return new Uint96(bigIntegerValue);
+	case "int96":
+	    return new Int96(bigIntegerValue);
+	case "uint104":
+	    return new Uint104(bigIntegerValue);
+	case "int104":
+	    return new Int104(bigIntegerValue);
+	case "uint112":
+	    return new Uint112(bigIntegerValue);
+	case "int112":
+	    return new Int112(bigIntegerValue);
+	case "uint120":
+	    return new Uint120(bigIntegerValue);
+	case "int120":
+	    return new Int120(bigIntegerValue);
+	case "uint128":
+	    return new Uint128(bigIntegerValue);
+	case "int128":
+	    return new Int128(bigIntegerValue);
+	case "uint136":
+	    return new Uint136(bigIntegerValue);
+	case "int136":
+	    return new Int136(bigIntegerValue);
+	case "uint144":
+	    return new Uint144(bigIntegerValue);
+	case "int144":
+	    return new Int144(bigIntegerValue);
+	case "uint152":
+	    return new Uint152(bigIntegerValue);
+	case "int152":
+	    return new Int152(bigIntegerValue);
+	case "uint160":
+	    return new Uint160(bigIntegerValue);
+	case "int160":
+	    return new Int160(bigIntegerValue);
+	case "uint168":
+	    return new Uint168(bigIntegerValue);
+	case "int168":
+	    return new Int168(bigIntegerValue);
+	case "uint176":
+	    return new Uint176(bigIntegerValue);
+	case "int176":
+	    return new Int176(bigIntegerValue);
+	case "uint184":
+	    return new Uint184(bigIntegerValue);
+	case "int184":
+	    return new Int184(bigIntegerValue);
+	case "uint192":
+	    return new Uint192(bigIntegerValue);
+	case "int192":
+	    return new Int192(bigIntegerValue);
+	case "uint200":
+	    return new Uint200(bigIntegerValue);
+	case "int200":
+	    return new Int200(bigIntegerValue);
+	case "uint208":
+	    return new Uint208(bigIntegerValue);
+	case "int208":
+	    return new Int208(bigIntegerValue);
+	case "uint216":
+	    return new Uint216(bigIntegerValue);
+	case "int216":
+	    return new Int216(bigIntegerValue);
+	case "uint224":
+	    return new Uint224(bigIntegerValue);
+	case "int224":
+	    return new Int224(bigIntegerValue);
+	case "uint232":
+	    return new Uint232(bigIntegerValue);
+	case "int232":
+	    return new Int232(bigIntegerValue);
+	case "uint240":
+	    return new Uint240(bigIntegerValue);
+	case "int240":
+	    return new Int240(bigIntegerValue);
+	case "uint248":
+	    return new Uint248(bigIntegerValue);
+	case "int248":
+	    return new Int248(bigIntegerValue);
+	case "uint256":
+	    return new Uint256(bigIntegerValue);
+	case "int256":
+	    return new Int256(bigIntegerValue);
+	case "bytes1":
+	    return new Bytes1(binaryValue);
+	case "bytes2":
+	    return new Bytes2(binaryValue);
+	case "bytes3":
+	    return new Bytes3(binaryValue);
+	case "bytes4":
+	    return new Bytes4(binaryValue);
+	case "bytes5":
+	    return new Bytes5(binaryValue);
+	case "bytes6":
+	    return new Bytes6(binaryValue);
+	case "bytes7":
+	    return new Bytes7(binaryValue);
+	case "bytes8":
+	    return new Bytes8(binaryValue);
+	case "bytes9":
+	    return new Bytes9(binaryValue);
+	case "bytes10":
+	    return new Bytes10(binaryValue);
+	case "bytes11":
+	    return new Bytes11(binaryValue);
+	case "bytes12":
+	    return new Bytes12(binaryValue);
+	case "bytes13":
+	    return new Bytes13(binaryValue);
+	case "bytes14":
+	    return new Bytes14(binaryValue);
+	case "bytes15":
+	    return new Bytes15(binaryValue);
+	case "bytes16":
+	    return new Bytes16(binaryValue);
+	case "bytes17":
+	    return new Bytes17(binaryValue);
+	case "bytes18":
+	    return new Bytes18(binaryValue);
+	case "bytes19":
+	    return new Bytes19(binaryValue);
+	case "bytes20":
+	    return new Bytes20(binaryValue);
+	case "bytes21":
+	    return new Bytes21(binaryValue);
+	case "bytes22":
+	    return new Bytes22(binaryValue);
+	case "bytes23":
+	    return new Bytes23(binaryValue);
+	case "bytes24":
+	    return new Bytes24(binaryValue);
+	case "bytes25":
+	    return new Bytes25(binaryValue);
+	case "bytes26":
+	    return new Bytes26(binaryValue);
+	case "bytes27":
+	    return new Bytes27(binaryValue);
+	case "bytes28":
+	    return new Bytes28(binaryValue);
+	case "bytes29":
+	    return new Bytes29(binaryValue);
+	case "bytes30":
+	    return new Bytes30(binaryValue);
+	case "bytes31":
+	    return new Bytes31(binaryValue);
+	case "bytes32":
+	    return new Bytes32(binaryValue);
+	default:
+	    throw new AttributeException("The type name  " + solidityType + " could not be recognized.");
+	}
+    }
 
 }

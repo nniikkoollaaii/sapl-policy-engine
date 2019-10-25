@@ -9,9 +9,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
 
-import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +61,8 @@ public class EthereumIntegrationTest {
     // private testnet via one of the startChain scripts
     // inside the folder ethereum-testnet.
     // For the scripts to work properly please follow these steps:
-    // 1. On Windows: Download and install Geth (https://geth.ethereum.org/downloads/) (This has
+    // 1. On Windows: Download and install Geth
+    // (https://geth.ethereum.org/downloads/) (This has
     // been tested with version 1.9.3). For Linux Geth is automatically provided.
     // 2. Navigate to the ethereum-testnet folder inside the project in a terminal
     // or the PowerShell.
@@ -190,7 +189,6 @@ public class EthereumIntegrationTest {
 
     // loadContractInformation
     @Test
-    @Ignore
     public void loadContractInformationShouldReturnCorrectValue() throws AttributeException {
 	ObjectNode saplObject = factory.objectNode();
 	saplObject.put("fromAccount", user1Address);
@@ -205,8 +203,11 @@ public class EthereumIntegrationTest {
 	ArrayNode outputParams = factory.arrayNode();
 	outputParams.add("bool");
 	saplObject.set("outputParams", outputParams);
-	boolean result = ethPip.loadContractInformation(saplObject, null).blockFirst().asBoolean();
-	assertTrue("False was returned although user2 was authorized and result should have been true.", result);
+	JsonNode result = ethPip.loadContractInformation(saplObject, null).blockFirst();
+	System.out.println(result);
+
+	assertTrue("False was returned although user2 was authorized and result should have been true.",
+		result.get(0).get("value").asBoolean());
 
     }
 

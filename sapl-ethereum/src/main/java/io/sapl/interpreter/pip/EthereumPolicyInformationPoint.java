@@ -1,7 +1,8 @@
 package io.sapl.interpreter.pip;
 
+import static io.sapl.interpreter.pip.EthereumPipFunctions.convertToType;
+
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.FunctionReturnDecoder;
-import org.web3j.abi.TypeDecoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.Type;
@@ -40,7 +40,8 @@ import reactor.core.publisher.Flux;
  * Excluded are the deprecated methods eth_getCompilers, eth_compileSolidity,
  * eth_compileLLL and eth_compileSerpent. Further excluded are all db_ methods
  * as they are deprecated and will be removed. Also excluded is the eth_getProof
- * method as up to now there doesn't exist an implementation in the Web3j API.
+ * method as at time of writing this there doesn't exist an implementation in
+ * the Web3j API.
  *
  * Furthermore the methods verifyTransaction and loadContractInformation are not
  * part of the JSON RPC API but are considered to be a more user friendly
@@ -56,8 +57,8 @@ public class EthereumPolicyInformationPoint {
 
     private Web3j web3j;
 
-    private static final String DBPBI = "defaultBlockParameterBigInt";
-    private static final String DBPS = "defaultBlockParameterString";
+    private static final String DEFAULT_BLOCK_PARAMETER_BIG_INT = "defaultBlockParameterBigInt";
+    private static final String DEFAULT_BLOCK_PARAMETER_STRING = "defaultBlockParameterString";
     private static final String LATEST = "latest";
     private static final String EARLIEST = "earliest";
     private static final String PENDING = "pending";
@@ -804,13 +805,13 @@ public class EthereumPolicyInformationPoint {
      * @return
      */
     private static DefaultBlockParameter extractDefaultBlockParameter(JsonNode saplObject) {
-	if (saplObject.has(DBPBI)) {
-	    JsonNode dbp = saplObject.get(DBPBI);
+	if (saplObject.has(DEFAULT_BLOCK_PARAMETER_BIG_INT)) {
+	    JsonNode dbp = saplObject.get(DEFAULT_BLOCK_PARAMETER_BIG_INT);
 	    BigInteger dbpValue = dbp.bigIntegerValue();
 	    return DefaultBlockParameter.valueOf(dbpValue);
 	}
-	if (saplObject.has(DBPS)) {
-	    String dbpsName = saplObject.get(DBPS).textValue();
+	if (saplObject.has(DEFAULT_BLOCK_PARAMETER_STRING)) {
+	    String dbpsName = saplObject.get(DEFAULT_BLOCK_PARAMETER_STRING).textValue();
 	    if (dbpsName.equals(EARLIEST) || dbpsName.equals(LATEST) || dbpsName.equals(PENDING))
 		return DefaultBlockParameter.valueOf(dbpsName);
 	}
@@ -818,18 +819,6 @@ public class EthereumPolicyInformationPoint {
 	LOGGER.warn(NO_DBP_WARNING);
 	return DefaultBlockParameter.valueOf(LATEST);
 
-    }
-
-    private static Type convertToType(JsonNode inputParam) throws AttributeException {
-	String solidityType = inputParam.get("type").textValue();
-	Object value = inputParam.get("value");
-
-	try {
-	    return TypeDecoder.instantiateType(solidityType, value);
-	} catch (InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException
-		| ClassNotFoundException e) {
-	    throw new AttributeException(e);
-	}
     }
 
 }
