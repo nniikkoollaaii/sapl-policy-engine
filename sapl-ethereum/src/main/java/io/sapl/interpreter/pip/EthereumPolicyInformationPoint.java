@@ -123,7 +123,10 @@ public class EthereumPolicyInformationPoint {
      *                   of the <a href=
      *                   "https://github.com/web3j/web3j/blob/master/abi/src/main/java/org/web3j/abi/datatypes/AbiTypes.java">AbiTypes</a>.
      * @param variables  is unused here
-     * @return The return value(s) of the called contract function
+     * @return The return value(s) of the called contract function as an Array Node.
+     *         Each node entry contains two values, "value" with the return value
+     *         and "typeAsString" with the return type. Example for a node entry:
+     *         {"value":true,"typeAsString":"bool"}
      * @throws AttributeException
      */
     @Attribute(name = "contract", docs = "Returns the result of a function call of a specified contract.")

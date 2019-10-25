@@ -3,28 +3,29 @@ package io.sapl.interpreter.pip;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
-import static org.powermock.api.mockito.PowerMockito.mockStatic;
 
+import java.io.IOException;
 import java.math.BigInteger;
 
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.Web3jService;
+import org.web3j.protocol.core.methods.response.EthTransaction;
+import org.web3j.protocol.core.methods.response.Transaction;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-@RunWith(PowerMockRunner.class)
+// @RunWith(PowerMockRunner.class)
 @PrepareForTest(Web3j.class)
 public class EthereumModuleTest {
 
@@ -38,15 +39,6 @@ public class EthereumModuleTest {
 
     private static final String TRANSACTION_HASH = "transactionHash";
 
-    @Mock
-    private static Web3j web3j;
-
-    @Mock
-    private static Web3jService web3jService;
-
-    @Rule
-    public MockitoRule mockitoRule = MockitoJUnit.rule();
-
     private static EthereumPolicyInformationPoint ethPip;
     private static final JsonNodeFactory factory = new JsonNodeFactory(true);
     private static final Logger logger = LoggerFactory.getLogger(EthereumIntegrationTest.class);
@@ -58,10 +50,30 @@ public class EthereumModuleTest {
     private static final String TEST_FALSE_ACCOUNT = "0x555cbea2185089ea5bbabbcd7616b215b724885c";
     private static final BigInteger TEST_TRANSACTION_VALUE = new BigInteger("2000000000000000000");
 
-    @BeforeClass
-    public static void init() {
-	mockStatic(Web3j.class);
-	when(Web3j.build(web3jService)).thenReturn(web3j);
+    @Rule
+    public MockitoRule mockitoRule = MockitoJUnit.rule();
+
+    @Mock
+    private static Web3jService web3jService;
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private Web3j web3j;
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private EthTransaction ethTransaction;
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private Transaction transactionFromChain;
+
+    @Before
+    public void init() throws IOException {
+
+	when(web3j.ethGetTransactionByHash(TEST_TRANSACTION_HASH).send()).thenReturn(ethTransaction);
+	when(ethTransaction.getTransaction().get()).thenReturn(transactionFromChain);
+	when(transactionFromChain.getFrom()).thenReturn(TEST_FROM_ACCOUNT);
+	when(transactionFromChain.getTo()).thenReturn(TEST_TO_ACCOUNT);
+	when(transactionFromChain.getValue()).thenReturn(TEST_TRANSACTION_VALUE);
+
 	ethPip = new EthereumPolicyInformationPoint(web3jService);
 
     }
