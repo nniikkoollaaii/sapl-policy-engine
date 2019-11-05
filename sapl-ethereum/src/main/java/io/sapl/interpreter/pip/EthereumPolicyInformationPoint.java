@@ -87,7 +87,7 @@ public class EthereumPolicyInformationPoint {
      *         taken place and false otherwise
      * @throws AttributeException
      */
-    @Attribute(name = "isValid", docs = "Returns true, if a transaction has taken place and false otherwise.")
+    @Attribute(name = "transaction", docs = "Returns true, if a transaction has taken place and false otherwise.")
     public Flux<JsonNode> verifyTransaction(JsonNode saplObject, Map<String, JsonNode> variables) {
 	try {
 
