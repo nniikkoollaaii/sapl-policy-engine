@@ -9,6 +9,9 @@ This function was added to provide a simple, user-friendly way of retreiving inf
  - "functionName": The name of the function that should be called
  - "inputParams":  The type and value of all input params that the called function requires
  - "outputParams": The type of all output params that the function returns.
+
+All types that can be used are listed in the convertToType-method of the [EthereumPipFunctions](https://github.com/heutelbeck/sapl-policy-engine/blob/sapl-ethereum/sapl-ethereum/src/main/java/io/sapl/interpreter/pip/EthereumPipFunctions.java).
+
  
 Let's assume that you want to call the function `isAuthorized` from the following contract:
 
