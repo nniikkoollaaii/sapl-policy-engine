@@ -8,10 +8,10 @@ import org.springframework.security.core.Authentication;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.sapl.api.pdp.AuthorizationSubscription;
 import io.sapl.api.pdp.Decision;
 import io.sapl.api.pdp.PolicyDecisionPoint;
-import io.sapl.api.pdp.Request;
-import io.sapl.api.pdp.Response;
+import io.sapl.api.pdp.AuthorizationDecision;
 import io.sapl.spring.constraints.ConstraintHandlerService;
 import io.sapl.spring.method.AbstractPolicyBasedInvocationEnforcementAdvice;
 import lombok.extern.slf4j.Slf4j;
@@ -20,12 +20,10 @@ import lombok.extern.slf4j.Slf4j;
  * Method pre-invocation handling based on a SAPL policy decision point.
  */
 @Slf4j
-public class PolicyBasedPreInvocationEnforcementAdvice
-		extends AbstractPolicyBasedInvocationEnforcementAdvice
+public class PolicyBasedPreInvocationEnforcementAdvice extends AbstractPolicyBasedInvocationEnforcementAdvice
 		implements PreInvocationEnforcementAdvice {
 
-	public PolicyBasedPreInvocationEnforcementAdvice(
-			ObjectFactory<PolicyDecisionPoint> pdpFactory,
+	public PolicyBasedPreInvocationEnforcementAdvice(ObjectFactory<PolicyDecisionPoint> pdpFactory,
 			ObjectFactory<ConstraintHandlerService> constraintHandlerFactory,
 			ObjectFactory<ObjectMapper> objectMapperFactory) {
 		super(pdpFactory, constraintHandlerFactory, objectMapperFactory);
@@ -38,42 +36,38 @@ public class PolicyBasedPreInvocationEnforcementAdvice
 		// initialization. Else, beans may become non eligible for BeanPostProcessors
 		lazyLoadDepdendencies();
 
-		EvaluationContext ctx = expressionHandler.createEvaluationContext(authentication,
-				mi);
+		EvaluationContext ctx = expressionHandler.createEvaluationContext(authentication, mi);
 
 		Object subject = retrieveSubjet(authentication, attr, ctx);
 		Object action = retrieveAction(mi, attr, ctx);
 		Object resource = retrieveResource(mi, attr, ctx);
 		Object environment = retrieveEnvironment(attr, ctx);
 
-		Request request = new Request(mapper.valueToTree(subject),
-				mapper.valueToTree(action), mapper.valueToTree(resource),
-				mapper.valueToTree(environment));
+		AuthorizationSubscription authzSubscription = new AuthorizationSubscription(mapper.valueToTree(subject),
+				mapper.valueToTree(action), mapper.valueToTree(resource), mapper.valueToTree(environment));
 
-		Response response = pdp.decide(request).blockFirst();
+		AuthorizationDecision authzDecision = pdp.decide(authzSubscription).blockFirst();
 
-		LOGGER.debug("REQUEST  : ACTION={} RESOURCE={} SUBJ={} ENV={}",
-				request.getAction(), request.getResource(), request.getSubject(),
-				request.getEnvironment());
-		LOGGER.debug("RESPONSE : {} - {}",
-				response == null ? "null" : response.getDecision(), response);
+		LOGGER.debug("SUBSCRIPTION   : ACTION={} RESOURCE={} SUBJ={} ENV={}", authzSubscription.getAction(),
+				authzSubscription.getResource(), authzSubscription.getSubject(), authzSubscription.getEnvironment());
+		LOGGER.debug("AUTHZ_DECISION : {} - {}", authzDecision == null ? "null" : authzDecision.getDecision(),
+				authzDecision);
 
-		if (response != null && response.getResource().isPresent()) {
-			LOGGER.warn(
-					"Cannot handle a response declaring a new resource in @PreEnforce. Deny access!");
+		if (authzDecision != null && authzDecision.getResource().isPresent()) {
+			LOGGER.warn("Cannot handle a authorization decision declaring a new resource in @PreEnforce. Deny access!");
 			return false;
 		}
-		if (response == null || response.getDecision() != Decision.PERMIT) {
+		if (authzDecision == null || authzDecision.getDecision() != Decision.PERMIT) {
 			return false;
 		}
 
 		try {
-			constraintHandlers.handleObligations(response);
+			constraintHandlers.handleObligations(authzDecision);
 		}
 		catch (AccessDeniedException e) {
 			return false;
 		}
-		constraintHandlers.handleAdvices(response);
+		constraintHandlers.handleAdvices(authzDecision);
 		return true;
 	}
 

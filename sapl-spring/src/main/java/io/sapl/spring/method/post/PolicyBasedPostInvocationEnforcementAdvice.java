@@ -11,10 +11,10 @@ import org.springframework.security.core.Authentication;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.sapl.api.pdp.AuthorizationDecision;
+import io.sapl.api.pdp.AuthorizationSubscription;
 import io.sapl.api.pdp.Decision;
 import io.sapl.api.pdp.PolicyDecisionPoint;
-import io.sapl.api.pdp.Request;
-import io.sapl.api.pdp.Response;
 import io.sapl.spring.constraints.ConstraintHandlerService;
 import io.sapl.spring.method.AbstractPolicyBasedInvocationEnforcementAdvice;
 import lombok.extern.slf4j.Slf4j;
@@ -23,12 +23,10 @@ import lombok.extern.slf4j.Slf4j;
  * Method post-invocation handling based on a SAPL policy decision point.
  */
 @Slf4j
-public class PolicyBasedPostInvocationEnforcementAdvice
-		extends AbstractPolicyBasedInvocationEnforcementAdvice
+public class PolicyBasedPostInvocationEnforcementAdvice extends AbstractPolicyBasedInvocationEnforcementAdvice
 		implements PostInvocationEnforcementAdvice {
 
-	public PolicyBasedPostInvocationEnforcementAdvice(
-			ObjectFactory<PolicyDecisionPoint> pdpFactory,
+	public PolicyBasedPostInvocationEnforcementAdvice(ObjectFactory<PolicyDecisionPoint> pdpFactory,
 			ObjectFactory<ConstraintHandlerService> constraintHandlerFactory,
 			ObjectFactory<ObjectMapper> objectMapperFactory) {
 		super(pdpFactory, constraintHandlerFactory, objectMapperFactory);
@@ -42,14 +40,12 @@ public class PolicyBasedPostInvocationEnforcementAdvice
 		// initialization.
 		// Else, beans may become not eligible for BeanPostProcessors
 		lazyLoadDepdendencies();
-		EvaluationContext ctx = expressionHandler.createEvaluationContext(authentication,
-				mi);
+		EvaluationContext ctx = expressionHandler.createEvaluationContext(authentication, mi);
 
 		boolean returnOptional = false;
 		Class<?> returnType;
 		if (returnedObject instanceof Optional) {
-			expressionHandler.setReturnObject(((Optional<Object>) returnedObject).get(),
-					ctx);
+			expressionHandler.setReturnObject(((Optional<Object>) returnedObject).get(), ctx);
 			returnType = ((Optional<Object>) returnedObject).get().getClass();
 			returnOptional = true;
 		}
@@ -63,30 +59,28 @@ public class PolicyBasedPostInvocationEnforcementAdvice
 		Object resource = retrieveResource(mi, pia, ctx);
 		Object environment = retrieveEnvironment(pia, ctx);
 
-		Request request = new Request(mapper.valueToTree(subject),
-				mapper.valueToTree(action), mapper.valueToTree(resource),
-				mapper.valueToTree(environment));
+		AuthorizationSubscription authzSubscription = new AuthorizationSubscription(mapper.valueToTree(subject),
+				mapper.valueToTree(action), mapper.valueToTree(resource), mapper.valueToTree(environment));
 
-		Response response = pdp.decide(request).blockFirst();
+		AuthorizationDecision authzDecision = pdp.decide(authzSubscription).blockFirst();
 
 		LOGGER.debug("ATTRIBUTE: {} - {}", pia, pia.getClass());
-		LOGGER.debug("REQUEST  :\n - ACTION={}\n - RESOURCE={}\n - SUBJ={}\n - ENV={}",
-				request.getAction(), request.getResource(), request.getSubject(),
-				request.getEnvironment());
-		LOGGER.debug("RESPONSE : {} - {}",
-				response == null ? "null" : response.getDecision(), response);
+		LOGGER.debug("SUBSCRIPTION  :\n - ACTION={}\n - RESOURCE={}\n - SUBJ={}\n - ENV={}",
+				authzSubscription.getAction(), authzSubscription.getResource(), authzSubscription.getSubject(),
+				authzSubscription.getEnvironment());
+		LOGGER.debug("AUTH_DECISION : {} - {}", authzDecision == null ? "null" : authzDecision.getDecision(),
+				authzDecision);
 
-		if (response == null || response.getDecision() != Decision.PERMIT) {
+		if (authzDecision == null || authzDecision.getDecision() != Decision.PERMIT) {
 			throw new AccessDeniedException("Access denied by policy decision point.");
 		}
 
-		constraintHandlers.handleObligations(response);
-		constraintHandlers.handleAdvices(response);
+		constraintHandlers.handleObligations(authzDecision);
+		constraintHandlers.handleAdvices(authzDecision);
 
-		if (response.getResource().isPresent()) {
+		if (authzDecision.getResource().isPresent()) {
 			try {
-				Object returnValue = mapper.treeToValue(response.getResource().get(),
-						returnType);
+				Object returnValue = mapper.treeToValue(authzDecision.getResource().get(), returnType);
 				if (returnOptional) {
 					return Optional.of(returnValue);
 				}
@@ -95,11 +89,11 @@ public class PolicyBasedPostInvocationEnforcementAdvice
 				}
 			}
 			catch (JsonProcessingException e) {
-				LOGGER.trace(
-						"Transformed result cannot be mapped to expected return type. {}",
-						response.getResource().get());
+				LOGGER.trace("Transformed result cannot be mapped to expected return type. {}",
+						authzDecision.getResource().get());
 				throw new AccessDeniedException(
-						"Returned resource of response cannot be mapped back to return value. Access not permitted by policy enforcement point.",e);
+						"Returned resource of authzDecision cannot be mapped back to return value. Access not permitted by policy enforcement point.",
+						e);
 			}
 		}
 		else {

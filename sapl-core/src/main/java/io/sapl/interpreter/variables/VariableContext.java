@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 import io.sapl.api.interpreter.PolicyEvaluationException;
-import io.sapl.api.pdp.Request;
+import io.sapl.api.pdp.AuthorizationSubscription;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
@@ -39,33 +39,33 @@ public class VariableContext {
 
 	private Map<String, JsonNode> variables = new HashMap<>();
 
-	public VariableContext(Request request) throws PolicyEvaluationException {
-		this(request, null);
+	public VariableContext(AuthorizationSubscription authzSubscription) throws PolicyEvaluationException {
+		this(authzSubscription, null);
 	}
 
-	public VariableContext(Request request, Map<String, JsonNode> defaultVariables)
+	public VariableContext(AuthorizationSubscription authzSubscription, Map<String, JsonNode> defaultVariables)
 			throws PolicyEvaluationException {
-		if (request != null) {
-			if (request.getSubject() != null) {
-				variables.put(SUBJECT, request.getSubject());
+		if (authzSubscription != null) {
+			if (authzSubscription.getSubject() != null) {
+				variables.put(SUBJECT, authzSubscription.getSubject());
 			}
 			else {
 				variables.put(SUBJECT, JSON.nullNode());
 			}
-			if (request.getAction() != null) {
-				variables.put(ACTION, request.getAction());
+			if (authzSubscription.getAction() != null) {
+				variables.put(ACTION, authzSubscription.getAction());
 			}
 			else {
 				variables.put(ACTION, JSON.nullNode());
 			}
-			if (request.getResource() != null) {
-				variables.put(RESOURCE, request.getResource());
+			if (authzSubscription.getResource() != null) {
+				variables.put(RESOURCE, authzSubscription.getResource());
 			}
 			else {
 				variables.put(RESOURCE, JSON.nullNode());
 			}
-			if (request.getEnvironment() != null) {
-				variables.put(ENVIRONMENT, request.getEnvironment());
+			if (authzSubscription.getEnvironment() != null) {
+				variables.put(ENVIRONMENT, authzSubscription.getEnvironment());
 			}
 			else {
 				variables.put(ENVIRONMENT, JSON.nullNode());
@@ -79,12 +79,10 @@ public class VariableContext {
 		}
 	}
 
-	public final void put(String identifier, JsonNode value)
-			throws PolicyEvaluationException {
-		if (SUBJECT.equals(identifier) || RESOURCE.equals(identifier)
-				|| ACTION.equals(identifier) || ENVIRONMENT.equals(identifier)) {
-			throw new PolicyEvaluationException(
-					"cannot overwrite system variable " + identifier);
+	public final void put(String identifier, JsonNode value) throws PolicyEvaluationException {
+		if (SUBJECT.equals(identifier) || RESOURCE.equals(identifier) || ACTION.equals(identifier)
+				|| ENVIRONMENT.equals(identifier)) {
+			throw new PolicyEvaluationException("cannot overwrite system variable " + identifier);
 		}
 		variables.put(identifier, value);
 	}
@@ -103,6 +101,15 @@ public class VariableContext {
 			throw new PolicyEvaluationException("unbound variable " + identifier);
 		}
 		return result;
+	}
+
+	/**
+	 * @return a deep copy of this variables context.
+	 */
+	public VariableContext copy() {
+		final VariableContext copy = new VariableContext();
+		variables.forEach((key, value) -> copy.variables.put(key, value.deepCopy()));
+		return copy;
 	}
 
 }

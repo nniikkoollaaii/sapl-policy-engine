@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import io.sapl.api.interpreter.PolicyEvaluationException;
 import io.sapl.api.interpreter.SAPLInterpreter;
-import io.sapl.api.pdp.Request;
+import io.sapl.api.pdp.AuthorizationSubscription;
 import io.sapl.api.prp.PolicyRetrievalResult;
 import io.sapl.grammar.sapl.SAPL;
 import io.sapl.interpreter.DefaultSAPLInterpreter;
@@ -69,11 +69,10 @@ public class ConcurrencyTest {
 		Map<String, Boolean> bindings = createBindings();
 		bindings.put("x0", true);
 		bindings.put("x1", false);
-		Request request = createRequestObject(bindings);
+		AuthorizationSubscription authzSubscription = createRequestObject(bindings);
 
 		// when
-		PolicyRetrievalResult result = prp.retrievePolicies(request, functionCtx,
-				variables);
+		PolicyRetrievalResult result = prp.retrievePolicies(authzSubscription, functionCtx, variables);
 
 		// then
 		Assertions.assertThat(result).isNotNull();
@@ -91,11 +90,10 @@ public class ConcurrencyTest {
 		bindings.put("x0", true);
 		bindings.put("x1", false);
 		prp.remove("1");
-		Request request = createRequestObject(bindings);
+		AuthorizationSubscription authzSubscription = createRequestObject(bindings);
 
 		// when
-		PolicyRetrievalResult result = prp.retrievePolicies(request, functionCtx,
-				variables);
+		PolicyRetrievalResult result = prp.retrievePolicies(authzSubscription, functionCtx, variables);
 
 		// then
 		Assertions.assertThat(result).isNotNull();
@@ -110,12 +108,11 @@ public class ConcurrencyTest {
 		prp.put("1", document);
 		Map<String, Boolean> bindings = createBindings();
 		bindings.put("x0", true);
-		Request request = createRequestObject(bindings);
+		AuthorizationSubscription authzSubscription = createRequestObject(bindings);
 
 		// when
 		prp.updateFunctionContext(functionCtx);
-		PolicyRetrievalResult result = prp.retrievePolicies(request, functionCtx,
-				variables);
+		PolicyRetrievalResult result = prp.retrievePolicies(authzSubscription, functionCtx, variables);
 
 		// then
 		Assertions.assertThat(result).isNotNull();
@@ -129,7 +126,7 @@ public class ConcurrencyTest {
 		return result;
 	}
 
-	private Request createRequestObject(Map<String, Boolean> assignments) {
+	private AuthorizationSubscription createRequestObject(Map<String, Boolean> assignments) {
 		ObjectNode resource = json.objectNode();
 		for (Map.Entry<String, Boolean> entry : assignments.entrySet()) {
 			Boolean value = entry.getValue();
@@ -137,7 +134,7 @@ public class ConcurrencyTest {
 				resource.put(entry.getKey(), value);
 			}
 		}
-		return new Request(NullNode.getInstance(), NullNode.getInstance(), resource,
+		return new AuthorizationSubscription(NullNode.getInstance(), NullNode.getInstance(), resource,
 				NullNode.getInstance());
 	}
 

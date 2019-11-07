@@ -15,10 +15,10 @@ import org.springframework.web.filter.GenericFilterBean;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.sapl.api.pdp.AuthorizationSubscription;
 import io.sapl.api.pdp.Decision;
 import io.sapl.api.pdp.PolicyDecisionPoint;
-import io.sapl.api.pdp.Request;
-import io.sapl.api.pdp.Response;
+import io.sapl.api.pdp.AuthorizationDecision;
 import io.sapl.spring.constraints.ConstraintHandlerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,31 +34,29 @@ public class PolicyEnforcementFilterPEP extends GenericFilterBean {
 	private final ObjectMapper mapper;
 
 	@Override
-	public void doFilter(ServletRequest request, ServletResponse response,
-			FilterChain chain) throws IOException, ServletException {
+	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+			throws IOException, ServletException {
 
 		HttpServletRequest req = (HttpServletRequest) request;
 
-		Authentication authentication = SecurityContextHolder.getContext()
-				.getAuthentication();
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-		Response saplResponse = pdp.decide(buildRequest(authentication, req, req))
-				.blockFirst();
+		AuthorizationDecision authzDecision = pdp.decide(buildRequest(authentication, req, req)).blockFirst();
 
-		LOGGER.trace("PDP response: {}", saplResponse);
+		LOGGER.trace("PDP decision: {}", authzDecision);
 
-		if (saplResponse == null || saplResponse.getDecision() != Decision.PERMIT) {
+		if (authzDecision == null || authzDecision.getDecision() != Decision.PERMIT) {
 			LOGGER.trace("User was not authorized for this action. Decision was: {}",
-					saplResponse == null ? "null" : saplResponse.getDecision());
+					authzDecision == null ? "null" : authzDecision.getDecision());
 			throw new AccessDeniedException("Current User may not perform this action.");
 		}
-		constraintHandlers.handleObligations(saplResponse);
-		constraintHandlers.handleAdvices(saplResponse);
+		constraintHandlers.handleObligations(authzDecision);
+		constraintHandlers.handleAdvices(authzDecision);
 		chain.doFilter(req, response);
 	}
 
-	private Request buildRequest(Object subject, Object action, Object resource) {
-		return new Request(mapper.valueToTree(subject), mapper.valueToTree(action),
+	private AuthorizationSubscription buildRequest(Object subject, Object action, Object resource) {
+		return new AuthorizationSubscription(mapper.valueToTree(subject), mapper.valueToTree(action),
 				mapper.valueToTree(resource), null);
 	}
 

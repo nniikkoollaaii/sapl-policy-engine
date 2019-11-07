@@ -12,6 +12,8 @@
  */
 package io.sapl.api.pdp;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.Objects;
 import java.util.Optional;
 
@@ -31,7 +33,15 @@ import lombok.ToString;
 @Getter
 @Setter
 @ToString
-public class Response {
+public class AuthorizationDecision {
+
+	public static final AuthorizationDecision PERMIT = new AuthorizationDecision(Decision.PERMIT);
+
+	public static final AuthorizationDecision DENY = new AuthorizationDecision(Decision.DENY);
+
+	public static final AuthorizationDecision INDETERMINATE = new AuthorizationDecision(Decision.INDETERMINATE);
+
+	public static final AuthorizationDecision NOT_APPLICABLE = new AuthorizationDecision(Decision.NOT_APPLICABLE);
 
 	Decision decision;
 
@@ -48,24 +58,8 @@ public class Response {
 	@JsonInclude(Include.NON_ABSENT)
 	Optional<ArrayNode> advices = Optional.empty();
 
-	public static Response permit() {
-		return new Response(Decision.PERMIT, Optional.empty(), Optional.empty(),
-				Optional.empty());
-	}
-
-	public static Response deny() {
-		return new Response(Decision.DENY, Optional.empty(), Optional.empty(),
-				Optional.empty());
-	}
-
-	public static Response indeterminate() {
-		return new Response(Decision.INDETERMINATE, Optional.empty(), Optional.empty(),
-				Optional.empty());
-	}
-
-	public static Response notApplicable() {
-		return new Response(Decision.NOT_APPLICABLE, Optional.empty(), Optional.empty(),
-				Optional.empty());
+	public AuthorizationDecision(Decision decision) {
+		this.decision = requireNonNull(decision);
 	}
 
 	@Override
@@ -76,7 +70,7 @@ public class Response {
 		if (o == null || o.getClass() != this.getClass()) {
 			return false;
 		}
-		final Response other = (Response) o;
+		final AuthorizationDecision other = (AuthorizationDecision) o;
 		if (!Objects.equals(getDecision(), other.getDecision())) {
 			return false;
 		}
@@ -108,8 +102,7 @@ public class Response {
 		final Optional<JsonNode> thisResource = getResource();
 		result = result * PRIME + thisResource.map(Object::hashCode).orElseGet(() -> 43);
 		final Optional<ArrayNode> thisObligation = getObligations();
-		result = result * PRIME
-				+ thisObligation.map(Object::hashCode).orElseGet(() -> 43);
+		result = result * PRIME + thisObligation.map(Object::hashCode).orElseGet(() -> 43);
 		final Optional<ArrayNode> thisAdvice = getAdvices();
 		result = result * PRIME + thisAdvice.map(Object::hashCode).orElseGet(() -> 43);
 		return result;

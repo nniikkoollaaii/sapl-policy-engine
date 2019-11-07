@@ -10,19 +10,24 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.sapl.api.pdp.multirequest;
+package io.sapl.api.pdp.multisubscription;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import io.sapl.api.pdp.AuthorizationSubscription;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 
+/**
+ * Data structure holding IDs for the elements of an {@link AuthorizationSubscription SAPL
+ * authorization subscription).
+ */
 @Value
 @AllArgsConstructor
 @JsonInclude(NON_EMPTY)
-public class RequestElements {
+public class AuthorizationSubscriptionElements {
 
 	private Integer subjectId;
 
@@ -32,7 +37,7 @@ public class RequestElements {
 
 	private Integer environmentId;
 
-	public RequestElements() {
+	public AuthorizationSubscriptionElements() {
 		subjectId = null;
 		actionId = null;
 		resourceId = null;

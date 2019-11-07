@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.sapl.api.interpreter.PolicyEvaluationException;
 import io.sapl.grammar.sapl.Arguments;
 import io.sapl.interpreter.EvaluationContext;
+import io.sapl.interpreter.Void;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
@@ -36,8 +37,7 @@ public class JsonNodeWithParentObject extends AbstractAnnotatedJsonNode {
 
 	private String attribute;
 
-	public JsonNodeWithParentObject(Optional<JsonNode> node, Optional<JsonNode> parent,
-			String attribute) {
+	public JsonNodeWithParentObject(Optional<JsonNode> node, Optional<JsonNode> parent, String attribute) {
 		super(node, parent);
 		this.attribute = attribute;
 	}
@@ -68,35 +68,30 @@ public class JsonNodeWithParentObject extends AbstractAnnotatedJsonNode {
 	}
 
 	@Override
-	public Flux<Void> applyFilter(String function, Arguments arguments, boolean each,
-			EvaluationContext ctx, boolean isBody) {
-		return applyFilterWithRelativeNode(function, arguments, each, ctx, isBody,
-				parent);
+	public Flux<Void> applyFilter(String function, Arguments arguments, boolean each, EvaluationContext ctx,
+			boolean isBody) {
+		return applyFilterWithRelativeNode(function, arguments, each, ctx, isBody, parent);
 	}
 
 	@Override
-	public Flux<Void> applyFilterWithRelativeNode(String function, Arguments arguments,
-			boolean each, EvaluationContext ctx, boolean isBody,
-			Optional<JsonNode> relativeNode) {
+	public Flux<Void> applyFilterWithRelativeNode(String function, Arguments arguments, boolean each,
+			EvaluationContext ctx, boolean isBody, Optional<JsonNode> relativeNode) {
 		if (each) {
-			return applyFilterToEachItem(function, node, arguments, ctx, isBody);
+			return applyFilterToEachItem(node, function, arguments, ctx, isBody);
 		}
 		else {
-			return applyFilterToNode(function, node, arguments, ctx, isBody, relativeNode)
-					.map(filteredNode -> {
-						((ObjectNode) parent.get()).set(attribute, filteredNode.get());
-						return ResultNode.Void.INSTANCE;
-					});
+			return applyFilterToNode(node, function, arguments, ctx, isBody, relativeNode).map(filteredNode -> {
+				((ObjectNode) parent.get()).set(attribute, filteredNode.get());
+				return Void.INSTANCE;
+			});
 		}
 	}
 
 	@Override
-	public boolean sameReference(AbstractAnnotatedJsonNode other)
-			throws PolicyEvaluationException {
-		return other.isNodeWithParentObject() && other.getParent().isPresent()
-				&& getParent().isPresent() && other.getParent().get() == getParent().get()
-				&& getAttribute()
-						.equals(((JsonNodeWithParentObject) other).getAttribute());
+	public boolean sameReference(AbstractAnnotatedJsonNode other) throws PolicyEvaluationException {
+		return other.isNodeWithParentObject() && other.getParent().isPresent() && getParent().isPresent()
+				&& other.getParent().get() == getParent().get()
+				&& getAttribute().equals(((JsonNodeWithParentObject) other).getAttribute());
 	}
 
 }

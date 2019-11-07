@@ -35,8 +35,7 @@ public class DirectoryWatcher {
 	 * longer accessible.
 	 */
 	public void watch(DirectoryWatchEventConsumer<Path> eventConsumer) {
-		try {
-			final WatchService watcher = FileSystems.getDefault().newWatchService();
+		try (WatchService watcher = FileSystems.getDefault().newWatchService()) {
 			watchedDir.register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
 			while (!eventConsumer.isCanceled()) {
 				final WatchKey key = watcher.take();
@@ -50,7 +49,9 @@ public class DirectoryWatcher {
 			LOGGER.info("directory watcher thread has been interrupted");
 			Thread.currentThread().interrupt();
 		}
-		eventConsumer.onComplete();
+		finally {
+			eventConsumer.onComplete();
+		}
 	}
 
 	@SuppressWarnings("unchecked")

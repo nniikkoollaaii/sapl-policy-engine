@@ -7,8 +7,8 @@ import java.util.Optional;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
+import io.sapl.api.pdp.AuthorizationDecision;
 import io.sapl.api.pdp.Decision;
-import io.sapl.api.pdp.Response;
 
 public class ObligationAdviceCollector {
 
@@ -35,14 +35,12 @@ public class ObligationAdviceCollector {
 		obligationAdvice.put(Type.ADVICE, adviceMap);
 	}
 
-	public void add(Decision decision, Response response) {
-		if (response.getObligations().isPresent()) {
-			obligationAdvice.get(Type.OBLIGATION).get(decision)
-					.addAll(response.getObligations().get());
+	public void add(Decision decision, AuthorizationDecision authzDecision) {
+		if (authzDecision.getObligations().isPresent()) {
+			obligationAdvice.get(Type.OBLIGATION).get(decision).addAll(authzDecision.getObligations().get());
 		}
-		if (response.getAdvices().isPresent()) {
-			obligationAdvice.get(Type.ADVICE).get(decision)
-					.addAll(response.getAdvices().get());
+		if (authzDecision.getAdvices().isPresent()) {
+			obligationAdvice.get(Type.ADVICE).get(decision).addAll(authzDecision.getAdvices().get());
 		}
 	}
 

@@ -49,50 +49,55 @@ public class WebClientRequestExecutor {
 
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 
-	public Flux<JsonNode> executeReactiveRequest(RequestSpecification saplRequest,
-			HttpMethod httpMethod) {
+	public Flux<JsonNode> executeReactiveRequest(RequestSpecification requestSpec, HttpMethod httpMethod) {
 		try {
-			final URLSpecification urlSpec = getURLSpecification(saplRequest);
+			final URLSpecification urlSpec = getURLSpecification(requestSpec);
 			final WebClient webClient = createWebClient(urlSpec.baseUrl());
+			// @formatter:off
 			if (httpMethod == GET) {
 				return webClient.get().uri(urlSpec.pathAndQueryString())
 						.accept(MediaType.APPLICATION_STREAM_JSON)
-						.headers(httpHeaders -> addHeaders(httpHeaders, saplRequest))
-						.retrieve().bodyToFlux(JsonNode.class);
+						.headers(httpHeaders -> addHeaders(httpHeaders, requestSpec))
+						.retrieve()
+						.bodyToFlux(JsonNode.class);
 			}
 			else if (httpMethod == POST) {
 				return webClient.post().uri(urlSpec.pathAndQueryString())
 						.contentType(MediaType.APPLICATION_JSON_UTF8)
 						.accept(MediaType.APPLICATION_STREAM_JSON)
-						.headers(httpHeaders -> addHeaders(httpHeaders, saplRequest))
-						.syncBody(getBody(saplRequest)).retrieve()
+						.headers(httpHeaders -> addHeaders(httpHeaders, requestSpec))
+						.syncBody(getBody(requestSpec))
+						.retrieve()
 						.bodyToFlux(JsonNode.class);
 			}
 			else if (httpMethod == PUT) {
 				return webClient.put().uri(urlSpec.pathAndQueryString())
 						.contentType(MediaType.APPLICATION_JSON_UTF8)
 						.accept(MediaType.APPLICATION_STREAM_JSON)
-						.headers(httpHeaders -> addHeaders(httpHeaders, saplRequest))
-						.syncBody(getBody(saplRequest)).retrieve()
+						.headers(httpHeaders -> addHeaders(httpHeaders, requestSpec))
+						.syncBody(getBody(requestSpec))
+						.retrieve()
 						.bodyToFlux(JsonNode.class);
 			}
 			else if (httpMethod == DELETE) {
 				return webClient.delete().uri(urlSpec.pathAndQueryString())
 						.accept(MediaType.APPLICATION_STREAM_JSON)
-						.headers(httpHeaders -> addHeaders(httpHeaders, saplRequest))
-						.retrieve().bodyToFlux(JsonNode.class);
+						.headers(httpHeaders -> addHeaders(httpHeaders, requestSpec))
+						.retrieve()
+						.bodyToFlux(JsonNode.class);
 			}
 			else if (httpMethod == PATCH) {
 				return webClient.patch().uri(urlSpec.pathAndQueryString())
 						.contentType(MediaType.APPLICATION_JSON_UTF8)
 						.accept(MediaType.APPLICATION_STREAM_JSON)
-						.headers(httpHeaders -> addHeaders(httpHeaders, saplRequest))
-						.syncBody(getBody(saplRequest)).retrieve()
+						.headers(httpHeaders -> addHeaders(httpHeaders, requestSpec))
+						.syncBody(getBody(requestSpec))
+						.retrieve()
 						.bodyToFlux(JsonNode.class);
 			}
+			// @formatter:on
 			else {
-				return Flux.error(
-						new IOException("Unsupported request method " + httpMethod));
+				return Flux.error(new IOException("Unsupported request method " + httpMethod));
 			}
 		}
 		catch (Exception e) {
@@ -100,89 +105,103 @@ public class WebClientRequestExecutor {
 		}
 	}
 
-	public JsonNode executeBlockingRequest(RequestSpecification saplRequest,
-			HttpMethod httpMethod) throws IOException {
-		final URLSpecification urlSpec = getURLSpecification(saplRequest);
+	public JsonNode executeBlockingRequest(RequestSpecification requestSpec, HttpMethod httpMethod) throws IOException {
+		final URLSpecification urlSpec = getURLSpecification(requestSpec);
 		final WebClient webClient = createWebClient(urlSpec.baseUrl());
 		if (httpMethod == GET) {
+			// @formatter:off
 			final ClientResponse response = webClient.get()
 					.uri(urlSpec.pathAndQueryString()).accept(MediaType.APPLICATION_JSON)
-					.headers(httpHeaders -> addHeaders(httpHeaders, saplRequest))
+					.headers(httpHeaders -> addHeaders(httpHeaders, requestSpec))
 					.exchange().block();
-			if (response.statusCode().is2xxSuccessful()) {
-				final Mono<JsonNode> body = response
-						.body(BodyExtractors.toMono(JsonNode.class));
+			// @formatter:on
+			if (response == null) {
+				throw new IOException("HTTP GET request returned null");
+			}
+			else if (response.statusCode().is2xxSuccessful()) {
+				final Mono<JsonNode> body = response.body(BodyExtractors.toMono(JsonNode.class));
 				return body.block();
 			}
 			else {
-				throw new IOException("HTTP GET request returned with status code "
-						+ response.statusCode().value());
+				throw new IOException("HTTP GET request returned with status code " + response.statusCode().value());
 			}
 		}
 		else if (httpMethod == POST) {
+			// @formatter:off
 			final ClientResponse response = webClient.post()
 					.uri(urlSpec.pathAndQueryString())
 					.contentType(MediaType.APPLICATION_JSON_UTF8)
 					.accept(MediaType.APPLICATION_JSON)
-					.headers(httpHeaders -> addHeaders(httpHeaders, saplRequest))
-					.syncBody(getBody(saplRequest)).exchange().block();
-			if (response.statusCode().is2xxSuccessful()) {
-				final Mono<JsonNode> body = response
-						.body(BodyExtractors.toMono(JsonNode.class));
+					.headers(httpHeaders -> addHeaders(httpHeaders, requestSpec))
+					.syncBody(getBody(requestSpec)).exchange().block();
+			// @formatter:on
+			if (response == null) {
+				throw new IOException("HTTP POST request returned null");
+			}
+			else if (response.statusCode().is2xxSuccessful()) {
+				final Mono<JsonNode> body = response.body(BodyExtractors.toMono(JsonNode.class));
 				return body.block();
 			}
 			else {
-				throw new IOException("HTTP POST request returned with status code "
-						+ response.statusCode().value());
+				throw new IOException("HTTP POST request returned with status code " + response.statusCode().value());
 			}
 		}
 		else if (httpMethod == PUT) {
+			// @formatter:off
 			final ClientResponse response = webClient.put()
 					.uri(urlSpec.pathAndQueryString())
 					.contentType(MediaType.APPLICATION_JSON_UTF8)
 					.accept(MediaType.APPLICATION_JSON)
-					.headers(httpHeaders -> addHeaders(httpHeaders, saplRequest))
-					.syncBody(getBody(saplRequest)).exchange().block();
-			if (response.statusCode().is2xxSuccessful()) {
-				final Mono<JsonNode> body = response
-						.body(BodyExtractors.toMono(JsonNode.class));
+					.headers(httpHeaders -> addHeaders(httpHeaders, requestSpec))
+					.syncBody(getBody(requestSpec)).exchange().block();
+			// @formatter:on
+			if (response == null) {
+				throw new IOException("HTTP PUT request returned null");
+			}
+			else if (response.statusCode().is2xxSuccessful()) {
+				final Mono<JsonNode> body = response.body(BodyExtractors.toMono(JsonNode.class));
 				return body.block();
 			}
 			else {
-				throw new IOException("HTTP PUT request returned with status code "
-						+ response.statusCode().value());
+				throw new IOException("HTTP PUT request returned with status code " + response.statusCode().value());
 			}
 		}
 		else if (httpMethod == DELETE) {
+			// @formatter:off
 			final ClientResponse response = webClient.delete()
 					.uri(urlSpec.pathAndQueryString()).accept(MediaType.APPLICATION_JSON)
-					.headers(httpHeaders -> addHeaders(httpHeaders, saplRequest))
+					.headers(httpHeaders -> addHeaders(httpHeaders, requestSpec))
 					.exchange().block();
-			if (response.statusCode().is2xxSuccessful()) {
-				final Mono<JsonNode> body = response
-						.body(BodyExtractors.toMono(JsonNode.class));
+			// @formatter:on
+			if (response == null) {
+				throw new IOException("HTTP DELETE request returned null");
+			}
+			else if (response.statusCode().is2xxSuccessful()) {
+				final Mono<JsonNode> body = response.body(BodyExtractors.toMono(JsonNode.class));
 				return body.block();
 			}
 			else {
-				throw new IOException("HTTP DELETE request returned with status code "
-						+ response.statusCode().value());
+				throw new IOException("HTTP DELETE request returned with status code " + response.statusCode().value());
 			}
 		}
 		else if (httpMethod == PATCH) {
+			// @formatter:off
 			final ClientResponse response = webClient.patch()
 					.uri(urlSpec.pathAndQueryString())
 					.contentType(MediaType.APPLICATION_JSON_UTF8)
 					.accept(MediaType.APPLICATION_JSON)
-					.headers(httpHeaders -> addHeaders(httpHeaders, saplRequest))
-					.syncBody(getBody(saplRequest)).exchange().block();
-			if (response.statusCode().is2xxSuccessful()) {
-				final Mono<JsonNode> body = response
-						.body(BodyExtractors.toMono(JsonNode.class));
+					.headers(httpHeaders -> addHeaders(httpHeaders, requestSpec))
+					.syncBody(getBody(requestSpec)).exchange().block();
+			// @formatter:on
+			if (response == null) {
+				throw new IOException("HTTP PATCH request returned null");
+			}
+			else if (response.statusCode().is2xxSuccessful()) {
+				final Mono<JsonNode> body = response.body(BodyExtractors.toMono(JsonNode.class));
 				return body.block();
 			}
 			else {
-				throw new IOException("HTTP PATCH request returned with status code "
-						+ response.statusCode().value());
+				throw new IOException("HTTP PATCH request returned with status code " + response.statusCode().value());
 			}
 		}
 		else {
@@ -193,21 +212,16 @@ public class WebClientRequestExecutor {
 	private WebClient createWebClient(String baseUrl) throws IOException {
 		if (baseUrl.startsWith(HTTPS_SCHEME)) {
 			final SslContext sslContext = createSslContext();
-			final SslProvider sslProvider = SslProvider.builder().sslContext(sslContext)
-					.build();
+			final SslProvider sslProvider = SslProvider.builder().sslContext(sslContext).build();
 			final TcpClient tcpClient = TcpClient.create().secure(sslProvider);
 			final HttpClient httpClient = HttpClient.from(tcpClient);
-			final ClientHttpConnector httpConnector = new ReactorClientHttpConnector(
-					httpClient);
-			return WebClient.builder().clientConnector(httpConnector).baseUrl(baseUrl)
-					.build();
+			final ClientHttpConnector httpConnector = new ReactorClientHttpConnector(httpClient);
+			return WebClient.builder().clientConnector(httpConnector).baseUrl(baseUrl).build();
 		}
 		return WebClient.create(baseUrl);
 	}
 
 	private SslContext createSslContext() throws IOException {
-		// return
-		// SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE).build();
 		try {
 			final KeyStore ks = KeyStore.getInstance("PKCS12");
 			try (InputStream is = getClass().getResourceAsStream("/truststore.p12")) {
@@ -225,19 +239,19 @@ public class WebClientRequestExecutor {
 			}).toArray(X509Certificate[]::new);
 
 			return SslContextBuilder.forClient().trustManager(trusted).build();
+			// return SslContextBuilder.forClient()
+			// .trustManager(InsecureTrustManagerFactory.INSTANCE).build();
 		}
 		catch (RuntimeException e) {
-			throw new SSLException(
-					e.getCause() instanceof KeyStoreException ? e.getCause() : e);
+			throw new SSLException(e.getCause() instanceof KeyStoreException ? e.getCause() : e);
 		}
 		catch (GeneralSecurityException e) {
 			throw new IOException(e);
 		}
 	}
 
-	private static URLSpecification getURLSpecification(RequestSpecification saplRequest)
-			throws IOException {
-		final JsonNode url = saplRequest.getUrl();
+	private static URLSpecification getURLSpecification(RequestSpecification requestSpec) throws IOException {
+		final JsonNode url = requestSpec.getUrl();
 		if (url == null) {
 			throw new IOException(NO_URL_PROVIDED);
 		}
@@ -263,9 +277,8 @@ public class WebClientRequestExecutor {
 		}
 	}
 
-	private static void addHeaders(HttpHeaders httpHeaders,
-			RequestSpecification saplRequest) {
-		final Map<String, String> reqHeaders = saplRequest.getHeaders();
+	private static void addHeaders(HttpHeaders httpHeaders, RequestSpecification requestSpec) {
+		final Map<String, String> reqHeaders = requestSpec.getHeaders();
 		if (reqHeaders != null) {
 			for (Map.Entry<String, String> header : reqHeaders.entrySet()) {
 				httpHeaders.set(header.getKey(), header.getValue());
@@ -273,13 +286,12 @@ public class WebClientRequestExecutor {
 		}
 	}
 
-	private static Object getBody(RequestSpecification saplRequest)
-			throws JsonProcessingException {
-		if (saplRequest.getBody() != null) {
-			return MAPPER.writeValueAsString(saplRequest.getBody());
+	private static Object getBody(RequestSpecification requestSpec) throws JsonProcessingException {
+		if (requestSpec.getBody() != null) {
+			return MAPPER.writeValueAsString(requestSpec.getBody());
 		}
-		else if (saplRequest.getRawBody() != null) {
-			return MAPPER.writeValueAsBytes(saplRequest.getRawBody());
+		else if (requestSpec.getRawBody() != null) {
+			return MAPPER.writeValueAsBytes(requestSpec.getRawBody());
 		}
 		else {
 			return "";

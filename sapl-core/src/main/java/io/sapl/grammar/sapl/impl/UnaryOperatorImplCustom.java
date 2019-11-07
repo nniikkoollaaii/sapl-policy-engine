@@ -17,20 +17,21 @@ import java.util.Objects;
 
 import org.eclipse.emf.ecore.EObject;
 
+/**
+ * Superclass for all unary operator expressions.
+ */
 public class UnaryOperatorImplCustom extends UnaryOperatorImpl {
 
 	@Override
 	public int hash(Map<String, String> imports) {
 		int hash = 17;
 		hash = 37 * hash + Objects.hashCode(getClass().getTypeName());
-		hash = 37 * hash
-				+ ((getExpression() == null) ? 0 : getExpression().hash(imports));
+		hash = 37 * hash + ((getExpression() == null) ? 0 : getExpression().hash(imports));
 		return hash;
 	}
 
 	@Override
-	public boolean isEqualTo(EObject other, Map<String, String> otherImports,
-			Map<String, String> imports) {
+	public boolean isEqualTo(EObject other, Map<String, String> otherImports, Map<String, String> imports) {
 		if (this == other) {
 			return true;
 		}
@@ -39,8 +40,7 @@ public class UnaryOperatorImplCustom extends UnaryOperatorImpl {
 		}
 		final UnaryOperatorImpl otherImpl = (UnaryOperatorImpl) other;
 		return getExpression() == null ? otherImpl.getExpression() == null
-				: getExpression().isEqualTo(otherImpl.getExpression(), otherImports,
-						imports);
+				: getExpression().isEqualTo(otherImpl.getExpression(), otherImports, imports);
 	}
 
 }

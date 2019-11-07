@@ -1,26 +1,28 @@
 package io.sapl.pdp.embedded.config.resources;
 
+import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
+import java.util.Enumeration;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+
+import org.apache.commons.io.IOUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.sapl.api.interpreter.SAPLInterpreter;
-import io.sapl.api.pdp.PolicyDecisionPointConfiguration;
-import io.sapl.interpreter.DefaultSAPLInterpreter;
-import io.sapl.interpreter.combinators.DocumentsCombinator;
 import io.sapl.api.pdp.PDPConfigurationException;
+import io.sapl.api.pdp.PolicyDecisionPointConfiguration;
+import io.sapl.interpreter.combinators.DocumentsCombinator;
 import io.sapl.pdp.embedded.config.PDPConfigurationProvider;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -35,12 +37,9 @@ public class ResourcesPDPConfigurationProvider implements PDPConfigurationProvid
 
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 
-	private final SAPLInterpreter interpreter = new DefaultSAPLInterpreter();
-
 	private PolicyDecisionPointConfiguration config;
 
-	public ResourcesPDPConfigurationProvider()
-			throws PDPConfigurationException, IOException, URISyntaxException {
+	public ResourcesPDPConfigurationProvider() throws PDPConfigurationException, IOException, URISyntaxException {
 		this(DEFAULT_CONFIG_PATH);
 	}
 
@@ -49,45 +48,67 @@ public class ResourcesPDPConfigurationProvider implements PDPConfigurationProvid
 		this(ResourcesPDPConfigurationProvider.class, configPath);
 	}
 
-	public ResourcesPDPConfigurationProvider(@NonNull Class<?> clazz,
-			@NonNull String configPath)
+	public ResourcesPDPConfigurationProvider(@NonNull Class<?> clazz, @NonNull String configPath)
 			throws PDPConfigurationException, IOException, URISyntaxException {
 		URL configFolderUrl = clazz.getResource(configPath);
-
 		if (configFolderUrl == null) {
-			throw new PDPConfigurationException("Config folder not found. Path:"
-					+ configPath + " - URL: " + configFolderUrl);
+			throw new PDPConfigurationException("Config folder not found. Path:" + configPath + " - URL: null");
 		}
 
-		Path path;
-		FileSystem fs = null;
-		try {
-			if (configFolderUrl.getProtocol().equals("jar")) {
-				final Map<String, String> env = new HashMap<>();
-				final String[] array = configFolderUrl.toString().split("!");
-				fs = FileSystems.newFileSystem(URI.create(array[0]), env);
-				path = fs.getPath(array[1]);
-			}
-			else {
-				path = Paths.get(configFolderUrl.toURI());
-			}
-			LOGGER.info("current path: {}", path);
-			try (DirectoryStream<Path> stream = Files.newDirectoryStream(path,
-					CONFIG_FILE_GLOB_PATTERN)) {
-				for (Path filePath : stream) {
-					LOGGER.info("load: {}", filePath);
-					this.config = MAPPER.readValue(filePath.toFile(),
-							PolicyDecisionPointConfiguration.class);
+		if ("jar".equals(configFolderUrl.getProtocol())) {
+			readConfigFromJar(configFolderUrl);
+		}
+		else {
+			readConfigFromDirectory(configFolderUrl);
+		}
+
+		if (this.config == null) {
+			LOGGER.debug("config is null - using default config");
+			this.config = new PolicyDecisionPointConfiguration();
+		}
+	}
+
+	private void readConfigFromJar(URL configFolderUrl) {
+		LOGGER.debug("reading config from jar {}", configFolderUrl);
+		final String[] jarPathElements = configFolderUrl.toString().split("!");
+		final String jarFilePath = jarPathElements[0].substring("jar:file:".length());
+		final StringBuilder dirPath = new StringBuilder();
+		for (int i = 1; i < jarPathElements.length; i++) {
+			dirPath.append(jarPathElements[i]);
+		}
+		if (dirPath.charAt(0) == File.separatorChar) {
+			dirPath.deleteCharAt(0);
+		}
+		final String configFilePath = dirPath.append(File.separatorChar).append(CONFIG_FILE_GLOB_PATTERN).toString();
+
+		try (ZipFile zipFile = new ZipFile(jarFilePath)) {
+			Enumeration<? extends ZipEntry> e = zipFile.entries();
+
+			while (e.hasMoreElements()) {
+				ZipEntry entry = e.nextElement();
+				if (!entry.isDirectory() && entry.getName().equals(configFilePath)) {
+					LOGGER.info("load: {}", entry.getName());
+					BufferedInputStream bis = new BufferedInputStream(zipFile.getInputStream(entry));
+					String fileContentsStr = IOUtils.toString(bis, StandardCharsets.UTF_8);
+					bis.close();
+					this.config = MAPPER.readValue(fileContentsStr, PolicyDecisionPointConfiguration.class);
 					break;
 				}
-				if (this.config == null) {
-					this.config = new PolicyDecisionPointConfiguration();
-				}
 			}
 		}
-		finally {
-			if (fs != null) {
-				fs.close();
+		catch (IOException e) {
+			LOGGER.error("Error while reading config from jar", e);
+		}
+	}
+
+	private void readConfigFromDirectory(URL configFolderUrl) throws IOException, URISyntaxException {
+		LOGGER.debug("reading config from directory {}", configFolderUrl);
+		Path configDirectoryPath = Paths.get(configFolderUrl.toURI());
+		try (DirectoryStream<Path> stream = Files.newDirectoryStream(configDirectoryPath, CONFIG_FILE_GLOB_PATTERN)) {
+			for (Path filePath : stream) {
+				LOGGER.info("load: {}", filePath);
+				this.config = MAPPER.readValue(filePath.toFile(), PolicyDecisionPointConfiguration.class);
+				break;
 			}
 		}
 	}
@@ -100,14 +121,14 @@ public class ResourcesPDPConfigurationProvider implements PDPConfigurationProvid
 	public Flux<DocumentsCombinator> getDocumentsCombinator() {
 		return Flux.just(config.getAlgorithm()).map(algorithm -> {
 			LOGGER.trace("|-- Current PDP config: combining algorithm = {}", algorithm);
-			return convert(algorithm, interpreter);
+			return convert(algorithm);
 		});
 	}
 
 	@Override
 	public Flux<Map<String, JsonNode>> getVariables() {
-		return Flux.just(config.getVariables()).doOnNext(variables -> LOGGER
-				.trace("|-- Current PDP config: variables = {}", variables));
+		return Flux.just((Map<String, JsonNode>) config.getVariables())
+				.doOnNext(variables -> LOGGER.trace("|-- Current PDP config: variables = {}", variables));
 	}
 
 }

@@ -25,37 +25,28 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import io.sapl.grammar.sapl.FilterStatement;
 import io.sapl.interpreter.EvaluationContext;
+import io.sapl.interpreter.FluxProvider;
+import io.sapl.interpreter.DependentStreamsUtil;
 import reactor.core.publisher.Flux;
 
 public class FilterExtendedImplCustom extends FilterExtendedImpl {
 
 	@Override
-	public Flux<Optional<JsonNode>> apply(Optional<JsonNode> unfilteredRootNode,
-			EvaluationContext ctx, boolean isBody, Optional<JsonNode> relativeNode) {
+	public Flux<Optional<JsonNode>> apply(Optional<JsonNode> unfilteredRootNode, EvaluationContext ctx, boolean isBody,
+			Optional<JsonNode> relativeNode) {
 		final JsonNode result = unfilteredRootNode.get().deepCopy();
 		if (statements != null && !statements.isEmpty()) {
-			final List<FluxProvider<Optional<JsonNode>>> fluxProviders = new ArrayList<>(
-					statements.size());
+			final List<FluxProvider<Optional<JsonNode>>> fluxProviders = new ArrayList<>(statements.size());
 			for (FilterStatement statement : statements) {
 				final String function = String.join(".", statement.getFsteps());
-				fluxProviders.add(node -> applyFilterStatement(node, function,
-						statement.getArguments(), statement.getTarget().getSteps(),
-						statement.isEach(), ctx, isBody, relativeNode));
+				fluxProviders.add(node -> applyFilterStatement(node, statement.getTarget().getSteps(),
+						statement.isEach(), function, statement.getArguments(), ctx, isBody, relativeNode));
 			}
-			return cascadingSwitchMap(result, fluxProviders, 0);
+			return DependentStreamsUtil.nestedSwitchMap(Optional.of(result), fluxProviders);
 		}
 		else {
 			return Flux.just(Optional.of(result));
 		}
-	}
-
-	private static Flux<Optional<JsonNode>> cascadingSwitchMap(JsonNode input,
-			List<FluxProvider<Optional<JsonNode>>> fluxProviders, int idx) {
-		if (idx < fluxProviders.size()) {
-			return fluxProviders.get(idx).getFlux(Optional.of(input)).switchMap(
-					result -> cascadingSwitchMap(result.get(), fluxProviders, idx + 1));
-		}
-		return Flux.just(Optional.of(input));
 	}
 
 	@Override
@@ -69,8 +60,7 @@ public class FilterExtendedImplCustom extends FilterExtendedImpl {
 	}
 
 	@Override
-	public boolean isEqualTo(EObject other, Map<String, String> otherImports,
-			Map<String, String> imports) {
+	public boolean isEqualTo(EObject other, Map<String, String> otherImports, Map<String, String> imports) {
 		if (this == other) {
 			return true;
 		}

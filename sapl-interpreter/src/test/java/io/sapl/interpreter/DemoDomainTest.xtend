@@ -17,8 +17,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import io.sapl.api.interpreter.PolicyEvaluationException
 import io.sapl.api.pdp.Decision
-import io.sapl.api.pdp.Request
-import io.sapl.api.pdp.Response
+import io.sapl.api.pdp.AuthorizationSubscription
+import io.sapl.api.pdp.AuthorizationDecision
 import io.sapl.functions.FilterFunctionLibrary
 import io.sapl.interpreter.functions.AnnotationFunctionContext
 import io.sapl.interpreter.functions.FunctionContext
@@ -57,7 +57,7 @@ class DemoDomainTest {
 
 	@Test
 	def void recursiveDescendTest() throws PolicyEvaluationException {
-		val request = '''		
+		val authzSubscription = '''
 		{   
 			"subject"		:	{
 				     				"authorities"	: [{"authority":"DOCTOR"}],
@@ -71,18 +71,18 @@ class DemoDomainTest {
 		    "resource"		:	"ui:view:patients:createPatientButton",
 		    "environment"	: null
 		}''';
-		val request_object = MAPPER.readValue(request, Request)
+		val authzSubscription_object = MAPPER.readValue(authzSubscription, AuthorizationSubscription)
 
 		val policyDefinition = '''
 			policy "all authenticated users may see patient list"
 			permit "getPatients" in action..java.name
 		''';
 
-		val expectedResponse = new Response(Decision.NOT_APPLICABLE, Optional.empty(), Optional.empty(), Optional.empty())
+		val expectedAuthzDecision = AuthorizationDecision.NOT_APPLICABLE
 
 		assertThat("demo policy fail",
-			INTERPRETER.evaluate(request_object, policyDefinition, ATTRIBUTE_CTX, FUNCTION_CTX, SYSTEM_VARIABLES).blockFirst(),
-			equalTo(expectedResponse));
+			INTERPRETER.evaluate(authzSubscription_object, policyDefinition, ATTRIBUTE_CTX, FUNCTION_CTX, SYSTEM_VARIABLES).blockFirst(),
+			equalTo(expectedAuthzDecision));
 	}
 
 }

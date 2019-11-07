@@ -10,6 +10,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import io.sapl.grammar.sapl.Step;
 import io.sapl.interpreter.EvaluationContext;
+import io.sapl.interpreter.FluxProvider;
+import io.sapl.interpreter.DependentStreamsUtil;
 import io.sapl.interpreter.selection.JsonNodeWithoutParent;
 import io.sapl.interpreter.selection.ResultNode;
 import lombok.experimental.UtilityClass;
@@ -32,33 +34,21 @@ public class StepResolver {
 	 * @param relativeNode the node a relative expression would point to
 	 * @return a flux of result tree root nodes (either an annotated JsonNode or an array)
 	 */
-	public static Flux<ResultNode> resolveSteps(Optional<JsonNode> rootNode,
-			EList<Step> steps, EvaluationContext ctx, boolean isBody,
-			Optional<JsonNode> relativeNode) {
+	public static Flux<ResultNode> resolveSteps(Optional<JsonNode> rootNode, EList<Step> steps, EvaluationContext ctx,
+			boolean isBody, Optional<JsonNode> relativeNode) {
 		// this implementation must be able to handle expressions like
 		// "input".<first.attr>.<second.attr>.<third.attr>... correctly
 		final ResultNode result = new JsonNodeWithoutParent(rootNode);
 		if (steps != null && !steps.isEmpty()) {
-			final List<FluxProvider<ResultNode>> fluxProviders = new ArrayList<>(
-					steps.size());
+			final List<FluxProvider<ResultNode>> fluxProviders = new ArrayList<>(steps.size());
 			for (Step step : steps) {
-				fluxProviders.add(resultNode -> resultNode.applyStep(step, ctx, isBody,
-						relativeNode));
+				fluxProviders.add(resultNode -> resultNode.applyStep(step, ctx, isBody, relativeNode));
 			}
-			return cascadingSwitchMap(result, fluxProviders, 0);
+			return DependentStreamsUtil.nestedSwitchMap(result, fluxProviders);
 		}
 		else {
 			return Flux.just(result);
 		}
-	}
-
-	private static Flux<ResultNode> cascadingSwitchMap(ResultNode input,
-			List<FluxProvider<ResultNode>> fluxProviders, int idx) {
-		if (idx < fluxProviders.size()) {
-			return fluxProviders.get(idx).getFlux(input).switchMap(
-					result -> cascadingSwitchMap(result, fluxProviders, idx + 1));
-		}
-		return Flux.just(input);
 	}
 
 }

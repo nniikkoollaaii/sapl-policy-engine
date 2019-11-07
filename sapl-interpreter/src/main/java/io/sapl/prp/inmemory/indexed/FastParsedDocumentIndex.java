@@ -13,20 +13,17 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
+
 import io.sapl.api.interpreter.PolicyEvaluationException;
-import io.sapl.api.interpreter.SAPLInterpreter;
-import io.sapl.api.pdp.Request;
+import io.sapl.api.pdp.AuthorizationSubscription;
 import io.sapl.api.prp.ParsedDocumentIndex;
 import io.sapl.api.prp.PolicyRetrievalResult;
 import io.sapl.grammar.sapl.Expression;
 import io.sapl.grammar.sapl.SAPL;
-import io.sapl.interpreter.DefaultSAPLInterpreter;
 import io.sapl.interpreter.functions.FunctionContext;
 import io.sapl.interpreter.variables.VariableContext;
 
 public class FastParsedDocumentIndex implements ParsedDocumentIndex {
-
-	private static final SAPLInterpreter INTERPRETER = new DefaultSAPLInterpreter();
 
 	private FunctionContext bufferCtx;
 
@@ -88,12 +85,12 @@ public class FastParsedDocumentIndex implements ParsedDocumentIndex {
 	}
 
 	@Override
-	public PolicyRetrievalResult retrievePolicies(Request request,
+	public PolicyRetrievalResult retrievePolicies(AuthorizationSubscription authzSubscription,
 			FunctionContext functionCtx, Map<String, JsonNode> variables) {
 		lazyInit(Preconditions.checkNotNull(functionCtx));
 		PolicyRetrievalResult result;
 		try {
-			VariableContext variableCtx = new VariableContext(request, variables);
+			VariableContext variableCtx = new VariableContext(authzSubscription, variables);
 			result = documentIndex.match(functionCtx, variableCtx);
 		}
 		catch (PolicyEvaluationException e) {
@@ -206,15 +203,13 @@ public class FastParsedDocumentIndex implements ParsedDocumentIndex {
 
 	private void retainTarget(String documentKey, SAPL sapl) {
 		try {
-			Map<String, String> imports = INTERPRETER.fetchFunctionImports(sapl,
-					functionCtx);
 			Expression targetExpression = sapl.getPolicyElement().getTargetExpression();
 			DisjunctiveFormula targetFormula;
 			if (targetExpression == null) {
-				targetFormula = new DisjunctiveFormula(
-						new ConjunctiveClause(new Literal(new Bool(true))));
+				targetFormula = new DisjunctiveFormula(new ConjunctiveClause(new Literal(new Bool(true))));
 			}
 			else {
+				Map<String, String> imports = sapl.fetchFunctionImports(functionCtx);
 				targetFormula = TreeWalker.walk(targetExpression, imports);
 			}
 			publishedTargets.put(documentKey, targetFormula);

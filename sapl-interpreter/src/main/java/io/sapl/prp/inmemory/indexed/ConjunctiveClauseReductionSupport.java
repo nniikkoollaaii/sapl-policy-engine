@@ -1,25 +1,12 @@
 package io.sapl.prp.inmemory.indexed;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
 
-public class ConjunctiveClauseSimplifier implements Simplifier<ConjunctiveClause> {
+public class ConjunctiveClauseReductionSupport {
 
-	@Override
-	public ConjunctiveClause reduce(final ConjunctiveClause obj) {
-		List<Literal> literals = obj.getLiterals();
-		if (literals.size() > 1) {
-			List<Literal> result = new ArrayList<>(literals);
-			reduceConstants(result);
-			reduceFormula(result);
-			return new ConjunctiveClause(result);
-		}
-		return obj;
-	}
-
-	private static void reduceConstants(final List<Literal> data) {
+	static void reduceConstants(final List<Literal> data) {
 		ListIterator<Literal> iter = data.listIterator();
 		while (iter.hasNext() && data.size() > 1) {
 			Literal literal = iter.next();
@@ -36,7 +23,7 @@ public class ConjunctiveClauseSimplifier implements Simplifier<ConjunctiveClause
 		}
 	}
 
-	private static void reduceFormula(final List<Literal> data) {
+	static void reduceFormula(final List<Literal> data) {
 		ListIterator<Literal> pointer = data.listIterator();
 		while (pointer.hasNext()) {
 			Literal lhs = pointer.next();
@@ -47,8 +34,8 @@ public class ConjunctiveClauseSimplifier implements Simplifier<ConjunctiveClause
 		data.removeIf(Objects::isNull);
 	}
 
-	private static boolean reduceFormulaStep(final List<Literal> data,
-			final ListIterator<Literal> pointer, final Literal value) {
+	private static boolean reduceFormulaStep(final List<Literal> data, final ListIterator<Literal> pointer,
+			final Literal value) {
 		ListIterator<Literal> forward = data.listIterator(pointer.nextIndex());
 		while (forward.hasNext()) {
 			Literal rhs = forward.next();

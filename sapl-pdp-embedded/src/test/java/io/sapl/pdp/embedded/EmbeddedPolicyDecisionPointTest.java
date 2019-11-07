@@ -1,16 +1,15 @@
 package io.sapl.pdp.embedded;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
+import io.sapl.api.pdp.AuthorizationDecision;
+import io.sapl.api.pdp.AuthorizationSubscription;
 import io.sapl.api.pdp.Decision;
-import io.sapl.api.pdp.Request;
-import io.sapl.api.pdp.Response;
-import io.sapl.api.pdp.multirequest.IdentifiableResponse;
-import io.sapl.api.pdp.multirequest.MultiRequest;
+import io.sapl.api.pdp.multisubscription.IdentifiableAuthorizationDecision;
+import io.sapl.api.pdp.multisubscription.MultiAuthorizationSubscription;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
@@ -26,82 +25,81 @@ public class EmbeddedPolicyDecisionPointTest {
 				.withResourcePolicyRetrievalPoint().withPolicyInformationPoint(new TestPIP()).build();
 	}
 
-	@After
-	public void cleanUp() throws Exception {
-		pdp.dispose();
-	}
-
 	@Test
 	public void decide_withEmptyRequest_shouldReturnDeny() {
-		Request emptyRequest = new Request(JSON.nullNode(), JSON.nullNode(), JSON.nullNode(), JSON.nullNode());
-		final Flux<Response> responseFlux = pdp.decide(emptyRequest);
-		StepVerifier.create(responseFlux).expectNextMatches(response -> response.getDecision() == Decision.DENY)
-				.thenCancel().verify();
+		AuthorizationSubscription emptyAuthzSubscription = new AuthorizationSubscription(JSON.nullNode(),
+				JSON.nullNode(), JSON.nullNode(), JSON.nullNode());
+		final Flux<AuthorizationDecision> authzDecisionFlux = pdp.decide(emptyAuthzSubscription);
+		StepVerifier.create(authzDecisionFlux)
+				.expectNextMatches(authzDecision -> authzDecision.getDecision() == Decision.DENY).thenCancel().verify();
 	}
 
 	@Test
 	public void decide_withAllowedAction_shouldReturnPermit() {
-		Request simpleRequest = new Request(JSON.textNode("willi"), JSON.textNode("read"), JSON.textNode("something"),
-				JSON.nullNode());
-		final Flux<Response> responseFlux = pdp.decide(simpleRequest);
-		StepVerifier.create(responseFlux).expectNextMatches(response -> response.getDecision() == Decision.PERMIT)
-				.thenCancel().verify();
+		AuthorizationSubscription simpleAuthzSubscription = new AuthorizationSubscription(JSON.textNode("willi"),
+				JSON.textNode("read"), JSON.textNode("something"), JSON.nullNode());
+		final Flux<AuthorizationDecision> authzDecisionFlux = pdp.decide(simpleAuthzSubscription);
+		StepVerifier.create(authzDecisionFlux)
+				.expectNextMatches(authzDecision -> authzDecision.getDecision() == Decision.PERMIT).thenCancel()
+				.verify();
 	}
 
 	@Test
 	public void decide_withForbiddenAction_shouldReturnDeny() {
-		Request simpleRequest = new Request(JSON.textNode("willi"), JSON.textNode("write"), JSON.textNode("something"),
-				JSON.nullNode());
-		final Flux<Response> responseFlux = pdp.decide(simpleRequest);
-		StepVerifier.create(responseFlux).expectNextMatches(response -> response.getDecision() == Decision.DENY)
+		AuthorizationSubscription simpleAuthzSubscription = new AuthorizationSubscription(JSON.textNode("willi"),
+				JSON.textNode("write"), JSON.textNode("something"), JSON.nullNode());
+		final Flux<AuthorizationDecision> authzDecisionFlux = pdp.decide(simpleAuthzSubscription);
+		StepVerifier.create(authzDecisionFlux)
+				.expectNextMatches(authzDecision -> authzDecision.getDecision() == Decision.DENY).thenCancel().verify();
+	}
+
+	@Test
+	public void decide_withEmptyMultiSubscription_shouldReturnIndeterminate() {
+		final MultiAuthorizationSubscription multiAuthzSubscription = new MultiAuthorizationSubscription();
+
+		final Flux<IdentifiableAuthorizationDecision> flux = pdp.decide(multiAuthzSubscription);
+		StepVerifier.create(flux)
+				.expectNextMatches(iad -> iad.getAuthorizationSubscriptionId() == null
+						&& iad.getAuthorizationDecision().equals(AuthorizationDecision.INDETERMINATE))
 				.thenCancel().verify();
 	}
 
 	@Test
-	public void decide_withEmptyMultiRequest_shouldReturnIndeterminateResponse() {
-		final MultiRequest multiRequest = new MultiRequest();
+	public void decide_withMultiSubscription_shouldReturnDecision() {
+		final MultiAuthorizationSubscription multiAuthzSubscription = new MultiAuthorizationSubscription()
+				.addAuthorizationSubscription("id", "willi", "read", "something");
 
-		final Flux<IdentifiableResponse> flux = pdp.decide(multiRequest);
-		StepVerifier.create(flux).expectNextMatches(
-				response -> response.getRequestId() == null && response.getResponse().equals(Response.indeterminate()))
-				.thenCancel().verify();
+		final Flux<IdentifiableAuthorizationDecision> flux = pdp.decide(multiAuthzSubscription);
+		StepVerifier.create(flux).expectNextMatches(iad -> iad.getAuthorizationSubscriptionId().equals("id")
+				&& iad.getAuthorizationDecision().equals(AuthorizationDecision.PERMIT)).thenCancel().verify();
 	}
 
 	@Test
-	public void decide_withMultiRequest_shouldReturnResponse() {
-		final MultiRequest multiRequest = new MultiRequest().addRequest("req", "willi", "read", "something");
+	public void decide_withMultiSubscriptionContainingTwoSubscriptions_shouldReturnTwoDecisions() {
+		final MultiAuthorizationSubscription multiAuthzSubscription = new MultiAuthorizationSubscription()
+				.addAuthorizationSubscription("id1", "willi", "read", "something")
+				.addAuthorizationSubscription("id2", "willi", "write", "something");
 
-		final Flux<IdentifiableResponse> flux = pdp.decide(multiRequest);
-		StepVerifier.create(flux).expectNextMatches(
-				response -> response.getRequestId().equals("req") && response.getResponse().equals(Response.permit()))
-				.thenCancel().verify();
-	}
-
-	@Test
-	public void decide_withMultiRequestContainingTwoRequests_shouldReturnTwoResponses() {
-		final MultiRequest multiRequest = new MultiRequest().addRequest("req1", "willi", "read", "something")
-				.addRequest("req2", "willi", "write", "something");
-
-		final Flux<IdentifiableResponse> flux = pdp.decide(multiRequest);
-		StepVerifier.create(flux).expectNextMatches(response -> {
-			if (response.getRequestId().equals("req1")) {
-				return response.getResponse().equals(Response.permit());
+		final Flux<IdentifiableAuthorizationDecision> flux = pdp.decide(multiAuthzSubscription);
+		StepVerifier.create(flux).expectNextMatches(iad -> {
+			if (iad.getAuthorizationSubscriptionId().equals("id1")) {
+				return iad.getAuthorizationDecision().equals(AuthorizationDecision.PERMIT);
 			}
-			else if (response.getRequestId().equals("req2")) {
-				return response.getResponse().equals(Response.deny());
+			else if (iad.getAuthorizationSubscriptionId().equals("id2")) {
+				return iad.getAuthorizationDecision().equals(AuthorizationDecision.DENY);
 			}
 			else {
-				throw new IllegalStateException("Invalid request id: " + response.getRequestId());
+				throw new IllegalStateException("Invalid subscription id: " + iad.getAuthorizationSubscriptionId());
 			}
-		}).expectNextMatches(response -> {
-			if (response.getRequestId().equals("req1")) {
-				return response.getResponse().equals(Response.permit());
+		}).expectNextMatches(iad -> {
+			if (iad.getAuthorizationSubscriptionId().equals("id1")) {
+				return iad.getAuthorizationDecision().equals(AuthorizationDecision.PERMIT);
 			}
-			else if (response.getRequestId().equals("req2")) {
-				return response.getResponse().equals(Response.deny());
+			else if (iad.getAuthorizationSubscriptionId().equals("id2")) {
+				return iad.getAuthorizationDecision().equals(AuthorizationDecision.DENY);
 			}
 			else {
-				throw new IllegalStateException("Invalid request id: " + response.getRequestId());
+				throw new IllegalStateException("Invalid subscription id: " + iad.getAuthorizationSubscriptionId());
 			}
 		}).thenCancel().verify();
 	}

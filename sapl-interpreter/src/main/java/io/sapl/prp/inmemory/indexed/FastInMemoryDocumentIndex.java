@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import io.sapl.api.interpreter.PolicyEvaluationException;
 import io.sapl.api.interpreter.SAPLInterpreter;
-import io.sapl.api.pdp.Request;
+import io.sapl.api.pdp.AuthorizationSubscription;
 import io.sapl.api.prp.InMemoryDocumentIndex;
 import io.sapl.api.prp.ParsedDocumentIndex;
 import io.sapl.api.prp.PolicyRetrievalResult;
@@ -27,8 +27,7 @@ public class FastInMemoryDocumentIndex implements InMemoryDocumentIndex {
 	AtomicBoolean live = new AtomicBoolean(false);
 
 	@Override
-	public void insert(String documentKey, String document)
-			throws PolicyEvaluationException {
+	public void insert(String documentKey, String document) throws PolicyEvaluationException {
 		parsedDocuments.put(documentKey, INTERPRETER.parse(document));
 	}
 
@@ -38,10 +37,10 @@ public class FastInMemoryDocumentIndex implements InMemoryDocumentIndex {
 	}
 
 	@Override
-	public PolicyRetrievalResult retrievePolicies(Request request,
+	public PolicyRetrievalResult retrievePolicies(AuthorizationSubscription authzSubscription,
 			FunctionContext functionCtx, Map<String, JsonNode> variables) {
 		if (live.get()) {
-			return index.retrievePolicies(request, functionCtx, variables);
+			return index.retrievePolicies(authzSubscription, functionCtx, variables);
 		}
 		else {
 			throw new IndexStillInReplayMode();

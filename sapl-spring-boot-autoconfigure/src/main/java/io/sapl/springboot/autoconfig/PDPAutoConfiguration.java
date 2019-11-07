@@ -3,11 +3,7 @@ package io.sapl.springboot.autoconfig;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Collection;
-import java.util.Optional;
 
-import javax.annotation.PreDestroy;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -16,19 +12,18 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.sapl.api.functions.FunctionException;
 import io.sapl.api.functions.FunctionLibrary;
 import io.sapl.api.interpreter.PolicyEvaluationException;
+import io.sapl.api.pdp.PDPConfigurationException;
 import io.sapl.api.pdp.PolicyDecisionPoint;
 import io.sapl.api.pip.AttributeException;
 import io.sapl.api.pip.PolicyInformationPoint;
 import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint;
 import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint.Builder;
-import io.sapl.api.pdp.PDPConfigurationException;
 import io.sapl.pdp.remote.RemotePolicyDecisionPoint;
 import io.sapl.spring.PolicyEnforcementFilterPEP;
 import io.sapl.spring.SAPLProperties;
@@ -92,8 +87,7 @@ import lombok.extern.slf4j.Slf4j;
 @Configuration
 @ComponentScan("io.sapl.spring")
 @EnableConfigurationProperties(SAPLProperties.class)
-@AutoConfigureAfter({ FunctionLibrariesAutoConfiguration.class,
-		PolicyInformationPointsAutoConfiguration.class })
+@AutoConfigureAfter({ FunctionLibrariesAutoConfiguration.class, PolicyInformationPointsAutoConfiguration.class })
 public class PDPAutoConfiguration {
 
 	private final SAPLProperties pdpProperties;
@@ -102,35 +96,28 @@ public class PDPAutoConfiguration {
 
 	private final Collection<Object> functionLibraries;
 
-	public PDPAutoConfiguration(SAPLProperties pdpProperties,
-			ConfigurableApplicationContext applicationContext) {
+	public PDPAutoConfiguration(SAPLProperties pdpProperties, ConfigurableApplicationContext applicationContext) {
 		this.pdpProperties = pdpProperties;
-		policyInformationPoints = applicationContext
-				.getBeansWithAnnotation(PolicyInformationPoint.class).values();
-		functionLibraries = applicationContext
-				.getBeansWithAnnotation(FunctionLibrary.class).values();
+		policyInformationPoints = applicationContext.getBeansWithAnnotation(PolicyInformationPoint.class).values();
+		functionLibraries = applicationContext.getBeansWithAnnotation(FunctionLibrary.class).values();
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public PolicyDecisionPoint policyDecisionPoint()
-			throws AttributeException, FunctionException, IOException, URISyntaxException,
-			PDPConfigurationException, PolicyEvaluationException {
+	public PolicyDecisionPoint policyDecisionPoint() throws AttributeException, FunctionException, IOException,
+			URISyntaxException, PDPConfigurationException, PolicyEvaluationException {
 		if (pdpProperties.getPdpType() == SAPLProperties.PDPType.REMOTE) {
 			return remotePolicyDecisionPoint();
 		}
 		return embeddedPolicyDecisionPoint();
 	}
 
-	private PolicyDecisionPoint embeddedPolicyDecisionPoint()
-			throws AttributeException, FunctionException, IOException, URISyntaxException,
-			PDPConfigurationException, PolicyEvaluationException {
-		final EmbeddedPolicyDecisionPoint.Builder builder = EmbeddedPolicyDecisionPoint
-				.builder();
+	private PolicyDecisionPoint embeddedPolicyDecisionPoint() throws AttributeException, FunctionException, IOException,
+			URISyntaxException, PDPConfigurationException, PolicyEvaluationException {
+		final EmbeddedPolicyDecisionPoint.Builder builder = EmbeddedPolicyDecisionPoint.builder();
 		if (pdpProperties.getPdpConfigType() == SAPLProperties.PDPConfigType.FILESYSTEM) {
 			final String configPath = pdpProperties.getFilesystem().getConfigPath();
-			LOGGER.info("using monitored config file from the filesystem: {}",
-					configPath);
+			LOGGER.info("using monitored config file from the filesystem: {}", configPath);
 			builder.withFilesystemPDPConfigurationProvider(configPath);
 		}
 		else {
@@ -149,8 +136,7 @@ public class PDPAutoConfiguration {
 		}
 		else {
 			final String policiesPath = pdpProperties.getResources().getPoliciesPath();
-			LOGGER.info(
-					"creating embedded PDP with {} index sourcing access policies from bundled resources at: {}",
+			LOGGER.info("creating embedded PDP with {} index sourcing access policies from bundled resources at: {}",
 					indexType, policiesPath);
 			builder.withResourcePolicyRetrievalPoint(policiesPath, indexType);
 		}
@@ -176,8 +162,7 @@ public class PDPAutoConfiguration {
 			}
 		}
 		for (Object entry : functionLibraries) {
-			LOGGER.debug("binding FunctionLibrary to PDP: {}",
-					entry.getClass().getSimpleName());
+			LOGGER.debug("binding FunctionLibrary to PDP: {}", entry.getClass().getSimpleName());
 			try {
 				builder.withFunctionLibrary(entry);
 			}
@@ -198,25 +183,11 @@ public class PDPAutoConfiguration {
 		return new RemotePolicyDecisionPoint(host, port, key, secret);
 	}
 
-	@Service
-	public static class PDPDestroyer {
-
-		@Autowired
-		Optional<EmbeddedPolicyDecisionPoint> pdp;
-
-		@PreDestroy
-		public void disposePdp() {
-			pdp.ifPresent(EmbeddedPolicyDecisionPoint::dispose);
-		}
-
-	}
-
 	@Bean
 	@ConditionalOnProperty("io.sapl.policyEnforcementFilter")
 	public PolicyEnforcementFilterPEP policyEnforcementFilter(PolicyDecisionPoint pdp,
 			ConstraintHandlerService constraintHandlers, ObjectMapper mapper) {
-		LOGGER.debug(
-				"no Bean of type PolicyEnforcementFilter defined. Will create default Bean of {}",
+		LOGGER.debug("no Bean of type PolicyEnforcementFilter defined. Will create default Bean of {}",
 				PolicyEnforcementFilterPEP.class);
 		return new PolicyEnforcementFilterPEP(pdp, constraintHandlers, mapper);
 	}

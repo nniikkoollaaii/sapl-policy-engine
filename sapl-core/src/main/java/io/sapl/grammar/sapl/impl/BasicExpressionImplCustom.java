@@ -29,11 +29,23 @@ import io.sapl.interpreter.selection.JsonNodeWithoutParent;
 import io.sapl.interpreter.selection.ResultNode;
 import reactor.core.publisher.Flux;
 
+/**
+ * Superclass of basic expressions providing a method to evaluate the steps, filter and
+ * subtemplate possibly being part of the basic expression.
+ *
+ * Grammar: BasicExpression returns Expression: Basic (FILTER filter=FilterComponent |
+ * SUBTEMPLATE subtemplate=BasicExpression)? ;
+ *
+ * Basic returns BasicExpression: {BasicGroup} '(' expression=Expression ')' steps+=Step*
+ * | {BasicValue} value=Value steps+=Step* | {BasicFunction} fsteps+=ID ('.' fsteps+=ID)*
+ * arguments=Arguments steps+=Step* | {BasicIdentifier} identifier=ID steps+=Step* |
+ * {BasicRelative} '@' steps+=Step* ;
+ */
 public class BasicExpressionImplCustom extends BasicExpressionImpl {
 
 	/**
 	 * Method which is supposed to be inherited by the various subclasses of
-	 * BasicExpression and used in their {@code reactiveEvaluate} method.
+	 * BasicExpression and used in their {@code evaluate} method.
 	 *
 	 * The method takes the JsonNode from evaluating the first part of the BasicExpression
 	 * and applies the selection steps as well as a filter or sub-template specified in
@@ -49,23 +61,19 @@ public class BasicExpressionImplCustom extends BasicExpressionImpl {
 	 * and sub-template
 	 * @throws PolicyEvaluationException
 	 */
-	protected Flux<Optional<JsonNode>> evaluateStepsFilterSubtemplate(
-			Optional<JsonNode> resultBeforeSteps, EList<Step> steps,
-			EvaluationContext ctx, boolean isBody, Optional<JsonNode> relativeNode) {
-		Flux<ResultNode> result = StepResolver.resolveSteps(resultBeforeSteps, steps, ctx,
-				isBody, relativeNode);
+	protected Flux<Optional<JsonNode>> evaluateStepsFilterSubtemplate(Optional<JsonNode> resultBeforeSteps,
+			EList<Step> steps, EvaluationContext ctx, boolean isBody, Optional<JsonNode> relativeNode) {
+		Flux<ResultNode> result = StepResolver.resolveSteps(resultBeforeSteps, steps, ctx, isBody, relativeNode);
 		if (filter != null) {
 			result = result.switchMap(resultNode -> {
 				final Optional<JsonNode> jsonNode = resultNode.asJsonWithoutAnnotations();
-				return filter.apply(jsonNode, ctx, isBody, relativeNode)
-						.map(JsonNodeWithoutParent::new);
+				return filter.apply(jsonNode, ctx, isBody, relativeNode).map(JsonNodeWithoutParent::new);
 			});
 		}
 		else if (subtemplate != null) {
 			result = result.switchMap(resultNode -> {
 				final Optional<JsonNode> jsonNode = resultNode.asJsonWithoutAnnotations();
-				return evaluateSubtemplate(jsonNode, ctx, isBody)
-						.map(JsonNodeWithoutParent::new);
+				return evaluateSubtemplate(jsonNode, ctx, isBody).map(JsonNodeWithoutParent::new);
 			});
 		}
 		return result.map(ResultNode::asJsonWithoutAnnotations);
@@ -79,11 +87,10 @@ public class BasicExpressionImplCustom extends BasicExpressionImpl {
 	 * @param isBody true if the expression is evaluated in the policy body
 	 * @return a Flux of altered array nodes
 	 */
-	private Flux<Optional<JsonNode>> evaluateSubtemplate(
-			Optional<JsonNode> preliminaryResult, EvaluationContext ctx, boolean isBody) {
+	private Flux<Optional<JsonNode>> evaluateSubtemplate(Optional<JsonNode> preliminaryResult, EvaluationContext ctx,
+			boolean isBody) {
 		if (!preliminaryResult.isPresent() || !preliminaryResult.get().isArray()) {
-			return Flux.error(
-					new PolicyEvaluationException("Type mismatch. Expected an array."));
+			return Flux.error(new PolicyEvaluationException("Type mismatch. Expected an array."));
 		}
 
 		final ArrayNode arrayNode = (ArrayNode) preliminaryResult.get();
@@ -97,16 +104,15 @@ public class BasicExpressionImplCustom extends BasicExpressionImpl {
 			return Flux.just(Optional.of(arrayNode));
 		}
 		return Flux.combineLatest(fluxes, Function.identity())
-				.flatMap(replacements -> replace(replacements, arrayNode));
+				.flatMap(replacements -> replace(arrayNode, replacements));
 	}
 
-	private Flux<Optional<JsonNode>> replace(Object[] replacements, ArrayNode arrayNode) {
+	private Flux<Optional<JsonNode>> replace(ArrayNode arrayNode, Object[] replacements) {
 		for (int i = 0; i < arrayNode.size(); i++) {
 			@SuppressWarnings("unchecked")
 			Optional<JsonNode> value = ((Optional<JsonNode>) replacements[i]);
 			if (!value.isPresent()) {
-				return Flux.error(new PolicyEvaluationException(
-						"undefined cannot be added to JSON array"));
+				return Flux.error(new PolicyEvaluationException("undefined cannot be added to JSON array"));
 			}
 			arrayNode.set(i, value.get());
 		}
