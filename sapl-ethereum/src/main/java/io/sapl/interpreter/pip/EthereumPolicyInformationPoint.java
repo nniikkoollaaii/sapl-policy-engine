@@ -7,6 +7,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,11 +94,15 @@ public class EthereumPolicyInformationPoint {
 
 	    EthTransaction ethTransaction = web3j.ethGetTransactionByHash(saplObject.get("transactionHash").textValue())
 		    .send();
-	    Transaction transactionFromChain = ethTransaction.getTransaction().get();
-	    if (transactionFromChain.getFrom().equals(saplObject.get("fromAccount").textValue())
-		    && transactionFromChain.getTo().equals(saplObject.get("toAccount").textValue())
-		    && transactionFromChain.getValue().equals(saplObject.get("transactionValue").bigIntegerValue())) {
-		return convertToFlux(true);
+	    Optional<Transaction> optionalTransactionFromChain = ethTransaction.getTransaction();
+	    if (optionalTransactionFromChain.isPresent()) {
+		Transaction transactionFromChain = optionalTransactionFromChain.get();
+		if (transactionFromChain.getFrom().equals(saplObject.get("fromAccount").textValue())
+			&& transactionFromChain.getTo().equals(saplObject.get("toAccount").textValue())
+			&& transactionFromChain.getValue()
+				.equals(saplObject.get("transactionValue").bigIntegerValue())) {
+		    return convertToFlux(true);
+		}
 	    }
 	} catch (IOException | NullPointerException e) {
 	    logger.warn(VERIFY_TRANSACTION_WARNING);

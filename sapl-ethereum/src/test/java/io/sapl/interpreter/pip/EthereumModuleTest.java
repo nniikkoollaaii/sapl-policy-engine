@@ -3,18 +3,22 @@ package io.sapl.interpreter.pip;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
+import static org.powermock.api.mockito.PowerMockito.mockStatic;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Optional;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.web3j.protocol.Web3j;
@@ -25,8 +29,8 @@ import org.web3j.protocol.core.methods.response.Transaction;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-// @RunWith(PowerMockRunner.class)
 @PrepareForTest(Web3j.class)
+@RunWith(PowerMockRunner.class)
 public class EthereumModuleTest {
 
     private static final String WRONG_NAME = "wrongName";
@@ -65,11 +69,17 @@ public class EthereumModuleTest {
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private Transaction transactionFromChain;
 
+    private Optional<Transaction> optionalTransactionFromChain;
+
     @Before
     public void init() throws IOException {
 
+	optionalTransactionFromChain = Optional.of(transactionFromChain);
+	mockStatic(Web3j.class);
+	when(Web3j.build(web3jService)).thenReturn(web3j);
+	when(Web3j.build(web3jService)).thenReturn(web3j);
 	when(web3j.ethGetTransactionByHash(TEST_TRANSACTION_HASH).send()).thenReturn(ethTransaction);
-	when(ethTransaction.getTransaction().get()).thenReturn(transactionFromChain);
+	when(ethTransaction.getTransaction()).thenReturn(optionalTransactionFromChain);
 	when(transactionFromChain.getFrom()).thenReturn(TEST_FROM_ACCOUNT);
 	when(transactionFromChain.getTo()).thenReturn(TEST_TO_ACCOUNT);
 	when(transactionFromChain.getValue()).thenReturn(TEST_TRANSACTION_VALUE);
@@ -156,11 +166,6 @@ public class EthereumModuleTest {
 	saplObject.put(TRANSACTION_VALUE, TEST_TRANSACTION_VALUE);
 	boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
 	assertFalse("Transaction was not validated as false although the input was erroneous.", result);
-
-    }
-
-    @Test
-    public void convertToTypeShouldReturnCorrectValueWithAddressType() {
 
     }
 
