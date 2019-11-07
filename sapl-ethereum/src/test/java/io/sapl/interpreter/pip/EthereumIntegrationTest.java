@@ -10,6 +10,7 @@ import java.math.BigInteger;
 import java.util.List;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +32,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.sapl.api.pip.AttributeException;
 import io.sapl.interpreter.pip.contracts.Authorization;
 
+@Ignore
 public class EthereumIntegrationTest {
 
     private static final String KEYSTORE = "ethereum-testnet/ptn/keystore/";
