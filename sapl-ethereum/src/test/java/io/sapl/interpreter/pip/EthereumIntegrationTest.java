@@ -8,10 +8,10 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.net.URISyntaxException;
 import java.util.List;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,12 +30,9 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import io.sapl.api.functions.FunctionException;
-import io.sapl.api.interpreter.PolicyEvaluationException;
 import io.sapl.api.pdp.AuthorizationDecision;
 import io.sapl.api.pdp.AuthorizationSubscription;
 import io.sapl.api.pdp.Decision;
-import io.sapl.api.pdp.PDPConfigurationException;
 import io.sapl.api.pip.AttributeException;
 import io.sapl.interpreter.pip.contracts.Authorization;
 import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint;
@@ -43,7 +40,7 @@ import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint.Builder.IndexType;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
-//@Ignore
+@Ignore
 public class EthereumIntegrationTest {
 
     private static final String KEYSTORE = "ethereum-testnet/ptn/keystore/";
@@ -129,21 +126,6 @@ public class EthereumIntegrationTest {
     }
 
     // Test with Policy
-    @Test
-    public void simplePolicySetupTest() throws IOException, URISyntaxException, PolicyEvaluationException,
-	    PDPConfigurationException, FunctionException, AttributeException {
-	EmbeddedPolicyDecisionPoint.builder().withResourcePDPConfigurationProvider().withResourcePolicyRetrievalPoint()
-		.build();
-    }
-
-    @Test
-    public void simplePolicyTest() {
-	AuthorizationSubscription emptyAuthzSubscription = new AuthorizationSubscription(JSON.nullNode(),
-		JSON.nullNode(), JSON.nullNode(), JSON.nullNode());
-	final Flux<AuthorizationDecision> authzDecisionFlux = pdp.decide(emptyAuthzSubscription);
-	StepVerifier.create(authzDecisionFlux)
-		.expectNextMatches(authzDecision -> authzDecision.getDecision() == Decision.DENY).thenCancel().verify();
-    }
 
     @Test
     public void loadContractInformationShouldWorkInPolicy() {
@@ -166,8 +148,6 @@ public class EthereumIntegrationTest {
 	final Flux<AuthorizationDecision> decision = pdp.decide(authzSubscription);
 	StepVerifier.create(decision).expectNextMatches(authzDecision -> authzDecision.getDecision() == Decision.PERMIT)
 		.thenCancel().verify();
-	// assertTrue("The decision wasn't permit although the user2 was authorized in
-	// the contract.", decision.blockFirst());
     }
 
     // verifyTransaction

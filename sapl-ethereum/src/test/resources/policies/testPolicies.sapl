@@ -1,6 +1,6 @@
-/*
 set "testPolicies"
 deny-unless-permit
+for subject.toAccount == "0x2d53b58c67ba813c2d1962f8a712ef5533c07c59"
 var authorization = "0x2d53b58c67ba813c2d1962f8a712ef5533c07c59";
 
 
@@ -10,4 +10,3 @@ permit
 where
   subject.toAccount == authorization &&
   subject.<ethereum.contract>[0].value;
-*/
