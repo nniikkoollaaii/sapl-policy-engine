@@ -7,8 +7,8 @@ This function was added to provide a simple, user-friendly way of retreiving inf
  - "fromAccount":  The account which the request is send from
  - "toAccount":    The address of the contract that should be called
  - "functionName": The name of the function that should be called
- - "inputParams":  The type and value of all input params that the called function requires
- - "outputParams": The type of all output params that the function returns.
+ - "inputParams":  The type and value of all input params that the called function requires in the same order as in the function declaration
+ - "outputParams": The type of all output params that the function returns in the same order as in the function declaration.
 
 All types that can be used are listed in the convertToType-method of the [EthereumPipFunctions](https://github.com/heutelbeck/sapl-policy-engine/blob/sapl-ethereum/sapl-ethereum/src/main/java/io/sapl/interpreter/pip/EthereumPipFunctions.java).
 
