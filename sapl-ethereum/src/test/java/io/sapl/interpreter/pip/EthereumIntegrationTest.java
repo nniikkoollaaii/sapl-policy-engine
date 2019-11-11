@@ -11,6 +11,7 @@ import java.math.BigInteger;
 import java.util.List;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +40,7 @@ import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint.Builder.IndexType;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
-//@Ignore
+@Ignore
 public class EthereumIntegrationTest {
 
     private static final String WRONG_NAME = "wrongName";
