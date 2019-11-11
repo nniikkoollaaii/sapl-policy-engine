@@ -145,7 +145,6 @@ public class EthereumIntegrationTest {
     @Test
     public void loadContractInformationShouldWorkInPolicy() {
 	ObjectNode saplObject = JSON.objectNode();
-	saplObject.put(FROM_ACCOUNT, user1Address);
 	saplObject.put(CONTRACT_ADDRESS, authContractAddress);
 	saplObject.put(FUNCTION_NAME, IS_AUTHORIZED);
 	ArrayNode inputParams = JSON.arrayNode();
@@ -250,7 +249,6 @@ public class EthereumIntegrationTest {
     @Test
     public void loadContractInformationShouldReturnCorrectValue() throws AttributeException {
 	ObjectNode saplObject = JSON.objectNode();
-	saplObject.put(FROM_ACCOUNT, user1Address);
 	saplObject.put(CONTRACT_ADDRESS, authContractAddress);
 	saplObject.put(FUNCTION_NAME, IS_AUTHORIZED);
 	ArrayNode inputParams = JSON.arrayNode();

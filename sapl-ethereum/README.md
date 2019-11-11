@@ -4,7 +4,7 @@
 
 This function was added to provide a simple, user-friendly way of retreiving information from a contract on the Ethereum Blockchain. It needs to receive a JsonNode with the following information:
 
- - "fromAccount":  The account which the request is send from
+ - "fromAccount":  (Optional) The account which the request is send from
  - "contractAddress":    The address of the contract that should be called
  - "functionName": The name of the function that should be called
  - "inputParams":  The type and value of all input params that the called function requires in the same order as in the function declaration
@@ -62,7 +62,6 @@ In this case your JsonNode should look like that:
 
 ```json
 {
-	"fromAccount":"0x70b6613e37616045a80a97e08e930e1e4d800039",
 	"contractAddress":"0x2d53b58c67ba813c2d1962f8a712ef5533c07c59",
 	"functionName":"isAuthorized",
 	"inputParams":[{"type":"address","value":"3f2cbea2185089ea5bbabbcd7616b215b724885c"}],
@@ -76,3 +75,31 @@ Example with one return value of type boolean:
 ```json
 [{"value":true,"typeAsString":"bool"}]
 ```
+
+Using this in your Application you could have a policy set like this one:
+
+```
+set "ethereumPolicies"
+deny-unless-permit
+//for subject.contractAddress == "0x2d53b58c67ba813c2d1962f8a712ef5533c07c59"
+//var authorization = "0x2d53b58c67ba813c2d1962f8a712ef5533c07c59";
+
+
+policy "test_eth_policy"
+permit
+  action=="access" & resource=="ethereum"
+where
+//  subject.contractAddress == authorization &&
+//  subject.functionName == "isAuthorized" &&
+  subject.<ethereum.contract>[0].value;
+```
+
+If you have policies for multiple contracts there are two options (both shown here in the commented sections):
+1. You make a new policy set for each contract and mark the policy set with
+`for subject.contractAddress == "addressOfTheContract"`
+2. If you prefer to keep the policies in the same set you can make a global variable for each contract:
+`var contract1 = "addressOfTheContract";` and then you can define the contract the policy belongs to in the where-section:
+`subject.contractAddress == contract1`
+
+This scheme is also helpful when calling different functions from a contract.
+In this case you would check `subject.functionName == "nameOfTheFunction"` in the where-section.

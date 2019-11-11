@@ -136,7 +136,8 @@ public class EthereumPolicyInformationPoint {
      * Method for querying the state of a contract.
      *
      * @param saplObject needs to have the following values <br>
-     *                   "fromAccount" : The account that makes the request <br>
+     *                   "fromAccount" : (Optional) The account that makes the
+     *                   request <br>
      *                   "contractAddress" : The address of the called contract <br>
      *                   "functionName" : The name of the called function. <br>
      *                   "inputParams" : A Json ArrayNode that contains a tuple of
