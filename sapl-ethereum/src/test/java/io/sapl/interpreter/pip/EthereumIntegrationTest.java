@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -33,6 +34,7 @@ import io.sapl.api.pdp.AuthorizationSubscription;
 import io.sapl.api.pip.AttributeException;
 import io.sapl.interpreter.pip.contracts.Authorization;
 import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint;
+import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint.Builder;
 import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint.Builder.IndexType;
 import reactor.core.publisher.Flux;
 
@@ -85,9 +87,16 @@ public class EthereumIntegrationTest {
     public static void init() throws InterruptedException, TransactionException, Exception {
 	web3j = Web3j.build(new HttpService());
 	ethPip = new EthereumPolicyInformationPoint(new HttpService());
-	pdp = EmbeddedPolicyDecisionPoint.builder().withResourcePDPConfigurationProvider("/config")
-		.withResourcePolicyRetrievalPoint("/policies", IndexType.FAST).withPolicyInformationPoint(ethPip)
-		.build();
+	
+	String path = "src/test/resources";
+	File file = new File(path);
+	String absolutePath = file.getAbsolutePath();
+
+	pdp = EmbeddedPolicyDecisionPoint.builder()
+			.withFilesystemPDPConfigurationProvider(absolutePath + "/policies")
+			.withFilesystemPolicyRetrievalPoint(absolutePath + "/policies", IndexType.SIMPLE)
+			.withPolicyInformationPoint(ethPip)
+			.build();
 
 	// TODO Automatically start a local Ethereum private testnet
 
@@ -240,7 +249,6 @@ public class EthereumIntegrationTest {
 	outputParams.add("bool");
 	saplObject.set("outputParams", outputParams);
 	JsonNode result = ethPip.loadContractInformation(saplObject, null).blockFirst();
-	System.out.println(result);
 
 	assertTrue("False was returned although user2 was authorized and result should have been true.",
 		result.get(0).get("value").asBoolean());

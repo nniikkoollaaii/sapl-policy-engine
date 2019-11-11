@@ -1,6 +1,6 @@
 set "testPolicies"
 deny-unless-permit
-for subject.toAdress = "0x2d53b58c67ba813c2d1962f8a712ef5533c07c59"
+for subject.toAccount = "0x2d53b58c67ba813c2d1962f8a712ef5533c07c59"
 var authorization = "0x2d53b58c67ba813c2d1962f8a712ef5533c07c59";
 
 
@@ -8,5 +8,5 @@ policy "test_eth_policy"
 permit
   action=="access" & resource=="ethereum"
 where
-  subject.toAdress == authorization &&
+  subject.toAccount == authorization &&
   subject.<ethereum.contract>[0].value;
