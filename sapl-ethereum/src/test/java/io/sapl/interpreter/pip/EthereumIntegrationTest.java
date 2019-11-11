@@ -11,7 +11,6 @@ import java.math.BigInteger;
 import java.util.List;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,16 +39,31 @@ import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint.Builder.IndexType;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
-@Ignore
+//@Ignore
 public class EthereumIntegrationTest {
 
+    private static final String WRONG_NAME = "wrongName";
+    private static final String ACCESS = "access";
+    private static final String ETHEREUM = "ethereum";
+    private static final String OUTPUT_PARAMS = "outputParams";
+    private static final String BOOL = "bool";
+    private static final String INPUT_PARAMS = "inputParams";
+    private static final String VALUE = "value";
+    private static final String ADDRESS = "address";
+    private static final String TYPE = "type";
     private static final String KEYSTORE = "ethereum-testnet/ptn/keystore/";
-
     private static final String USER1WALLET = "UTC--2019-05-10T11-32-05.64000000Z--70b6613e37616045a80a97e08e930e1e4d800039.json";
     private static final String USER2WALLET = "UTC--2019-05-10T11-32-55.438000000Z--3f2cbea2185089ea5bbabbcd7616b215b724885c.json";
     private static final String USER3WALLET = "UTC--2019-05-10T11-33-01.363000000Z--2978263a3ecacb01c75e51e3f74b37016ee3904c.json";
     private static final String USER4WALLET = "UTC--2019-05-10T11-33-10.665000000Z--23a28c4cbad79cf61c8ad2e47d5134b06ef0bb73.json";
     private static final String TEST_VALUE = "testValue";
+    private static final String TO_ACCOUNT = "toAccount";
+    private static final String FROM_ACCOUNT = "fromAccount";
+    private static final String CONTRACT_ADDRESS = "contractAddress";
+    private static final String TRANSACTION_HASH = "transactionHash";
+    private static final String TRANSACTION_VALUE = "transactionValue";
+    private static final String FUNCTION_NAME = "functionName";
+    private static final String IS_AUTHORIZED = "isAuthorized";
 
     private static Web3j web3j;
     private static EthereumPolicyInformationPoint ethPip;
@@ -130,21 +144,21 @@ public class EthereumIntegrationTest {
     @Test
     public void loadContractInformationShouldWorkInPolicy() {
 	ObjectNode saplObject = JSON.objectNode();
-	saplObject.put("fromAccount", user1Address);
-	saplObject.put("toAccount", authContractAddress);
-	saplObject.put("functionName", "isAuthorized");
+	saplObject.put(FROM_ACCOUNT, user1Address);
+	saplObject.put(CONTRACT_ADDRESS, authContractAddress);
+	saplObject.put(FUNCTION_NAME, IS_AUTHORIZED);
 	ArrayNode inputParams = JSON.arrayNode();
 	ObjectNode input1 = JSON.objectNode();
-	input1.put("type", "address");
-	input1.put("value", user2Address.substring(2));
+	input1.put(TYPE, ADDRESS);
+	input1.put(VALUE, user2Address.substring(2));
 	inputParams.add(input1);
-	saplObject.set("inputParams", inputParams);
+	saplObject.set(INPUT_PARAMS, inputParams);
 	ArrayNode outputParams = JSON.arrayNode();
-	outputParams.add("bool");
-	saplObject.set("outputParams", outputParams);
+	outputParams.add(BOOL);
+	saplObject.set(OUTPUT_PARAMS, outputParams);
 	JsonNodeFactory JSON = JsonNodeFactory.instance;
-	AuthorizationSubscription authzSubscription = new AuthorizationSubscription(saplObject, JSON.textNode("access"),
-		JSON.textNode("ethereum"), null);
+	AuthorizationSubscription authzSubscription = new AuthorizationSubscription(saplObject, JSON.textNode(ACCESS),
+		JSON.textNode(ETHEREUM), null);
 	final Flux<AuthorizationDecision> decision = pdp.decide(authzSubscription);
 	StepVerifier.create(decision).expectNextMatches(authzDecision -> authzDecision.getDecision() == Decision.PERMIT)
 		.thenCancel().verify();
@@ -155,10 +169,10 @@ public class EthereumIntegrationTest {
     @Test
     public void verifyTransactionShouldReturnTrueWithCorrectTransaction() {
 	ObjectNode saplObject = JSON.objectNode();
-	saplObject.put("transactionHash", transactionReceiptUser2.getTransactionHash());
-	saplObject.put("fromAccount", user1Address);
-	saplObject.put("toAccount", user2Address);
-	saplObject.put("transactionValue", new BigInteger("2000000000000000000"));
+	saplObject.put(TRANSACTION_HASH, transactionReceiptUser2.getTransactionHash());
+	saplObject.put(FROM_ACCOUNT, user1Address);
+	saplObject.put(TO_ACCOUNT, user2Address);
+	saplObject.put(TRANSACTION_VALUE, new BigInteger("2000000000000000000"));
 	boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
 	assertTrue("Transaction was not validated as true although it is correct.", result);
 
@@ -167,10 +181,10 @@ public class EthereumIntegrationTest {
     @Test
     public void verifyTransactionShouldReturnFalseWithFalseValue() {
 	ObjectNode saplObject = JSON.objectNode();
-	saplObject.put("transactionHash", transactionReceiptUser2.getTransactionHash());
-	saplObject.put("fromAccount", user1Address);
-	saplObject.put("toAccount", user2Address);
-	saplObject.put("transactionValue", new BigInteger("25"));
+	saplObject.put(TRANSACTION_HASH, transactionReceiptUser2.getTransactionHash());
+	saplObject.put(FROM_ACCOUNT, user1Address);
+	saplObject.put(TO_ACCOUNT, user2Address);
+	saplObject.put(TRANSACTION_VALUE, new BigInteger("25"));
 	boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
 	assertFalse("Transaction was not validated as false although the value was false.", result);
 
@@ -179,10 +193,10 @@ public class EthereumIntegrationTest {
     @Test
     public void verifyTransactionShouldReturnFalseWithFalseSender() {
 	ObjectNode saplObject = JSON.objectNode();
-	saplObject.put("transactionHash", transactionReceiptUser2.getTransactionHash());
-	saplObject.put("fromAccount", user3Address);
-	saplObject.put("toAccount", user2Address);
-	saplObject.put("transactionValue", new BigInteger("2000000000000000000"));
+	saplObject.put(TRANSACTION_HASH, transactionReceiptUser2.getTransactionHash());
+	saplObject.put(FROM_ACCOUNT, user3Address);
+	saplObject.put(TO_ACCOUNT, user2Address);
+	saplObject.put(TRANSACTION_VALUE, new BigInteger("2000000000000000000"));
 	boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
 	assertFalse("Transaction was not validated as false although the sender was false.", result);
 
@@ -191,10 +205,10 @@ public class EthereumIntegrationTest {
     @Test
     public void verifyTransactionShouldReturnFalseWithFalseRecipient() {
 	ObjectNode saplObject = JSON.objectNode();
-	saplObject.put("transactionHash", transactionReceiptUser2.getTransactionHash());
-	saplObject.put("fromAccount", user1Address);
-	saplObject.put("toAccount", user3Address);
-	saplObject.put("transactionValue", new BigInteger("2000000000000000000"));
+	saplObject.put(TRANSACTION_HASH, transactionReceiptUser2.getTransactionHash());
+	saplObject.put(FROM_ACCOUNT, user1Address);
+	saplObject.put(TO_ACCOUNT, user3Address);
+	saplObject.put(TRANSACTION_VALUE, new BigInteger("2000000000000000000"));
 	boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
 	assertFalse("Transaction was not validated as false although the recipient was false.", result);
 
@@ -203,10 +217,10 @@ public class EthereumIntegrationTest {
     @Test
     public void verifyTransactionShouldReturnFalseWithFalseTransactionHash() {
 	ObjectNode saplObject = JSON.objectNode();
-	saplObject.put("transactionHash", transactionReceiptUser3.getTransactionHash());
-	saplObject.put("fromAccount", user1Address);
-	saplObject.put("toAccount", user2Address);
-	saplObject.put("transactionValue", new BigInteger("2000000000000000000"));
+	saplObject.put(TRANSACTION_HASH, transactionReceiptUser3.getTransactionHash());
+	saplObject.put(FROM_ACCOUNT, user1Address);
+	saplObject.put(TO_ACCOUNT, user2Address);
+	saplObject.put(TRANSACTION_VALUE, new BigInteger("2000000000000000000"));
 	boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
 	assertFalse("Transaction was not validated as false although the TransactionHash was false.", result);
 
@@ -222,10 +236,10 @@ public class EthereumIntegrationTest {
     @Test
     public void verifyTransactionShouldReturnFalseWithWrongInput() {
 	ObjectNode saplObject = JSON.objectNode();
-	saplObject.put("wrongName", transactionReceiptUser2.getTransactionHash());
-	saplObject.put("fromAccount", user1Address);
-	saplObject.put("toAccount", user2Address);
-	saplObject.put("transactionValue", new BigInteger("2000000000000000000"));
+	saplObject.put(WRONG_NAME, transactionReceiptUser2.getTransactionHash());
+	saplObject.put(FROM_ACCOUNT, user1Address);
+	saplObject.put(TO_ACCOUNT, user2Address);
+	saplObject.put(TRANSACTION_VALUE, new BigInteger("2000000000000000000"));
 	boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
 	assertFalse("Transaction was not validated as false although the input was erroneous.", result);
 
@@ -235,22 +249,22 @@ public class EthereumIntegrationTest {
     @Test
     public void loadContractInformationShouldReturnCorrectValue() throws AttributeException {
 	ObjectNode saplObject = JSON.objectNode();
-	saplObject.put("fromAccount", user1Address);
-	saplObject.put("toAccount", authContractAddress);
-	saplObject.put("functionName", "isAuthorized");
+	saplObject.put(FROM_ACCOUNT, user1Address);
+	saplObject.put(CONTRACT_ADDRESS, authContractAddress);
+	saplObject.put(FUNCTION_NAME, IS_AUTHORIZED);
 	ArrayNode inputParams = JSON.arrayNode();
 	ObjectNode input1 = JSON.objectNode();
-	input1.put("type", "address");
-	input1.put("value", user2Address.substring(2));
+	input1.put(TYPE, ADDRESS);
+	input1.put(VALUE, user2Address.substring(2));
 	inputParams.add(input1);
-	saplObject.set("inputParams", inputParams);
+	saplObject.set(INPUT_PARAMS, inputParams);
 	ArrayNode outputParams = JSON.arrayNode();
-	outputParams.add("bool");
-	saplObject.set("outputParams", outputParams);
+	outputParams.add(BOOL);
+	saplObject.set(OUTPUT_PARAMS, outputParams);
 	JsonNode result = ethPip.loadContractInformation(saplObject, null).blockFirst();
 
 	assertTrue("False was returned although user2 was authorized and result should have been true.",
-		result.get(0).get("value").asBoolean());
+		result.get(0).get(VALUE).asBoolean());
 
     }
 

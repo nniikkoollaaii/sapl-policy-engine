@@ -5,7 +5,7 @@
 This function was added to provide a simple, user-friendly way of retreiving information from a contract on the Ethereum Blockchain. It needs to receive a JsonNode with the following information:
 
  - "fromAccount":  The account which the request is send from
- - "toAccount":    The address of the contract that should be called
+ - "contractAddress":    The address of the contract that should be called
  - "functionName": The name of the function that should be called
  - "inputParams":  The type and value of all input params that the called function requires in the same order as in the function declaration
  - "outputParams": The type of all output params that the function returns in the same order as in the function declaration.
@@ -63,7 +63,7 @@ In this case your JsonNode should look like that:
 ```json
 {
 	"fromAccount":"0x70b6613e37616045a80a97e08e930e1e4d800039",
-	"toAccount":"0x2d53b58c67ba813c2d1962f8a712ef5533c07c59",
+	"contractAddress":"0x2d53b58c67ba813c2d1962f8a712ef5533c07c59",
 	"functionName":"isAuthorized",
 	"inputParams":[{"type":"address","value":"3f2cbea2185089ea5bbabbcd7616b215b724885c"}],
 	"outputParams":["bool"]

@@ -57,9 +57,9 @@ public class EthereumPolicyInformationPoint {
     private static final Logger logger = LoggerFactory.getLogger(EthereumPolicyInformationPoint.class);
 
     private Web3j web3j;
-    
-    
+
     private static final String ADDRESS = "address";
+    private static final String CONTRACT_ADDRESS = "contractAddress";
     private static final String TRANSACTION_HASH = "transactionHash";
     private static final String FROM_ACCOUNT = "fromAccount";
     private static final String TO_ACCOUNT = "toAccount";
@@ -137,7 +137,7 @@ public class EthereumPolicyInformationPoint {
      *
      * @param saplObject needs to have the following values <br>
      *                   "fromAccount" : The account that makes the request <br>
-     *                   "toAccount" : The address of the called contract <br>
+     *                   "contractAddress" : The address of the called contract <br>
      *                   "functionName" : The name of the called function. <br>
      *                   "inputParams" : A Json ArrayNode that contains a tuple of
      *                   "type" and "value" for each input parameter. Example:
@@ -159,8 +159,8 @@ public class EthereumPolicyInformationPoint {
     public Flux<JsonNode> loadContractInformation(JsonNode saplObject, Map<String, JsonNode> variables)
 	    throws AttributeException {
 	try {
-	    String from = getStringFrom(saplObject, FROM_ACCOUNT);
-	    String to = getStringFrom(saplObject, TO_ACCOUNT);
+	    String fromAccount = getStringFrom(saplObject, FROM_ACCOUNT);
+	    String contractAddress = getStringFrom(saplObject, CONTRACT_ADDRESS);
 
 	    List<Type> inputParameters = new ArrayList<>();
 	    JsonNode inputNode = saplObject.get(INPUT_PARAMS);
@@ -182,8 +182,8 @@ public class EthereumPolicyInformationPoint {
 
 	    String encodedFunction = FunctionEncoder.encode(function);
 	    org.web3j.protocol.core.methods.response.EthCall response = web3j
-		    .ethCall(org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction(from, to,
-			    encodedFunction), extractDefaultBlockParameter(saplObject))
+		    .ethCall(org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction(fromAccount,
+			    contractAddress, encodedFunction), extractDefaultBlockParameter(saplObject))
 		    .send();
 
 	    List<Type> output = FunctionReturnDecoder.decode(response.getValue(), function.getOutputParameters());
@@ -340,10 +340,8 @@ public class EthereumPolicyInformationPoint {
     @Attribute(name = "eth_getStorageAt", docs = "Returns the value from a storage position at a given address.")
     public Flux<JsonNode> ethGetStorageAt(JsonNode saplObject, Map<String, JsonNode> variables) {
 	try {
-	    return convertToFlux(web3j
-		    .ethGetStorageAt(saplObject.get(ADDRESS).textValue(),
-			    saplObject.get(POSITION).bigIntegerValue(), extractDefaultBlockParameter(saplObject))
-		    .send());
+	    return convertToFlux(web3j.ethGetStorageAt(saplObject.get(ADDRESS).textValue(),
+		    saplObject.get(POSITION).bigIntegerValue(), extractDefaultBlockParameter(saplObject)).send());
 	} catch (IOException e) {
 
 	}
@@ -412,9 +410,8 @@ public class EthereumPolicyInformationPoint {
     @Attribute(name = "eth_getCode", docs = "Returns code at a given address.")
     public Flux<JsonNode> ethGetCode(JsonNode saplObject, Map<String, JsonNode> variables) {
 	try {
-	    return convertToFlux(
-		    web3j.ethGetCode(saplObject.get(ADDRESS).textValue(), extractDefaultBlockParameter(saplObject))
-			    .send());
+	    return convertToFlux(web3j
+		    .ethGetCode(saplObject.get(ADDRESS).textValue(), extractDefaultBlockParameter(saplObject)).send());
 	} catch (IOException e) {
 
 	}
@@ -676,9 +673,9 @@ public class EthereumPolicyInformationPoint {
     @Attribute(name = "eth_submitHashrate", docs = "Used for submitting mining hashrate.")
     public Flux<JsonNode> ethSubmitHashrate(JsonNode saplObject, Map<String, JsonNode> variables) {
 	try {
-	    return convertToFlux(web3j
-		    .ethSubmitHashrate(getStringFrom(saplObject, HASHRATE), getStringFrom(saplObject, CLIENT_ID))
-		    .send());
+	    return convertToFlux(
+		    web3j.ethSubmitHashrate(getStringFrom(saplObject, HASHRATE), getStringFrom(saplObject, CLIENT_ID))
+			    .send());
 	} catch (IOException e) {
 
 	}
@@ -813,7 +810,10 @@ public class EthereumPolicyInformationPoint {
     }
 
     private static String getStringFrom(JsonNode saplObject, String stringName) {
-	return saplObject.get(stringName).textValue();
+	if (saplObject.has(stringName)) {
+	    return saplObject.get(stringName).textValue();
+	}
+	return null;
     }
 
     private static BigInteger getBigIntFrom(JsonNode saplObject, String bigIntegerName) {
