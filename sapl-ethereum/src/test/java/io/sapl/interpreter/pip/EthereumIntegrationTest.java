@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URISyntaxException;
 import java.util.List;
 
 import org.junit.BeforeClass;
@@ -29,14 +30,18 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import io.sapl.api.functions.FunctionException;
+import io.sapl.api.interpreter.PolicyEvaluationException;
 import io.sapl.api.pdp.AuthorizationDecision;
 import io.sapl.api.pdp.AuthorizationSubscription;
+import io.sapl.api.pdp.Decision;
+import io.sapl.api.pdp.PDPConfigurationException;
 import io.sapl.api.pip.AttributeException;
 import io.sapl.interpreter.pip.contracts.Authorization;
 import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint;
-import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint.Builder;
 import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint.Builder.IndexType;
 import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
 
 //@Ignore
 public class EthereumIntegrationTest {
@@ -52,7 +57,7 @@ public class EthereumIntegrationTest {
     private static Web3j web3j;
     private static EthereumPolicyInformationPoint ethPip;
     private static EmbeddedPolicyDecisionPoint pdp;
-    private static final JsonNodeFactory factory = new JsonNodeFactory(true);
+    private static final JsonNodeFactory JSON = JsonNodeFactory.instance;
     private static final Logger logger = LoggerFactory.getLogger(EthereumIntegrationTest.class);
 
     private static String user1Address;
@@ -87,16 +92,14 @@ public class EthereumIntegrationTest {
     public static void init() throws InterruptedException, TransactionException, Exception {
 	web3j = Web3j.build(new HttpService());
 	ethPip = new EthereumPolicyInformationPoint(new HttpService());
-	
+
 	String path = "src/test/resources";
 	File file = new File(path);
 	String absolutePath = file.getAbsolutePath();
 
-	pdp = EmbeddedPolicyDecisionPoint.builder()
-			.withFilesystemPDPConfigurationProvider(absolutePath + "/policies")
-			.withFilesystemPolicyRetrievalPoint(absolutePath + "/policies", IndexType.SIMPLE)
-			.withPolicyInformationPoint(ethPip)
-			.build();
+	pdp = EmbeddedPolicyDecisionPoint.builder().withFilesystemPDPConfigurationProvider(absolutePath + "/policies")
+		.withFilesystemPolicyRetrievalPoint(absolutePath + "/policies", IndexType.SIMPLE)
+		.withPolicyInformationPoint(ethPip).build();
 
 	// TODO Automatically start a local Ethereum private testnet
 
@@ -126,27 +129,43 @@ public class EthereumIntegrationTest {
     }
 
     // Test with Policy
+    @Test
+    public void simplePolicySetupTest() throws IOException, URISyntaxException, PolicyEvaluationException,
+	    PDPConfigurationException, FunctionException, AttributeException {
+	EmbeddedPolicyDecisionPoint.builder().withResourcePDPConfigurationProvider().withResourcePolicyRetrievalPoint()
+		.build();
+    }
+
+    @Test
+    public void simplePolicyTest() {
+	AuthorizationSubscription emptyAuthzSubscription = new AuthorizationSubscription(JSON.nullNode(),
+		JSON.nullNode(), JSON.nullNode(), JSON.nullNode());
+	final Flux<AuthorizationDecision> authzDecisionFlux = pdp.decide(emptyAuthzSubscription);
+	StepVerifier.create(authzDecisionFlux)
+		.expectNextMatches(authzDecision -> authzDecision.getDecision() == Decision.DENY).thenCancel().verify();
+    }
 
     @Test
     public void loadContractInformationShouldWorkInPolicy() {
-	ObjectNode saplObject = factory.objectNode();
+	ObjectNode saplObject = JSON.objectNode();
 	saplObject.put("fromAccount", user1Address);
 	saplObject.put("toAccount", authContractAddress);
 	saplObject.put("functionName", "isAuthorized");
-	ArrayNode inputParams = factory.arrayNode();
-	ObjectNode input1 = factory.objectNode();
+	ArrayNode inputParams = JSON.arrayNode();
+	ObjectNode input1 = JSON.objectNode();
 	input1.put("type", "address");
 	input1.put("value", user2Address.substring(2));
 	inputParams.add(input1);
 	saplObject.set("inputParams", inputParams);
-	ArrayNode outputParams = factory.arrayNode();
+	ArrayNode outputParams = JSON.arrayNode();
 	outputParams.add("bool");
 	saplObject.set("outputParams", outputParams);
 	JsonNodeFactory JSON = JsonNodeFactory.instance;
 	AuthorizationSubscription authzSubscription = new AuthorizationSubscription(saplObject, JSON.textNode("access"),
 		JSON.textNode("ethereum"), null);
-	Flux<AuthorizationDecision> decision = pdp.decide(authzSubscription);
-	System.out.println(decision.blockFirst());
+	final Flux<AuthorizationDecision> decision = pdp.decide(authzSubscription);
+	StepVerifier.create(decision).expectNextMatches(authzDecision -> authzDecision.getDecision() == Decision.PERMIT)
+		.thenCancel().verify();
 	// assertTrue("The decision wasn't permit although the user2 was authorized in
 	// the contract.", decision.blockFirst());
     }
@@ -155,7 +174,7 @@ public class EthereumIntegrationTest {
 
     @Test
     public void verifyTransactionShouldReturnTrueWithCorrectTransaction() {
-	ObjectNode saplObject = factory.objectNode();
+	ObjectNode saplObject = JSON.objectNode();
 	saplObject.put("transactionHash", transactionReceiptUser2.getTransactionHash());
 	saplObject.put("fromAccount", user1Address);
 	saplObject.put("toAccount", user2Address);
@@ -167,7 +186,7 @@ public class EthereumIntegrationTest {
 
     @Test
     public void verifyTransactionShouldReturnFalseWithFalseValue() {
-	ObjectNode saplObject = factory.objectNode();
+	ObjectNode saplObject = JSON.objectNode();
 	saplObject.put("transactionHash", transactionReceiptUser2.getTransactionHash());
 	saplObject.put("fromAccount", user1Address);
 	saplObject.put("toAccount", user2Address);
@@ -179,7 +198,7 @@ public class EthereumIntegrationTest {
 
     @Test
     public void verifyTransactionShouldReturnFalseWithFalseSender() {
-	ObjectNode saplObject = factory.objectNode();
+	ObjectNode saplObject = JSON.objectNode();
 	saplObject.put("transactionHash", transactionReceiptUser2.getTransactionHash());
 	saplObject.put("fromAccount", user3Address);
 	saplObject.put("toAccount", user2Address);
@@ -191,7 +210,7 @@ public class EthereumIntegrationTest {
 
     @Test
     public void verifyTransactionShouldReturnFalseWithFalseRecipient() {
-	ObjectNode saplObject = factory.objectNode();
+	ObjectNode saplObject = JSON.objectNode();
 	saplObject.put("transactionHash", transactionReceiptUser2.getTransactionHash());
 	saplObject.put("fromAccount", user1Address);
 	saplObject.put("toAccount", user3Address);
@@ -203,7 +222,7 @@ public class EthereumIntegrationTest {
 
     @Test
     public void verifyTransactionShouldReturnFalseWithFalseTransactionHash() {
-	ObjectNode saplObject = factory.objectNode();
+	ObjectNode saplObject = JSON.objectNode();
 	saplObject.put("transactionHash", transactionReceiptUser3.getTransactionHash());
 	saplObject.put("fromAccount", user1Address);
 	saplObject.put("toAccount", user2Address);
@@ -222,7 +241,7 @@ public class EthereumIntegrationTest {
 
     @Test
     public void verifyTransactionShouldReturnFalseWithWrongInput() {
-	ObjectNode saplObject = factory.objectNode();
+	ObjectNode saplObject = JSON.objectNode();
 	saplObject.put("wrongName", transactionReceiptUser2.getTransactionHash());
 	saplObject.put("fromAccount", user1Address);
 	saplObject.put("toAccount", user2Address);
@@ -235,17 +254,17 @@ public class EthereumIntegrationTest {
     // loadContractInformation
     @Test
     public void loadContractInformationShouldReturnCorrectValue() throws AttributeException {
-	ObjectNode saplObject = factory.objectNode();
+	ObjectNode saplObject = JSON.objectNode();
 	saplObject.put("fromAccount", user1Address);
 	saplObject.put("toAccount", authContractAddress);
 	saplObject.put("functionName", "isAuthorized");
-	ArrayNode inputParams = factory.arrayNode();
-	ObjectNode input1 = factory.objectNode();
+	ArrayNode inputParams = JSON.arrayNode();
+	ObjectNode input1 = JSON.objectNode();
 	input1.put("type", "address");
 	input1.put("value", user2Address.substring(2));
 	inputParams.add(input1);
 	saplObject.set("inputParams", inputParams);
-	ArrayNode outputParams = factory.arrayNode();
+	ArrayNode outputParams = JSON.arrayNode();
 	outputParams.add("bool");
 	saplObject.set("outputParams", outputParams);
 	JsonNode result = ethPip.loadContractInformation(saplObject, null).blockFirst();
@@ -268,7 +287,7 @@ public class EthereumIntegrationTest {
     // web3_sha3
     @Test
     public void web3Sha3ShouldReturnCorrectValuer() throws IOException {
-	JsonNode saplObject = factory.textNode(TEST_VALUE);
+	JsonNode saplObject = JSON.textNode(TEST_VALUE);
 	String pipResult = ethPip.web3Sha3(saplObject, null).blockFirst().textValue();
 	String web3jResult = web3j.web3Sha3(TEST_VALUE).send().getResult();
 	assertEquals("The web3Sha3 method did not work correctly.", pipResult, web3jResult);
