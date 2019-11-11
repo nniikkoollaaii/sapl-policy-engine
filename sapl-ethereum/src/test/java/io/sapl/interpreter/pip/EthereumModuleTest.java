@@ -34,25 +34,20 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class EthereumModuleTest {
 
     private static final String WRONG_NAME = "wrongName";
-
     private static final String TRANSACTION_VALUE = "transactionValue";
-
     private static final String TO_ACCOUNT = "toAccount";
-
     private static final String FROM_ACCOUNT = "fromAccount";
-
     private static final String TRANSACTION_HASH = "transactionHash";
-
-    private static EthereumPolicyInformationPoint ethPip;
-    private static final JsonNodeFactory factory = new JsonNodeFactory(true);
-    private static final Logger logger = LoggerFactory.getLogger(EthereumIntegrationTest.class);
-
     private static final String TEST_TRANSACTION_HASH = "0xbeac927d1d256e9a21f8d81233cc83c03bf1a7a79a73a4664fa7ffba74101dac";
     private static final String TEST_FALSE_TRANSACTION_HASH = "0x777c927d1d256e9a21f8d81233cc83c03bf1a7a79a73a4664fa7ffba74101dac";
     private static final String TEST_FROM_ACCOUNT = "0x70b6613e37616045a80a97e08e930e1e4d800039";
     private static final String TEST_TO_ACCOUNT = "0x3f2cbea2185089ea5bbabbcd7616b215b724885c";
     private static final String TEST_FALSE_ACCOUNT = "0x555cbea2185089ea5bbabbcd7616b215b724885c";
     private static final BigInteger TEST_TRANSACTION_VALUE = new BigInteger("2000000000000000000");
+
+    private static EthereumPolicyInformationPoint ethPip;
+    private static final JsonNodeFactory factory = new JsonNodeFactory(true);
+    private static final Logger logger = LoggerFactory.getLogger(EthereumIntegrationTest.class);
 
     @Rule
     public MockitoRule mockitoRule = MockitoJUnit.rule();

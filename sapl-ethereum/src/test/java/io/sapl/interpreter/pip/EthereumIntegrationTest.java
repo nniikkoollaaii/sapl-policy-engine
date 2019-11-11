@@ -29,8 +29,13 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import io.sapl.api.pdp.AuthorizationDecision;
+import io.sapl.api.pdp.AuthorizationSubscription;
 import io.sapl.api.pip.AttributeException;
 import io.sapl.interpreter.pip.contracts.Authorization;
+import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint;
+import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint.Builder.IndexType;
+import reactor.core.publisher.Flux;
 
 @Ignore
 public class EthereumIntegrationTest {
@@ -45,6 +50,7 @@ public class EthereumIntegrationTest {
 
     private static Web3j web3j;
     private static EthereumPolicyInformationPoint ethPip;
+    private static EmbeddedPolicyDecisionPoint pdp;
     private static final JsonNodeFactory factory = new JsonNodeFactory(true);
     private static final Logger logger = LoggerFactory.getLogger(EthereumIntegrationTest.class);
 
@@ -80,6 +86,9 @@ public class EthereumIntegrationTest {
     public static void init() throws InterruptedException, TransactionException, Exception {
 	web3j = Web3j.build(new HttpService());
 	ethPip = new EthereumPolicyInformationPoint(new HttpService());
+	pdp = EmbeddedPolicyDecisionPoint.builder().withResourcePDPConfigurationProvider("resources/policies")
+		.withResourcePolicyRetrievalPoint("resources/policies", IndexType.FAST)
+		.withPolicyInformationPoint(ethPip).build();
 
 	// TODO Automatically start a local Ethereum private testnet
 
@@ -106,6 +115,32 @@ public class EthereumIntegrationTest {
 	authContractAddress = authContract.getContractAddress();
 	authContract.authorize(user2Address).send();
 
+    }
+
+    // Test with Policy
+
+    @Test
+    public void loadContractInformationShouldWorkInPolicy() {
+	ObjectNode saplObject = factory.objectNode();
+	saplObject.put("fromAccount", user1Address);
+	saplObject.put("toAccount", authContractAddress);
+	saplObject.put("functionName", "isAuthorized");
+	ArrayNode inputParams = factory.arrayNode();
+	ObjectNode input1 = factory.objectNode();
+	input1.put("type", "address");
+	input1.put("value", user2Address.substring(2));
+	inputParams.add(input1);
+	saplObject.set("inputParams", inputParams);
+	ArrayNode outputParams = factory.arrayNode();
+	outputParams.add("bool");
+	saplObject.set("outputParams", outputParams);
+	JsonNodeFactory JSON = JsonNodeFactory.instance;
+	AuthorizationSubscription authzSubscription = new AuthorizationSubscription(saplObject, JSON.textNode("access"),
+		JSON.textNode("ethereum"), null);
+	Flux<AuthorizationDecision> decision = pdp.decide(authzSubscription);
+	System.out.println(decision.blockFirst());
+	// assertTrue("The decision wasn't permit although the user2 was authorized in
+	// the contract.", decision.blockFirst());
     }
 
     // verifyTransaction

@@ -23,6 +23,12 @@
 		</dependency>
 		
 		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>sapl-pdp-embedded</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		
+		<dependency>
   			<groupId>org.web3j</groupId>
   			<artifactId>core</artifactId>
   			<version>4.5.0</version>

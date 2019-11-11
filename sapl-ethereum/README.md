@@ -5,7 +5,7 @@
 This function was added to provide a simple, user-friendly way of retreiving information from a contract on the Ethereum Blockchain. It needs to receive a JsonNode with the following information:
 
  - "fromAccount":  The account which the request is send from
- - "toAccount":    The adress of the contract that should be called
+ - "toAccount":    The address of the contract that should be called
  - "functionName": The name of the function that should be called
  - "inputParams":  The type and value of all input params that the called function requires
  - "outputParams": The type of all output params that the function returns.
@@ -55,8 +55,8 @@ contract Authorization {
 }
 ```
 
-The contract has been published to the adress `0x2d53b58c67ba813c2d1962f8a712ef5533c07c59`.
-Furthermore, you want to know if the Ethereum user with the adress `3f2cbea2185089ea5bbabbcd7616b215b724885c` is authorized.
+The contract has been published to the address `0x2d53b58c67ba813c2d1962f8a712ef5533c07c59`.
+Furthermore, you want to know if the Ethereum user with the address `3f2cbea2185089ea5bbabbcd7616b215b724885c` is authorized.
 In this case your JsonNode should look like that:
 
 
