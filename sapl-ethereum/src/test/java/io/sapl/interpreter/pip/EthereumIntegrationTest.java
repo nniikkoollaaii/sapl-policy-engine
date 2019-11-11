@@ -10,7 +10,6 @@ import java.math.BigInteger;
 import java.util.List;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +36,7 @@ import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint;
 import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint.Builder.IndexType;
 import reactor.core.publisher.Flux;
 
-@Ignore
+//@Ignore
 public class EthereumIntegrationTest {
 
     private static final String KEYSTORE = "ethereum-testnet/ptn/keystore/";
@@ -86,9 +85,9 @@ public class EthereumIntegrationTest {
     public static void init() throws InterruptedException, TransactionException, Exception {
 	web3j = Web3j.build(new HttpService());
 	ethPip = new EthereumPolicyInformationPoint(new HttpService());
-	pdp = EmbeddedPolicyDecisionPoint.builder().withResourcePDPConfigurationProvider("resources/policies")
-		.withResourcePolicyRetrievalPoint("resources/policies", IndexType.FAST)
-		.withPolicyInformationPoint(ethPip).build();
+	pdp = EmbeddedPolicyDecisionPoint.builder().withResourcePDPConfigurationProvider("/config")
+		.withResourcePolicyRetrievalPoint("/policies", IndexType.FAST).withPolicyInformationPoint(ethPip)
+		.build();
 
 	// TODO Automatically start a local Ethereum private testnet
 
