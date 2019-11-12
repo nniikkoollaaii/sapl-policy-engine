@@ -33,135 +33,147 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 @RunWith(PowerMockRunner.class)
 public class EthereumModuleTest {
 
-    private static final String WRONG_NAME = "wrongName";
-    private static final String TRANSACTION_VALUE = "transactionValue";
-    private static final String TO_ACCOUNT = "toAccount";
-    private static final String FROM_ACCOUNT = "fromAccount";
-    private static final String TRANSACTION_HASH = "transactionHash";
-    private static final String TEST_TRANSACTION_HASH = "0xbeac927d1d256e9a21f8d81233cc83c03bf1a7a79a73a4664fa7ffba74101dac";
-    private static final String TEST_FALSE_TRANSACTION_HASH = "0x777c927d1d256e9a21f8d81233cc83c03bf1a7a79a73a4664fa7ffba74101dac";
-    private static final String TEST_FROM_ACCOUNT = "0x70b6613e37616045a80a97e08e930e1e4d800039";
-    private static final String TEST_TO_ACCOUNT = "0x3f2cbea2185089ea5bbabbcd7616b215b724885c";
-    private static final String TEST_FALSE_ACCOUNT = "0x555cbea2185089ea5bbabbcd7616b215b724885c";
-    private static final BigInteger TEST_TRANSACTION_VALUE = new BigInteger("2000000000000000000");
+	private static final String WRONG_NAME = "wrongName";
 
-    private static EthereumPolicyInformationPoint ethPip;
-    private static final JsonNodeFactory factory = new JsonNodeFactory(true);
-    private static final Logger logger = LoggerFactory.getLogger(EthereumIntegrationTest.class);
+	private static final String TRANSACTION_VALUE = "transactionValue";
 
-    @Rule
-    public MockitoRule mockitoRule = MockitoJUnit.rule();
+	private static final String TO_ACCOUNT = "toAccount";
 
-    @Mock
-    private static Web3jService web3jService;
+	private static final String FROM_ACCOUNT = "fromAccount";
 
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    private Web3j web3j;
+	private static final String TRANSACTION_HASH = "transactionHash";
 
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    private EthTransaction ethTransaction;
+	private static final String TEST_TRANSACTION_HASH = "0xbeac927d1d256e9a21f8d81233cc83c03bf1a7a79a73a4664fa7ffba74101dac";
 
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    private Transaction transactionFromChain;
+	private static final String TEST_FALSE_TRANSACTION_HASH = "0x777c927d1d256e9a21f8d81233cc83c03bf1a7a79a73a4664fa7ffba74101dac";
 
-    private Optional<Transaction> optionalTransactionFromChain;
+	private static final String TEST_FROM_ACCOUNT = "0x70b6613e37616045a80a97e08e930e1e4d800039";
 
-    @Before
-    public void init() throws IOException {
+	private static final String TEST_TO_ACCOUNT = "0x3f2cbea2185089ea5bbabbcd7616b215b724885c";
 
-	optionalTransactionFromChain = Optional.of(transactionFromChain);
-	mockStatic(Web3j.class);
-	when(Web3j.build(web3jService)).thenReturn(web3j);
-	when(Web3j.build(web3jService)).thenReturn(web3j);
-	when(web3j.ethGetTransactionByHash(TEST_TRANSACTION_HASH).send()).thenReturn(ethTransaction);
-	when(ethTransaction.getTransaction()).thenReturn(optionalTransactionFromChain);
-	when(transactionFromChain.getFrom()).thenReturn(TEST_FROM_ACCOUNT);
-	when(transactionFromChain.getTo()).thenReturn(TEST_TO_ACCOUNT);
-	when(transactionFromChain.getValue()).thenReturn(TEST_TRANSACTION_VALUE);
+	private static final String TEST_FALSE_ACCOUNT = "0x555cbea2185089ea5bbabbcd7616b215b724885c";
 
-	ethPip = new EthereumPolicyInformationPoint(web3jService);
+	private static final BigInteger TEST_TRANSACTION_VALUE = new BigInteger("2000000000000000000");
 
-    }
+	private static EthereumPolicyInformationPoint ethPip;
 
-    // verifyTransaction
+	private static final JsonNodeFactory factory = new JsonNodeFactory(true);
 
-    @Test
-    public void verifyTransactionShouldReturnTrueWithCorrectTransaction() {
-	ObjectNode saplObject = factory.objectNode();
-	saplObject.put(TRANSACTION_HASH, TEST_TRANSACTION_HASH);
-	saplObject.put(FROM_ACCOUNT, TEST_FROM_ACCOUNT);
-	saplObject.put(TO_ACCOUNT, TEST_TO_ACCOUNT);
-	saplObject.put(TRANSACTION_VALUE, TEST_TRANSACTION_VALUE);
-	boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
-	assertTrue("Transaction was not validated as true although it is correct.", result);
+	private static final Logger logger = LoggerFactory.getLogger(EthereumIntegrationTest.class);
 
-    }
+	@Rule
+	public MockitoRule mockitoRule = MockitoJUnit.rule();
 
-    @Test
-    public void verifyTransactionShouldReturnFalseWithFalseValue() {
-	ObjectNode saplObject = factory.objectNode();
-	saplObject.put(TRANSACTION_HASH, TEST_TRANSACTION_HASH);
-	saplObject.put(FROM_ACCOUNT, TEST_FROM_ACCOUNT);
-	saplObject.put(TO_ACCOUNT, TEST_TO_ACCOUNT);
-	saplObject.put(TRANSACTION_VALUE, new BigInteger("25"));
-	boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
-	assertFalse("Transaction was not validated as false although the value was false.", result);
+	@Mock
+	private static Web3jService web3jService;
 
-    }
+	@Mock(answer = Answers.RETURNS_DEEP_STUBS)
+	private Web3j web3j;
 
-    @Test
-    public void verifyTransactionShouldReturnFalseWithFalseSender() {
-	ObjectNode saplObject = factory.objectNode();
-	saplObject.put(TRANSACTION_HASH, TEST_TRANSACTION_HASH);
-	saplObject.put(FROM_ACCOUNT, TEST_FALSE_ACCOUNT);
-	saplObject.put(TO_ACCOUNT, TEST_TO_ACCOUNT);
-	saplObject.put(TRANSACTION_VALUE, TEST_TRANSACTION_VALUE);
-	boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
-	assertFalse("Transaction was not validated as false although the sender was false.", result);
+	@Mock(answer = Answers.RETURNS_DEEP_STUBS)
+	private EthTransaction ethTransaction;
 
-    }
+	@Mock(answer = Answers.RETURNS_DEEP_STUBS)
+	private Transaction transactionFromChain;
 
-    @Test
-    public void verifyTransactionShouldReturnFalseWithFalseRecipient() {
-	ObjectNode saplObject = factory.objectNode();
-	saplObject.put(TRANSACTION_HASH, TEST_TRANSACTION_HASH);
-	saplObject.put(FROM_ACCOUNT, TEST_FROM_ACCOUNT);
-	saplObject.put(TO_ACCOUNT, TEST_FALSE_ACCOUNT);
-	saplObject.put(TRANSACTION_VALUE, TEST_TRANSACTION_VALUE);
-	boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
-	assertFalse("Transaction was not validated as false although the recipient was false.", result);
+	private Optional<Transaction> optionalTransactionFromChain;
 
-    }
+	@Before
+	public void init() throws IOException {
 
-    @Test
-    public void verifyTransactionShouldReturnFalseWithFalseTransactionHash() {
-	ObjectNode saplObject = factory.objectNode();
-	saplObject.put(TRANSACTION_HASH, TEST_FALSE_TRANSACTION_HASH);
-	saplObject.put(FROM_ACCOUNT, TEST_FROM_ACCOUNT);
-	saplObject.put(TO_ACCOUNT, TEST_TO_ACCOUNT);
-	saplObject.put(TRANSACTION_VALUE, TEST_TRANSACTION_VALUE);
-	boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
-	assertFalse("Transaction was not validated as false although the TransactionHash was false.", result);
+		optionalTransactionFromChain = Optional.of(transactionFromChain);
+		mockStatic(Web3j.class);
+		when(Web3j.build(web3jService)).thenReturn(web3j);
+		when(Web3j.build(web3jService)).thenReturn(web3j);
+		when(web3j.ethGetTransactionByHash(TEST_TRANSACTION_HASH).send()).thenReturn(ethTransaction);
+		when(ethTransaction.getTransaction()).thenReturn(optionalTransactionFromChain);
+		when(transactionFromChain.getFrom()).thenReturn(TEST_FROM_ACCOUNT);
+		when(transactionFromChain.getTo()).thenReturn(TEST_TO_ACCOUNT);
+		when(transactionFromChain.getValue()).thenReturn(TEST_TRANSACTION_VALUE);
 
-    }
+		ethPip = new EthereumPolicyInformationPoint(web3jService);
 
-    @Test
-    public void verifyTransactionShouldReturnFalseWithNullInput() {
-	boolean result = ethPip.verifyTransaction(null, null).blockFirst().asBoolean();
-	assertFalse("Transaction was not validated as false although the input was null.", result);
+	}
 
-    }
+	// verifyTransaction
 
-    @Test
-    public void verifyTransactionShouldReturnFalseWithWrongInput() {
-	ObjectNode saplObject = factory.objectNode();
-	saplObject.put(WRONG_NAME, TEST_TRANSACTION_HASH);
-	saplObject.put(FROM_ACCOUNT, TEST_FROM_ACCOUNT);
-	saplObject.put(TO_ACCOUNT, TEST_TO_ACCOUNT);
-	saplObject.put(TRANSACTION_VALUE, TEST_TRANSACTION_VALUE);
-	boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
-	assertFalse("Transaction was not validated as false although the input was erroneous.", result);
+	@Test
+	public void verifyTransactionShouldReturnTrueWithCorrectTransaction() {
+		ObjectNode saplObject = factory.objectNode();
+		saplObject.put(TRANSACTION_HASH, TEST_TRANSACTION_HASH);
+		saplObject.put(FROM_ACCOUNT, TEST_FROM_ACCOUNT);
+		saplObject.put(TO_ACCOUNT, TEST_TO_ACCOUNT);
+		saplObject.put(TRANSACTION_VALUE, TEST_TRANSACTION_VALUE);
+		boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
+		assertTrue("Transaction was not validated as true although it is correct.", result);
 
-    }
+	}
+
+	@Test
+	public void verifyTransactionShouldReturnFalseWithFalseValue() {
+		ObjectNode saplObject = factory.objectNode();
+		saplObject.put(TRANSACTION_HASH, TEST_TRANSACTION_HASH);
+		saplObject.put(FROM_ACCOUNT, TEST_FROM_ACCOUNT);
+		saplObject.put(TO_ACCOUNT, TEST_TO_ACCOUNT);
+		saplObject.put(TRANSACTION_VALUE, new BigInteger("25"));
+		boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
+		assertFalse("Transaction was not validated as false although the value was false.", result);
+
+	}
+
+	@Test
+	public void verifyTransactionShouldReturnFalseWithFalseSender() {
+		ObjectNode saplObject = factory.objectNode();
+		saplObject.put(TRANSACTION_HASH, TEST_TRANSACTION_HASH);
+		saplObject.put(FROM_ACCOUNT, TEST_FALSE_ACCOUNT);
+		saplObject.put(TO_ACCOUNT, TEST_TO_ACCOUNT);
+		saplObject.put(TRANSACTION_VALUE, TEST_TRANSACTION_VALUE);
+		boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
+		assertFalse("Transaction was not validated as false although the sender was false.", result);
+
+	}
+
+	@Test
+	public void verifyTransactionShouldReturnFalseWithFalseRecipient() {
+		ObjectNode saplObject = factory.objectNode();
+		saplObject.put(TRANSACTION_HASH, TEST_TRANSACTION_HASH);
+		saplObject.put(FROM_ACCOUNT, TEST_FROM_ACCOUNT);
+		saplObject.put(TO_ACCOUNT, TEST_FALSE_ACCOUNT);
+		saplObject.put(TRANSACTION_VALUE, TEST_TRANSACTION_VALUE);
+		boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
+		assertFalse("Transaction was not validated as false although the recipient was false.", result);
+
+	}
+
+	@Test
+	public void verifyTransactionShouldReturnFalseWithFalseTransactionHash() {
+		ObjectNode saplObject = factory.objectNode();
+		saplObject.put(TRANSACTION_HASH, TEST_FALSE_TRANSACTION_HASH);
+		saplObject.put(FROM_ACCOUNT, TEST_FROM_ACCOUNT);
+		saplObject.put(TO_ACCOUNT, TEST_TO_ACCOUNT);
+		saplObject.put(TRANSACTION_VALUE, TEST_TRANSACTION_VALUE);
+		boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
+		assertFalse("Transaction was not validated as false although the TransactionHash was false.", result);
+
+	}
+
+	@Test
+	public void verifyTransactionShouldReturnFalseWithNullInput() {
+		boolean result = ethPip.verifyTransaction(null, null).blockFirst().asBoolean();
+		assertFalse("Transaction was not validated as false although the input was null.", result);
+
+	}
+
+	@Test
+	public void verifyTransactionShouldReturnFalseWithWrongInput() {
+		ObjectNode saplObject = factory.objectNode();
+		saplObject.put(WRONG_NAME, TEST_TRANSACTION_HASH);
+		saplObject.put(FROM_ACCOUNT, TEST_FROM_ACCOUNT);
+		saplObject.put(TO_ACCOUNT, TEST_TO_ACCOUNT);
+		saplObject.put(TRANSACTION_VALUE, TEST_TRANSACTION_VALUE);
+		boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
+		assertFalse("Transaction was not validated as false although the input was erroneous.", result);
+
+	}
 
 }

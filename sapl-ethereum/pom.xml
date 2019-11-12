@@ -75,12 +75,12 @@
 	</dependencies>
 	
 	<build>
-	<plugins>
-		<plugin>
-			<groupId>io.spring.javaformat</groupId>
-			<artifactId>spring-javaformat-maven-plugin</artifactId>
-		</plugin>
-	</plugins>
+		<plugins>
+			<plugin>
+				<groupId>io.spring.javaformat</groupId>
+				<artifactId>spring-javaformat-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
 	</build>
 
 </project>
