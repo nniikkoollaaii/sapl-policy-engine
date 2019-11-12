@@ -10,13 +10,10 @@ import java.math.BigInteger;
 import java.util.Optional;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.slf4j.Logger;
@@ -57,12 +54,9 @@ public class EthereumModuleTest {
 
 	private static EthereumPolicyInformationPoint ethPip;
 
-	private static final JsonNodeFactory factory = new JsonNodeFactory(true);
+	private static final JsonNodeFactory JSON = JsonNodeFactory.instance;
 
 	private static final Logger logger = LoggerFactory.getLogger(EthereumIntegrationTest.class);
-
-	@Rule
-	public MockitoRule mockitoRule = MockitoJUnit.rule();
 
 	@Mock
 	private static Web3jService web3jService;
@@ -99,7 +93,7 @@ public class EthereumModuleTest {
 
 	@Test
 	public void verifyTransactionShouldReturnTrueWithCorrectTransaction() {
-		ObjectNode saplObject = factory.objectNode();
+		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(TRANSACTION_HASH, TEST_TRANSACTION_HASH);
 		saplObject.put(FROM_ACCOUNT, TEST_FROM_ACCOUNT);
 		saplObject.put(TO_ACCOUNT, TEST_TO_ACCOUNT);
@@ -111,7 +105,7 @@ public class EthereumModuleTest {
 
 	@Test
 	public void verifyTransactionShouldReturnFalseWithFalseValue() {
-		ObjectNode saplObject = factory.objectNode();
+		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(TRANSACTION_HASH, TEST_TRANSACTION_HASH);
 		saplObject.put(FROM_ACCOUNT, TEST_FROM_ACCOUNT);
 		saplObject.put(TO_ACCOUNT, TEST_TO_ACCOUNT);
@@ -123,7 +117,7 @@ public class EthereumModuleTest {
 
 	@Test
 	public void verifyTransactionShouldReturnFalseWithFalseSender() {
-		ObjectNode saplObject = factory.objectNode();
+		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(TRANSACTION_HASH, TEST_TRANSACTION_HASH);
 		saplObject.put(FROM_ACCOUNT, TEST_FALSE_ACCOUNT);
 		saplObject.put(TO_ACCOUNT, TEST_TO_ACCOUNT);
@@ -135,7 +129,7 @@ public class EthereumModuleTest {
 
 	@Test
 	public void verifyTransactionShouldReturnFalseWithFalseRecipient() {
-		ObjectNode saplObject = factory.objectNode();
+		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(TRANSACTION_HASH, TEST_TRANSACTION_HASH);
 		saplObject.put(FROM_ACCOUNT, TEST_FROM_ACCOUNT);
 		saplObject.put(TO_ACCOUNT, TEST_FALSE_ACCOUNT);
@@ -147,7 +141,7 @@ public class EthereumModuleTest {
 
 	@Test
 	public void verifyTransactionShouldReturnFalseWithFalseTransactionHash() {
-		ObjectNode saplObject = factory.objectNode();
+		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(TRANSACTION_HASH, TEST_FALSE_TRANSACTION_HASH);
 		saplObject.put(FROM_ACCOUNT, TEST_FROM_ACCOUNT);
 		saplObject.put(TO_ACCOUNT, TEST_TO_ACCOUNT);
@@ -166,7 +160,7 @@ public class EthereumModuleTest {
 
 	@Test
 	public void verifyTransactionShouldReturnFalseWithWrongInput() {
-		ObjectNode saplObject = factory.objectNode();
+		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(WRONG_NAME, TEST_TRANSACTION_HASH);
 		saplObject.put(FROM_ACCOUNT, TEST_FROM_ACCOUNT);
 		saplObject.put(TO_ACCOUNT, TEST_TO_ACCOUNT);
