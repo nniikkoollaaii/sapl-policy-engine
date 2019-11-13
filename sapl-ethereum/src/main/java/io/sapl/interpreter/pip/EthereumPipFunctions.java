@@ -198,8 +198,11 @@ public class EthereumPipFunctions {
 			case "bytes":
 				return new DynamicBytes(binaryValue);
 			case "byte":
-				return new org.web3j.abi.datatypes.primitive.Byte(new java.lang.Byte(textValue));
+				return new org.web3j.abi.datatypes.primitive.Byte((byte) value.asInt());
 			case "char":
+				if (textValue.isEmpty()) {
+					throw new AttributeException("Expected a String with at least one char but got empty String.");
+				}
 				return new Char(new java.lang.Character(textValue.charAt(0)));
 			case "double":
 				return new org.web3j.abi.datatypes.primitive.Double(new java.lang.Double(textValue));
