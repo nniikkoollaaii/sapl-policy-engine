@@ -10,3 +10,10 @@ permit
 where
 //  subject.contractAddress == authorization &&
   subject.<ethereum.contract>[0].value;
+  
+policy "test_cert_policy"
+permit
+  action=="access" & resource=="certification"
+where
+//  subject.contractAddress == certification &&
+  subject.<ethereum.contract>[0].value;

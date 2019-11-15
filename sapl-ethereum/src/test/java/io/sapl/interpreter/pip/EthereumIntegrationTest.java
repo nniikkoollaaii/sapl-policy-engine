@@ -35,6 +35,7 @@ import io.sapl.api.pdp.AuthorizationSubscription;
 import io.sapl.api.pdp.Decision;
 import io.sapl.api.pip.AttributeException;
 import io.sapl.interpreter.pip.contracts.Authorization;
+import io.sapl.interpreter.pip.contracts.Certification;
 import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint;
 import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint.Builder.IndexType;
 import reactor.core.publisher.Flux;
@@ -42,6 +43,18 @@ import reactor.test.StepVerifier;
 
 @Ignore
 public class EthereumIntegrationTest {
+
+	private static final String CERTIFICATION = "certification";
+
+	private static final String STRING = "string";
+
+	private static final String HAS_CERTIFICATE = "hasCertificate";
+
+	private static final String INCREDIBLE_CERTIFICATE = "Incredible_Certificate";
+
+	private static final String ETHEREUM_CERTIFICATE = "Ethereum_Certificate";
+
+	private static final String SAPL_CERTIFICATE = "SAPL_Certificate";
 
 	private static final String WRONG_NAME = "wrongName";
 
@@ -107,6 +120,8 @@ public class EthereumIntegrationTest {
 
 	private static String authContractAddress;
 
+	private static String certContractAddress;
+
 	private static TransactionReceipt transactionReceiptUser2;
 
 	private static TransactionReceipt transactionReceiptUser3;
@@ -117,13 +132,12 @@ public class EthereumIntegrationTest {
 	// private testnet via one of the startChain scripts
 	// inside the folder ethereum-testnet.
 	// For the scripts to work properly please follow these steps:
-	// 1. On Windows: Download and install Geth
+	// 1. Download and install Geth
 	// (https://geth.ethereum.org/downloads/) (This has
-	// been tested with version 1.9.3). For Linux Geth is automatically provided.
+	// been tested with version 1.9.7).
 	// 2. Navigate to the ethereum-testnet folder inside the project in a terminal
 	// or the PowerShell.
-	// 3. Execute the startChain.ps1 script in Windows or the startChain script in
-	// Linux to initialize and start a private, local version of the Ethereum
+	// 3. Execute the startChain script to initialize and start a private, local version of the Ethereum
 	// blockchain.
 	// 4. Run the test.
 	// 5. After the test has finished, type exit in the Geth console to stop the
@@ -168,12 +182,52 @@ public class EthereumIntegrationTest {
 		authContractAddress = authContract.getContractAddress();
 		authContract.authorize(user2Address).send();
 
+		// Deploying the Certification contract
+		Certification certContract = Certification.deploy(web3j, credentials, new DefaultGasProvider()).send();
+		certContractAddress = certContract.getContractAddress();
+		certContract.issueCertificate(user2Address, SAPL_CERTIFICATE);
+		certContract.issueCertificate(user2Address, ETHEREUM_CERTIFICATE);
+		certContract.issueCertificate(user3Address, ETHEREUM_CERTIFICATE);
+		credentials = WalletUtils.loadCredentials("", KEYSTORE + USER2WALLET);
+		certContract.issueCertificate(user3Address, INCREDIBLE_CERTIFICATE);
+		certContract.issueCertificate(user4Address, INCREDIBLE_CERTIFICATE);
+
 	}
 
 	// Test with Policy
 
 	@Test
-	public void loadContractInformationShouldWorkInPolicy() {
+	public void loadContractInformationShouldWorkInCertificationPolicy() {
+		ObjectNode saplObject = JSON.objectNode();
+		saplObject.put(CONTRACT_ADDRESS, certContractAddress);
+		saplObject.put(FUNCTION_NAME, HAS_CERTIFICATE);
+		ArrayNode inputParams = JSON.arrayNode();
+		ObjectNode input1 = JSON.objectNode();
+		input1.put(TYPE, ADDRESS);
+		input1.put(VALUE, user2Address.substring(2));
+		inputParams.add(input1);
+		ObjectNode input2 = JSON.objectNode();
+		input2.put(TYPE, ADDRESS);
+		input2.put(VALUE, user1Address.substring(2));
+		inputParams.add(input2);
+		ObjectNode input3 = JSON.objectNode();
+		input3.put(TYPE, STRING);
+		input3.put(VALUE, SAPL_CERTIFICATE);
+		inputParams.add(input3);
+		saplObject.set(INPUT_PARAMS, inputParams);
+		ArrayNode outputParams = JSON.arrayNode();
+		outputParams.add(BOOL);
+		saplObject.set(OUTPUT_PARAMS, outputParams);
+		AuthorizationSubscription authzSubscription = new AuthorizationSubscription(saplObject, JSON.textNode(ACCESS),
+				JSON.textNode(CERTIFICATION), null);
+		final Flux<AuthorizationDecision> decision = pdp.decide(authzSubscription);
+		StepVerifier.create(decision).expectNextMatches(authzDecision -> authzDecision.getDecision() == Decision.PERMIT)
+				.thenCancel().verify();
+
+	}
+
+	@Test
+	public void loadContractInformationShouldWorkInAuthorizationPolicy() {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(CONTRACT_ADDRESS, authContractAddress);
 		saplObject.put(FUNCTION_NAME, IS_AUTHORIZED);
@@ -186,7 +240,6 @@ public class EthereumIntegrationTest {
 		ArrayNode outputParams = JSON.arrayNode();
 		outputParams.add(BOOL);
 		saplObject.set(OUTPUT_PARAMS, outputParams);
-		JsonNodeFactory JSON = JsonNodeFactory.instance;
 		AuthorizationSubscription authzSubscription = new AuthorizationSubscription(saplObject, JSON.textNode(ACCESS),
 				JSON.textNode(ETHEREUM), null);
 		final Flux<AuthorizationDecision> decision = pdp.decide(authzSubscription);
@@ -295,6 +348,54 @@ public class EthereumIntegrationTest {
 		assertTrue("False was returned although user2 was authorized and result should have been true.",
 				result.get(0).get(VALUE).asBoolean());
 
+	}
+
+	@Test
+	public void loadContractInformationShouldWorkWithCertificationContract() throws AttributeException {
+		ObjectNode saplObject = JSON.objectNode();
+		saplObject.put(CONTRACT_ADDRESS, certContractAddress);
+		saplObject.put(FUNCTION_NAME, HAS_CERTIFICATE);
+		ArrayNode inputParams = JSON.arrayNode();
+		ObjectNode input1 = JSON.objectNode();
+		input1.put(TYPE, ADDRESS);
+		input1.put(VALUE, user2Address.substring(2));
+		inputParams.add(input1);
+		ObjectNode input2 = JSON.objectNode();
+		input2.put(TYPE, ADDRESS);
+		input2.put(VALUE, user1Address.substring(2));
+		inputParams.add(input2);
+		ObjectNode input3 = JSON.objectNode();
+		input3.put(TYPE, STRING);
+		input3.put(VALUE, SAPL_CERTIFICATE);
+		inputParams.add(input3);
+		saplObject.set(INPUT_PARAMS, inputParams);
+		ArrayNode outputParams = JSON.arrayNode();
+		outputParams.add(BOOL);
+		saplObject.set(OUTPUT_PARAMS, outputParams);
+		JsonNode result = ethPip.loadContractInformation(saplObject, null).blockFirst();
+
+		assertTrue("False was returned although user2 was certified and result should have been true.",
+				result.get(0).get(VALUE).asBoolean());
+	}
+
+	@Test
+	public void loadContractInformationShouldReturnIssuer() throws AttributeException {
+		ObjectNode saplObject = JSON.objectNode();
+		saplObject.put(CONTRACT_ADDRESS, certContractAddress);
+		saplObject.put(FUNCTION_NAME, "certIssuerAddress");
+		ArrayNode inputParams = JSON.arrayNode();
+		ObjectNode input1 = JSON.objectNode();
+		input1.put(TYPE, ADDRESS);
+		input1.put(VALUE, user2Address.substring(2));
+		inputParams.add(input1);
+		saplObject.set(INPUT_PARAMS, inputParams);
+		ArrayNode outputParams = JSON.arrayNode();
+		outputParams.add(ADDRESS);
+		saplObject.set(OUTPUT_PARAMS, outputParams);
+		JsonNode result = ethPip.loadContractInformation(saplObject, null).blockFirst();
+
+		assertTrue("False was returned although user2 was certified and result should have been true.",
+				result.get(0).get(VALUE).asBoolean());
 	}
 
 	// web3_clientVersion
