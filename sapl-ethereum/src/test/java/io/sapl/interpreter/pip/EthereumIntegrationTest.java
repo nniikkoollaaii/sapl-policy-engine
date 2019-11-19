@@ -401,7 +401,7 @@ public class EthereumIntegrationTest {
 	// web3_clientVersion
 
 	@Test
-	public void web3ClientVersionShouldReturnTheClientVersion() throws IOException {
+	public void web3ClientVersionShouldReturnTheClientVersion() throws IOException, AttributeException {
 		String pipClientVersion = ethPip.web3ClientVersion(null, null).blockFirst().asText();
 		String web3jClientVersion = web3j.web3ClientVersion().send().getWeb3ClientVersion();
 		assertEquals("The web3ClientVersion from the PIP was not loaded correctly.", pipClientVersion,
@@ -410,7 +410,7 @@ public class EthereumIntegrationTest {
 
 	// web3_sha3
 	@Test
-	public void web3Sha3ShouldReturnCorrectValuer() throws IOException {
+	public void web3Sha3ShouldReturnCorrectValuer() throws IOException, AttributeException {
 		JsonNode saplObject = JSON.textNode(TEST_VALUE);
 		String pipResult = ethPip.web3Sha3(saplObject, null).blockFirst().textValue();
 		String web3jResult = web3j.web3Sha3(TEST_VALUE).send().getResult();
@@ -419,7 +419,7 @@ public class EthereumIntegrationTest {
 
 	// net_version
 	@Test
-	public void netVersionShouldReturnCorrectValue() throws IOException {
+	public void netVersionShouldReturnCorrectValue() throws IOException, AttributeException {
 		String pipResult = ethPip.netVersion(null, null).blockFirst().textValue();
 		String web3jResult = web3j.netVersion().send().getNetVersion();
 		assertEquals("The netVersion method did not work correctly.", pipResult, web3jResult);
@@ -428,14 +428,14 @@ public class EthereumIntegrationTest {
 
 	// net_listening
 	@Test
-	public void netListeningShouldReturnTrueWhenListeningToNetworkConnections() throws IOException {
+	public void netListeningShouldReturnTrueWhenListeningToNetworkConnections() throws IOException, AttributeException {
 		assertTrue("The netListening method did not return true although the Client by default is listening.",
 				ethPip.netListening(null, null).blockFirst().asBoolean());
 	}
 
 	// net_peerCount
 	@Test
-	public void netPeerCountShouldReturnTheCorrectNumber() throws IOException {
+	public void netPeerCountShouldReturnTheCorrectNumber() throws IOException, AttributeException {
 		BigInteger pipResult = ethPip.netPeerCount(null, null).blockFirst().bigIntegerValue();
 		BigInteger web3jResult = web3j.netPeerCount().send().getQuantity();
 		assertEquals("The NetPeerCount method did not return the correct number.", pipResult, web3jResult);

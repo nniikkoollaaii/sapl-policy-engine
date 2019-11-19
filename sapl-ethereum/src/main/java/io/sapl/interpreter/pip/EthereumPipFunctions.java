@@ -127,7 +127,7 @@ public class EthereumPipFunctions {
 
 	private static final String ETHEREUM_WALLET = "ethereumWallet";
 
-	private static final String WALLET_PASSWORD = "walletPassword";
+	private static final String WALLET_PASS = "walletPassword";
 
 	private static final String WALLET_FILE = "walletFile";
 
@@ -136,6 +136,10 @@ public class EthereumPipFunctions {
 
 	private static final String CREDENTIALS_LOADING_ERROR = ETHEREUM_WALLET + " has been found, but the credentials "
 			+ "couldn't be retrieved. Please ensure your Password and Wallet File Path were correct.";
+
+	private EthereumPipFunctions() {
+
+	}
 
 	public static Credentials loadCredentials(JsonNode saplObject, Map<String, JsonNode> variables) {
 
@@ -155,12 +159,11 @@ public class EthereumPipFunctions {
 	}
 
 	private static Credentials retrieveCredentials(JsonNode ethereumWallet) {
-		if (ethereumWallet.has(WALLET_PASSWORD) && ethereumWallet.has(WALLET_FILE)) {
-			String walletPassword = ethereumWallet.get(WALLET_PASSWORD).textValue();
+		if (ethereumWallet.has(WALLET_PASS) && ethereumWallet.has(WALLET_FILE)) {
+			String walletPassword = ethereumWallet.get(WALLET_PASS).textValue();
 			String walletFile = ethereumWallet.get(WALLET_FILE).textValue();
 			try {
-				Credentials credentials = WalletUtils.loadCredentials(walletPassword, walletFile);
-				return credentials;
+				return WalletUtils.loadCredentials(walletPassword, walletFile);
 			}
 			catch (IOException | CipherException e) {
 				logger.warn(CREDENTIALS_LOADING_ERROR);
@@ -203,11 +206,11 @@ public class EthereumPipFunctions {
 				if (textValue.isEmpty()) {
 					throw new AttributeException("Expected a String with at least one char but got empty String.");
 				}
-				return new Char(new java.lang.Character(textValue.charAt(0)));
+				return new Char(textValue.charAt(0));
 			case "double":
-				return new org.web3j.abi.datatypes.primitive.Double(new java.lang.Double(textValue));
+				return new org.web3j.abi.datatypes.primitive.Double(Double.valueOf(textValue));
 			case "float":
-				return new org.web3j.abi.datatypes.primitive.Float(new java.lang.Float(textValue));
+				return new org.web3j.abi.datatypes.primitive.Float(Float.valueOf(textValue));
 			case "uint":
 				return new Uint(bigIntegerValue);
 			case "int":
