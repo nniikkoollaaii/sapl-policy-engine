@@ -12,6 +12,8 @@ This function was added to provide a simple, user-friendly way of retreiving inf
 
 All types that can be used are listed in the convertToType-method of the [EthereumPipFunctions](https://github.com/heutelbeck/sapl-policy-engine/blob/sapl-ethereum/sapl-ethereum/src/main/java/io/sapl/interpreter/pip/EthereumPipFunctions.java).
 
+For examples of how to use the types with correct values you can have a look at the [EthereumPipFunctionsTest](https://github.com/heutelbeck/sapl-policy-engine/blob/sapl-ethereum/sapl-ethereum/src/test/java/io/sapl/interpreter/pip/EthereumPipFunctionsTest.java).
+
  
 Let's assume that you want to call the function `isAuthorized` from the following contract:
 
