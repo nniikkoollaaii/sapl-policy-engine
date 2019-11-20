@@ -175,9 +175,9 @@ public class EthereumPipFunctions {
 
 	}
 
-	public static Type convertToType(JsonNode inputParam) throws IOException, AttributeException {
+	public static Type convertToType(JsonNode inputParam) throws AttributeException, IOException {
 		if (inputParam == null) {
-			throw new AttributeException("An input Parameter for the Ethereum Function was null");
+			throw new AttributeException("An input Parameter for convertToType was null");
 		}
 
 		if (inputParam.has(TYPE) && inputParam.has(VALUE)) {
@@ -208,9 +208,9 @@ public class EthereumPipFunctions {
 				}
 				return new Char(textValue.charAt(0));
 			case "double":
-				return new org.web3j.abi.datatypes.primitive.Double(Double.valueOf(textValue));
+				return new org.web3j.abi.datatypes.primitive.Double(value.asDouble());
 			case "float":
-				return new org.web3j.abi.datatypes.primitive.Float(Float.valueOf(textValue));
+				return new org.web3j.abi.datatypes.primitive.Float(value.floatValue());
 			case "uint":
 				return new Uint(bigIntegerValue);
 			case "int":
@@ -236,9 +236,9 @@ public class EthereumPipFunctions {
 			case "int32":
 				return new Int32(bigIntegerValue);
 			case "uint40":
-				return new Int40(bigIntegerValue);
-			case "int40":
 				return new Uint40(bigIntegerValue);
+			case "int40":
+				return new Int40(bigIntegerValue);
 			case "uint48":
 				return new Uint48(bigIntegerValue);
 			case "int48":
