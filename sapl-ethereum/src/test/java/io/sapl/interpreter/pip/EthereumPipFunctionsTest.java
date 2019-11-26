@@ -4,6 +4,8 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.Test;
 import org.web3j.abi.datatypes.Address;
@@ -110,7 +112,11 @@ import org.web3j.abi.datatypes.generated.Uint80;
 import org.web3j.abi.datatypes.generated.Uint88;
 import org.web3j.abi.datatypes.generated.Uint96;
 import org.web3j.abi.datatypes.primitive.Char;
+import org.web3j.crypto.CipherException;
+import org.web3j.crypto.Credentials;
+import org.web3j.crypto.WalletUtils;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -118,6 +124,12 @@ import io.sapl.api.pip.AttributeException;
 
 @SuppressWarnings("rawtypes")
 public class EthereumPipFunctionsTest {
+
+	private static final String ETHEREUM_WALLET = "ethereumWallet";
+
+	private static final String WALLET_PASS = "walletPassword";
+
+	private static final String WALLET_FILE = "walletFile";
 
 	private static final int INT_TEST_VALUE = 123;
 
@@ -136,6 +148,16 @@ public class EthereumPipFunctionsTest {
 	private static final String TYPE = "type";
 
 	private static final String VALUE = "value";
+
+	private static final String KEYSTORE = "ethereum-testnet/ptn/keystore/";
+
+	private static final String USER1WALLET = "UTC--2019-05-10T11-32-05.64000000Z--70b6613e37616045a80a97e08e930e1e4d800039.json";
+
+	private static final String USER2WALLET = "UTC--2019-05-10T11-32-55.438000000Z--3f2cbea2185089ea5bbabbcd7616b215b724885c.json";
+
+	private static final String USER3WALLET = "UTC--2019-05-10T11-33-01.363000000Z--2978263a3ecacb01c75e51e3f74b37016ee3904c.json";
+
+	private static final String USER4WALLET = "UTC--2019-05-10T11-33-10.665000000Z--23a28c4cbad79cf61c8ad2e47d5134b06ef0bb73.json";
 
 	private static final byte[] BYTE_ARRAY = hexStringToByteArray(TEST_ADDRESS);
 
@@ -1195,6 +1217,37 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "wrongType");
 		inputParam.put(VALUE, "anyValue");
 		EthereumPipFunctions.convertToType(inputParam);
+	}
+
+	// loadCredentials
+	@Test
+	public void loadCredentialsShouldWorkWithCredentialsFromPolicy()
+			throws AttributeException, IOException, CipherException {
+		ObjectNode inputParam = JSON.objectNode();
+		ObjectNode wallet = JSON.objectNode();
+		wallet.put(WALLET_FILE, KEYSTORE + USER1WALLET);
+		wallet.put(WALLET_PASS, "");
+		inputParam.set(ETHEREUM_WALLET, wallet);
+		Credentials credentials = EthereumPipFunctions.loadCredentials(inputParam, null);
+		assertEquals("Credentials couldn't be loaded from saplObject.", credentials,
+				WalletUtils.loadCredentials("", KEYSTORE + USER1WALLET));
+		assertEquals("load Credentials didn't load an object of Credentials class.", credentials.getClass(),
+				Credentials.class);
+	}
+
+	@Test
+	public void loadCredentialsShouldWorkWithCredentialsFromVariables()
+			throws AttributeException, IOException, CipherException {
+		ObjectNode wallet = JSON.objectNode();
+		wallet.put(WALLET_FILE, KEYSTORE + USER1WALLET);
+		wallet.put(WALLET_PASS, "");
+		Map<String, JsonNode> inputVariables = new HashMap<String, JsonNode>();
+		inputVariables.put(ETHEREUM_WALLET, wallet);
+		Credentials credentials = EthereumPipFunctions.loadCredentials(JSON.nullNode(), inputVariables);
+		assertEquals("Credentials couldn't be loaded from saplObject.", credentials,
+				WalletUtils.loadCredentials("", KEYSTORE + USER1WALLET));
+		assertEquals("load Credentials didn't load an object of Credentials class.", credentials.getClass(),
+				Credentials.class);
 	}
 
 	private static byte[] hexStringToByteArray(String s) {

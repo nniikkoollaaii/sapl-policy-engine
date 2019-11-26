@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.web3j.abi.datatypes.Address;
 import org.web3j.abi.datatypes.Bool;
 import org.web3j.abi.datatypes.DynamicBytes;
@@ -123,8 +121,6 @@ public class EthereumPipFunctions {
 
 	private static final String TYPE = "type";
 
-	private static final Logger logger = LoggerFactory.getLogger(EthereumPipFunctions.class);
-
 	private static final String ETHEREUM_WALLET = "ethereumWallet";
 
 	private static final String WALLET_PASS = "walletPassword";
@@ -141,7 +137,8 @@ public class EthereumPipFunctions {
 
 	}
 
-	public static Credentials loadCredentials(JsonNode saplObject, Map<String, JsonNode> variables) {
+	public static Credentials loadCredentials(JsonNode saplObject, Map<String, JsonNode> variables)
+			throws AttributeException {
 
 		// First trying to load Credentials that only apply with the given policy.
 		if (saplObject.has(ETHEREUM_WALLET)) {
@@ -154,11 +151,10 @@ public class EthereumPipFunctions {
 			return retrieveCredentials(variables.get(ETHEREUM_WALLET));
 		}
 
-		logger.warn(NO_CREDENTIALS_WARNING);
-		return null;
+		throw new AttributeException(NO_CREDENTIALS_WARNING);
 	}
 
-	private static Credentials retrieveCredentials(JsonNode ethereumWallet) {
+	private static Credentials retrieveCredentials(JsonNode ethereumWallet) throws AttributeException {
 		if (ethereumWallet.has(WALLET_PASS) && ethereumWallet.has(WALLET_FILE)) {
 			String walletPassword = ethereumWallet.get(WALLET_PASS).textValue();
 			String walletFile = ethereumWallet.get(WALLET_FILE).textValue();
@@ -166,12 +162,11 @@ public class EthereumPipFunctions {
 				return WalletUtils.loadCredentials(walletPassword, walletFile);
 			}
 			catch (IOException | CipherException e) {
-				logger.warn(CREDENTIALS_LOADING_ERROR);
+				throw new AttributeException(CREDENTIALS_LOADING_ERROR);
 			}
 		}
 
-		logger.warn(NO_CREDENTIALS_WARNING);
-		return null;
+		throw new AttributeException(NO_CREDENTIALS_WARNING);
 
 	}
 
