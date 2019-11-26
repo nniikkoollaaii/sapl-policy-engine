@@ -35,15 +35,17 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 
 /**
- * The Ethereum Policy Information Point gives access to most methods of the JSON-RPC Ethereum API
- * (https://github.com/ethereum/wiki/wiki/JSON-RPC)
+ * The Ethereum Policy Information Point gives access to most methods of the JSON-RPC
+ * Ethereum API (https://github.com/ethereum/wiki/wiki/JSON-RPC)
  *
- * Excluded are the deprecated methods eth_getCompilers, eth_compileSolidity, eth_compileLLL and eth_compileSerpent.
- * Further excluded are all db_ methods as they are deprecated and will be removed. Also excluded is the eth_getProof
- * method as at time of writing this there doesn't exist an implementation in the Web3j API.
+ * Excluded are the deprecated methods eth_getCompilers, eth_compileSolidity,
+ * eth_compileLLL and eth_compileSerpent. Further excluded are all db_ methods as they are
+ * deprecated and will be removed. Also excluded is the eth_getProof method as at time of
+ * writing this there doesn't exist an implementation in the Web3j API.
  *
- * Furthermore the methods verifyTransaction and loadContractInformation are not part of the JSON RPC API but are
- * considered to be a more user friendly implementation of the most common use cases.
+ * Furthermore the methods verifyTransaction and loadContractInformation are not part of
+ * the JSON RPC API but are considered to be a more user friendly implementation of the
+ * most common use cases.
  */
 
 @Slf4j
@@ -122,9 +124,11 @@ public class EthereumPolicyInformationPoint {
 	 * "transactionHash" : The hash of the transaction that should be verified <br>
 	 * "fromAccount" : The adress of the account the transaction is send from <br>
 	 * "toAccount" : The adress of the account that receives the transaction <br>
-	 * "transactionValue" : A BigInteger that represents the value of the transaction in Wei
+	 * "transactionValue" : A BigInteger that represents the value of the transaction in
+	 * Wei
 	 * @param variables is unused here
-	 * @return A single JsonNode that has boolean value true if the transaction has taken place and false otherwise
+	 * @return A single JsonNode that has boolean value true if the transaction has taken
+	 * place and false otherwise
 	 * @throws AttributeException
 	 */
 	@Attribute(name = "transaction", docs = "Returns true, if a transaction has taken place and false otherwise.")
@@ -157,14 +161,17 @@ public class EthereumPolicyInformationPoint {
 	 * "fromAccount" : (Optional) The account that makes the request <br>
 	 * "contractAddress" : The address of the called contract <br>
 	 * "functionName" : The name of the called function. <br>
-	 * "inputParams" : A Json ArrayNode that contains a tuple of "type" and "value" for each input parameter. Example:
-	 * [{"type" : "uint32", "value" : 45},{"type" : "bool", "value" : "true"}] <br>
-	 * "outputParams" : A Json ArrayNode that contains the return types. Example: ["address","bool"] <br>
+	 * "inputParams" : A Json ArrayNode that contains a tuple of "type" and "value" for
+	 * each input parameter. Example: [{"type" : "uint32", "value" : 45},{"type" : "bool",
+	 * "value" : "true"}] <br>
+	 * "outputParams" : A Json ArrayNode that contains the return types. Example:
+	 * ["address","bool"] <br>
 	 * All types that can be used are listed in the getType-method of the <a href=
 	 * "https://github.com/web3j/web3j/blob/master/abi/src/main/java/org/web3j/abi/datatypes/AbiTypes.java">AbiTypes</a>.
 	 * @param variables is unused here
-	 * @return The return value(s) of the called contract function as an Array Node. Each node entry contains two
-	 * values, "value" with the return value and "typeAsString" with the return type. Example for a node entry:
+	 * @return The return value(s) of the called contract function as an Array Node. Each
+	 * node entry contains two values, "value" with the return value and "typeAsString"
+	 * with the return type. Example for a node entry:
 	 * {"value":true,"typeAsString":"bool"}
 	 * @throws AttributeException
 	 */
@@ -408,7 +415,8 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "eth_getBlockTransactionCountByHash", docs = "Returns the number of transactions in a block from a block matching the given block hash.")
+	@Attribute(name = "eth_getBlockTransactionCountByHash",
+			docs = "Returns the number of transactions in a block from a block matching the given block hash.")
 	public Flux<JsonNode> ethGetBlockTransactionCountByHash(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
@@ -422,7 +430,8 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "eth_getBlockTransactionCountByNumber", docs = "Returns the number of transactions in a block matching the given block number.")
+	@Attribute(name = "eth_getBlockTransactionCountByNumber",
+			docs = "Returns the number of transactions in a block matching the given block number.")
 	public Flux<JsonNode> ethGetBlockTransactionCountByNumber(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
@@ -436,7 +445,8 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "eth_getUncleCountByBlockHash", docs = "Returns the number of uncles in a block from a block matching the given block hash.")
+	@Attribute(name = "eth_getUncleCountByBlockHash",
+			docs = "Returns the number of uncles in a block from a block matching the given block hash.")
 	public Flux<JsonNode> ethGetUncleCountByBlockHash(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
@@ -449,7 +459,8 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "eth_getUncleCountByBlockNumber", docs = "Returns the number of uncles in a block from a block matching the given block number.")
+	@Attribute(name = "eth_getUncleCountByBlockNumber",
+			docs = "Returns the number of uncles in a block from a block matching the given block number.")
 	public Flux<JsonNode> ethGetUncleCountByBlockNumber(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
@@ -489,7 +500,8 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "eth_sendTransaction", docs = "Creates new message call transaction or a contract creation, if the data field contains code.")
+	@Attribute(name = "eth_sendTransaction",
+			docs = "Creates new message call transaction or a contract creation, if the data field contains code.")
 	public Flux<JsonNode> ethSendTransaction(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
@@ -505,7 +517,8 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "eth_sendRawTransaction", docs = "Creates new message call transaction or a contract creation for signed transactions.")
+	@Attribute(name = "eth_sendRawTransaction",
+			docs = "Creates new message call transaction or a contract creation for signed transactions.")
 	public Flux<JsonNode> ethSendRawTransaction(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
@@ -518,7 +531,8 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "eth_call", docs = "Executes a new message call immediately without creating a transaction on the block chain.")
+	@Attribute(name = "eth_call",
+			docs = "Executes a new message call immediately without creating a transaction on the block chain.")
 	public Flux<JsonNode> ethCall(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
 		try {
 			return convertToFlux(web3j.ethCall(
@@ -533,7 +547,8 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "eth_estimateGas", docs = "Generates and returns an estimate of how much gas is necessary to allow the transaction to complete.")
+	@Attribute(name = "eth_estimateGas",
+			docs = "Generates and returns an estimate of how much gas is necessary to allow the transaction to complete.")
 	public Flux<JsonNode> ethEstimateGas(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
@@ -575,7 +590,8 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "eth_getTransactionByHash", docs = "Returns the information about a transaction requested by transaction hash.")
+	@Attribute(name = "eth_getTransactionByHash",
+			docs = "Returns the information about a transaction requested by transaction hash.")
 	public Flux<JsonNode> ethGetTransactionByHash(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
@@ -588,7 +604,8 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "eth_getTransactionByBlockHashAndIndex", docs = "Returns information about a transaction by block hash and transaction index position.")
+	@Attribute(name = "eth_getTransactionByBlockHashAndIndex",
+			docs = "Returns information about a transaction by block hash and transaction index position.")
 	public Flux<JsonNode> ethGetTransactionByBlockHashAndIndex(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
@@ -602,7 +619,8 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "eth_getTransactionByBlockNumberAndIndex", docs = "Returns information about a transaction by block number and transaction index position.")
+	@Attribute(name = "eth_getTransactionByBlockNumberAndIndex",
+			docs = "Returns information about a transaction by block number and transaction index position.")
 	public Flux<JsonNode> ethGetTransactionByBlockNumberAndIndex(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
@@ -636,7 +654,8 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "eth_getUncleByBlockHashAndIndex", docs = "Returns information about a uncle of a block by hash and uncle index position.")
+	@Attribute(name = "eth_getUncleByBlockHashAndIndex",
+			docs = "Returns information about a uncle of a block by hash and uncle index position.")
 	public Flux<JsonNode> ethGetUncleByBlockHashAndIndex(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
@@ -650,7 +669,8 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "eth_getUncleByBlockNumberAndIndex", docs = "Returns information about a uncle of a block by number and uncle index position.")
+	@Attribute(name = "eth_getUncleByBlockNumberAndIndex",
+			docs = "Returns information about a uncle of a block by number and uncle index position.")
 	public Flux<JsonNode> ethGetUncleByBlockNumberAndIndex(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
@@ -664,7 +684,8 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "eth_newBlockFilter", docs = "Creates a filter in the node, to notify when a new block arrives. To check if the state has changed, call eth_getFilterChanges.")
+	@Attribute(name = "eth_newBlockFilter",
+			docs = "Creates a filter in the node, to notify when a new block arrives. To check if the state has changed, call eth_getFilterChanges.")
 	public Flux<JsonNode> ethNewBlockFilter(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
@@ -677,7 +698,8 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "eth_newPendingTransactionFilter", docs = "Creates a filter in the node, to notify when new pending transactions arrive. To check if the state has changed, call eth_getFilterChanges.")
+	@Attribute(name = "eth_newPendingTransactionFilter",
+			docs = "Creates a filter in the node, to notify when new pending transactions arrive. To check if the state has changed, call eth_getFilterChanges.")
 	public Flux<JsonNode> ethNewPendingTransactionFilter(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
@@ -690,7 +712,8 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "eth_uninstallFilter", docs = "Uninstalls a filter with given id. Should always be called when watch is no longer needed. Additonally Filters timeout when they aren't requested with eth_getFilterChanges for a period of time.")
+	@Attribute(name = "eth_uninstallFilter",
+			docs = "Uninstalls a filter with given id. Should always be called when watch is no longer needed. Additonally Filters timeout when they aren't requested with eth_getFilterChanges for a period of time.")
 	public Flux<JsonNode> ethUninstallFilter(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
@@ -703,7 +726,8 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "eth_getFilterChanges", docs = "Polling method for a filter, which returns an array of logs which occurred since last poll.")
+	@Attribute(name = "eth_getFilterChanges",
+			docs = "Polling method for a filter, which returns an array of logs which occurred since last poll.")
 	public Flux<JsonNode> ethGetFilterChanges(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
@@ -741,7 +765,8 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "eth_getWork", docs = "Returns the hash of the current block, the seedHash, and the boundary condition to be met (\"target\").")
+	@Attribute(name = "eth_getWork",
+			docs = "Returns the hash of the current block, the seedHash, and the boundary condition to be met (\"target\").")
 	public Flux<JsonNode> ethGetWork(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
 		try {
 			return convertToFlux(web3j.ethGetWork().send());
@@ -857,7 +882,8 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "shh_newFilter", docs = "Creates filter to notify, when client receives whisper message matching the filter options.")
+	@Attribute(name = "shh_newFilter",
+			docs = "Creates filter to notify, when client receives whisper message matching the filter options.")
 	public Flux<JsonNode> shhNewFilter(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
 		try {
 			return convertToFlux(web3j.shhNewFilter(mapper.convertValue(saplObject, ShhFilter.class)).send());
@@ -869,7 +895,8 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "shh_uninstallFilter", docs = "Uninstalls a filter with given id. Should always be called when watch is no longer needed. Additonally Filters timeout when they aren't requested with shh_getFilterChanges for a period of time.")
+	@Attribute(name = "shh_uninstallFilter",
+			docs = "Uninstalls a filter with given id. Should always be called when watch is no longer needed. Additonally Filters timeout when they aren't requested with shh_getFilterChanges for a period of time.")
 	public Flux<JsonNode> shhUninstallFilter(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
@@ -882,7 +909,8 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "shh_getFilterChanges", docs = "Polling method for whisper filters. Returns new messages since the last call of this method.")
+	@Attribute(name = "shh_getFilterChanges",
+			docs = "Polling method for whisper filters. Returns new messages since the last call of this method.")
 	public Flux<JsonNode> shhGetFilterChanges(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
@@ -895,7 +923,8 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "shh_getMessages", docs = "Get all messages matching a filter. Unlike shh_getFilterChanges this returns all messages.")
+	@Attribute(name = "shh_getMessages",
+			docs = "Get all messages matching a filter. Unlike shh_getFilterChanges this returns all messages.")
 	public Flux<JsonNode> shhGetMessages(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
@@ -924,12 +953,14 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	/**
-	 * Determines the DefaultBlockParameter needed for some Ethereum API calls. This Parameter can be a BigInteger
-	 * number or one of the Strings "latest", "earliest" or "pending". If the DefaultBlockParameter is not provided in
-	 * the policy, the latest Block is used. In this case there is also a warning.
+	 * Determines the DefaultBlockParameter needed for some Ethereum API calls. This
+	 * Parameter can be a BigInteger number or one of the Strings "latest", "earliest" or
+	 * "pending". If the DefaultBlockParameter is not provided in the policy, the latest
+	 * Block is used. In this case there is also a warning.
 	 *
-	 * Please use the following names in your SAPL Object: The above mentioned value of DBPBI if you want to use a
-	 * BigInteger. The above mentioned value of DBPS if you want to use a String.
+	 * Please use the following names in your SAPL Object: The above mentioned value of
+	 * DBPBI if you want to use a BigInteger. The above mentioned value of DBPS if you
+	 * want to use a String.
 	 * @param saplObject
 	 * @return
 	 */

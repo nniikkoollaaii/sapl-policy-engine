@@ -137,7 +137,8 @@ public class EthereumIntegrationTest {
 	// been tested with version 1.9.7).
 	// 2. Navigate to the ethereum-testnet folder inside the project in a terminal
 	// or the PowerShell.
-	// 3. Execute the startChain script to initialize and start a private, local version of the Ethereum
+	// 3. Execute the startChain script to initialize and start a private, local version
+	// of the Ethereum
 	// blockchain.
 	// 4. Run the test.
 	// 5. After the test has finished, type exit in the Geth console to stop the
