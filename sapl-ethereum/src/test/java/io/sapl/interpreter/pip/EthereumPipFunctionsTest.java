@@ -153,12 +153,6 @@ public class EthereumPipFunctionsTest {
 
 	private static final String USER1WALLET = "UTC--2019-05-10T11-32-05.64000000Z--70b6613e37616045a80a97e08e930e1e4d800039.json";
 
-	private static final String USER2WALLET = "UTC--2019-05-10T11-32-55.438000000Z--3f2cbea2185089ea5bbabbcd7616b215b724885c.json";
-
-	private static final String USER3WALLET = "UTC--2019-05-10T11-33-01.363000000Z--2978263a3ecacb01c75e51e3f74b37016ee3904c.json";
-
-	private static final String USER4WALLET = "UTC--2019-05-10T11-33-10.665000000Z--23a28c4cbad79cf61c8ad2e47d5134b06ef0bb73.json";
-
 	private static final byte[] BYTE_ARRAY = hexStringToByteArray(TEST_ADDRESS);
 
 	private static final BigInteger TEST_BIG_INT = BigInteger.valueOf(1364961235);
