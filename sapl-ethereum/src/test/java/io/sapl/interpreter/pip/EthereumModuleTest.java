@@ -10,14 +10,15 @@ import java.math.BigInteger;
 import java.util.Optional;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.Web3jService;
 import org.web3j.protocol.core.methods.response.EthTransaction;
@@ -26,7 +27,7 @@ import org.web3j.protocol.core.methods.response.Transaction;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-@PrepareForTest(Web3j.class)
+@PrepareForTest({ Web3j.class, Web3jService.class })
 @RunWith(PowerMockRunner.class)
 public class EthereumModuleTest {
 
@@ -56,8 +57,6 @@ public class EthereumModuleTest {
 
 	private static final JsonNodeFactory JSON = JsonNodeFactory.instance;
 
-	private static final Logger logger = LoggerFactory.getLogger(EthereumIntegrationTest.class);
-
 	@Mock
 	private static Web3jService web3jService;
 
@@ -72,27 +71,26 @@ public class EthereumModuleTest {
 
 	private Optional<Transaction> optionalTransactionFromChain;
 
+	@Rule
+	public MockitoRule mockitoRule = MockitoJUnit.rule();
+
 	@Before
 	public void init() throws IOException {
-
-		optionalTransactionFromChain = Optional.of(transactionFromChain);
 		mockStatic(Web3j.class);
 		when(Web3j.build(web3jService)).thenReturn(web3j);
-		when(Web3j.build(web3jService)).thenReturn(web3j);
-		when(web3j.ethGetTransactionByHash(TEST_TRANSACTION_HASH).send()).thenReturn(ethTransaction);
-		when(ethTransaction.getTransaction()).thenReturn(optionalTransactionFromChain);
-		when(transactionFromChain.getFrom()).thenReturn(TEST_FROM_ACCOUNT);
-		when(transactionFromChain.getTo()).thenReturn(TEST_TO_ACCOUNT);
-		when(transactionFromChain.getValue()).thenReturn(TEST_TRANSACTION_VALUE);
-
 		ethPip = new EthereumPolicyInformationPoint(web3jService);
-
 	}
 
 	// verifyTransaction
 
 	@Test
-	public void verifyTransactionShouldReturnTrueWithCorrectTransaction() {
+	public void verifyTransactionShouldReturnTrueWithCorrectTransaction() throws IOException {
+		optionalTransactionFromChain = Optional.of(transactionFromChain);
+		when(web3j.ethGetTransactionByHash(TEST_TRANSACTION_HASH).send()).thenReturn(ethTransaction);
+		when(ethTransaction.getTransaction()).thenReturn(optionalTransactionFromChain);
+		when(transactionFromChain.getFrom()).thenReturn(TEST_FROM_ACCOUNT);
+		when(transactionFromChain.getTo()).thenReturn(TEST_TO_ACCOUNT);
+		when(transactionFromChain.getValue()).thenReturn(TEST_TRANSACTION_VALUE);
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(TRANSACTION_HASH, TEST_TRANSACTION_HASH);
 		saplObject.put(FROM_ACCOUNT, TEST_FROM_ACCOUNT);
@@ -104,7 +102,13 @@ public class EthereumModuleTest {
 	}
 
 	@Test
-	public void verifyTransactionShouldReturnFalseWithFalseValue() {
+	public void verifyTransactionShouldReturnFalseWithFalseValue() throws IOException {
+		optionalTransactionFromChain = Optional.of(transactionFromChain);
+		when(web3j.ethGetTransactionByHash(TEST_TRANSACTION_HASH).send()).thenReturn(ethTransaction);
+		when(ethTransaction.getTransaction()).thenReturn(optionalTransactionFromChain);
+		when(transactionFromChain.getFrom()).thenReturn(TEST_FROM_ACCOUNT);
+		when(transactionFromChain.getTo()).thenReturn(TEST_TO_ACCOUNT);
+		when(transactionFromChain.getValue()).thenReturn(TEST_TRANSACTION_VALUE);
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(TRANSACTION_HASH, TEST_TRANSACTION_HASH);
 		saplObject.put(FROM_ACCOUNT, TEST_FROM_ACCOUNT);
@@ -116,7 +120,12 @@ public class EthereumModuleTest {
 	}
 
 	@Test
-	public void verifyTransactionShouldReturnFalseWithFalseSender() {
+	public void verifyTransactionShouldReturnFalseWithFalseSender() throws IOException {
+		optionalTransactionFromChain = Optional.of(transactionFromChain);
+		when(web3j.ethGetTransactionByHash(TEST_TRANSACTION_HASH).send()).thenReturn(ethTransaction);
+		when(ethTransaction.getTransaction()).thenReturn(optionalTransactionFromChain);
+		when(transactionFromChain.getFrom()).thenReturn(TEST_FROM_ACCOUNT);
+		when(transactionFromChain.getValue()).thenReturn(TEST_TRANSACTION_VALUE);
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(TRANSACTION_HASH, TEST_TRANSACTION_HASH);
 		saplObject.put(FROM_ACCOUNT, TEST_FALSE_ACCOUNT);
@@ -128,7 +137,13 @@ public class EthereumModuleTest {
 	}
 
 	@Test
-	public void verifyTransactionShouldReturnFalseWithFalseRecipient() {
+	public void verifyTransactionShouldReturnFalseWithFalseRecipient() throws IOException {
+		optionalTransactionFromChain = Optional.of(transactionFromChain);
+		when(web3j.ethGetTransactionByHash(TEST_TRANSACTION_HASH).send()).thenReturn(ethTransaction);
+		when(ethTransaction.getTransaction()).thenReturn(optionalTransactionFromChain);
+		when(transactionFromChain.getFrom()).thenReturn(TEST_FROM_ACCOUNT);
+		when(transactionFromChain.getTo()).thenReturn(TEST_TO_ACCOUNT);
+		when(transactionFromChain.getValue()).thenReturn(TEST_TRANSACTION_VALUE);
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(TRANSACTION_HASH, TEST_TRANSACTION_HASH);
 		saplObject.put(FROM_ACCOUNT, TEST_FROM_ACCOUNT);
@@ -140,7 +155,8 @@ public class EthereumModuleTest {
 	}
 
 	@Test
-	public void verifyTransactionShouldReturnFalseWithFalseTransactionHash() {
+	public void verifyTransactionShouldReturnFalseWithFalseTransactionHash() throws IOException {
+		when(web3j.ethGetTransactionByHash(TEST_TRANSACTION_HASH).send()).thenReturn(ethTransaction);
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(TRANSACTION_HASH, TEST_FALSE_TRANSACTION_HASH);
 		saplObject.put(FROM_ACCOUNT, TEST_FROM_ACCOUNT);
@@ -152,14 +168,17 @@ public class EthereumModuleTest {
 	}
 
 	@Test
-	public void verifyTransactionShouldReturnFalseWithNullInput() {
+	public void verifyTransactionShouldReturnFalseWithNullInput() throws IOException {
+		when(web3j.ethGetTransactionByHash(TEST_TRANSACTION_HASH).send()).thenReturn(ethTransaction);
+		when(transactionFromChain.getValue()).thenReturn(TEST_TRANSACTION_VALUE);
 		boolean result = ethPip.verifyTransaction(null, null).blockFirst().asBoolean();
 		assertFalse("Transaction was not validated as false although the input was null.", result);
 
 	}
 
 	@Test
-	public void verifyTransactionShouldReturnFalseWithWrongInput() {
+	public void verifyTransactionShouldReturnFalseWithWrongInput() throws IOException {
+		when(web3j.ethGetTransactionByHash(TEST_TRANSACTION_HASH).send()).thenReturn(ethTransaction);
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(WRONG_NAME, TEST_TRANSACTION_HASH);
 		saplObject.put(FROM_ACCOUNT, TEST_FROM_ACCOUNT);
@@ -169,5 +188,7 @@ public class EthereumModuleTest {
 		assertFalse("Transaction was not validated as false although the input was erroneous.", result);
 
 	}
+
+	// loadContractInformation
 
 }

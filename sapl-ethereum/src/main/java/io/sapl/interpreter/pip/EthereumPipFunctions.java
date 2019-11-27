@@ -110,11 +110,14 @@ import org.web3j.abi.datatypes.primitive.Char;
 import org.web3j.crypto.CipherException;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.WalletUtils;
+import org.web3j.protocol.core.DefaultBlockParameter;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 import io.sapl.api.pip.AttributeException;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class EthereumPipFunctions {
 
 	private static final String VALUE = "value";
@@ -133,7 +136,46 @@ public class EthereumPipFunctions {
 	private static final String CREDENTIALS_LOADING_ERROR = ETHEREUM_WALLET + " has been found, but the credentials "
 			+ "couldn't be retrieved. Please ensure your Password and Wallet File Path were correct.";
 
+	private static final String DEFAULT_BLOCK_PARAMETER_BIG_INT = "defaultBlockParameterBigInt";
+
+	private static final String DEFAULT_BLOCK_PARAMETER_STRING = "defaultBlockParameterString";
+
+	private static final String LATEST = "latest";
+
+	private static final String EARLIEST = "earliest";
+
+	private static final String PENDING = "pending";
+
+	private static final String NO_DBP_WARNING = "The DefaultBlockParameter was not correctly provided. By default the latest Block is used.";
+
 	private EthereumPipFunctions() {
+
+	}
+
+	/**
+	 * Determines the DefaultBlockParameter needed for some Ethereum API calls. This Parameter can be a BigInteger
+	 * number or one of the Strings "latest", "earliest" or "pending". If the DefaultBlockParameter is not provided in
+	 * the policy, the latest Block is used. In this case there is also a warning.
+	 *
+	 * Please use the following names in your SAPL Object: The above mentioned value of DBPBI if you want to use a
+	 * BigInteger. The above mentioned value of DBPS if you want to use a String.
+	 * @param saplObject
+	 * @return
+	 */
+	protected static DefaultBlockParameter extractDefaultBlockParameter(JsonNode saplObject) {
+		if (saplObject.has(DEFAULT_BLOCK_PARAMETER_BIG_INT)) {
+			JsonNode dbp = saplObject.get(DEFAULT_BLOCK_PARAMETER_BIG_INT);
+			BigInteger dbpValue = dbp.bigIntegerValue();
+			return DefaultBlockParameter.valueOf(dbpValue);
+		}
+		if (saplObject.has(DEFAULT_BLOCK_PARAMETER_STRING)) {
+			String dbpsName = saplObject.get(DEFAULT_BLOCK_PARAMETER_STRING).textValue();
+			if (dbpsName.equals(EARLIEST) || dbpsName.equals(LATEST) || dbpsName.equals(PENDING))
+				return DefaultBlockParameter.valueOf(dbpsName);
+		}
+
+		LOGGER.warn(NO_DBP_WARNING);
+		return DefaultBlockParameter.valueOf(LATEST);
 
 	}
 
