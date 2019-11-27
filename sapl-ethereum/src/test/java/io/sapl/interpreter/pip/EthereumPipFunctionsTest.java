@@ -149,7 +149,7 @@ public class EthereumPipFunctionsTest {
 
 	private static final String VALUE = "value";
 
-	private static final String KEYSTORE = "ethereum-testnet/ptn/keystore/";
+	private static final String KEYSTORE = "src/test/resources/keystore/";
 
 	private static final String USER1WALLET = "UTC--2019-05-10T11-32-05.64000000Z--70b6613e37616045a80a97e08e930e1e4d800039.json";
 
@@ -1248,6 +1248,51 @@ public class EthereumPipFunctionsTest {
 				WalletUtils.loadCredentials("", KEYSTORE + USER1WALLET));
 		assertEquals("load Credentials didn't load an object of Credentials class.", credentials.getClass(),
 				Credentials.class);
+	}
+
+	@Test(expected = AttributeException.class)
+	public void loadCredentialsShouldThrowAttributeExceptionWhenNoEthereumWallet() throws AttributeException {
+		Map<String, JsonNode> inputVariables = new HashMap<String, JsonNode>();
+		EthereumPipFunctions.loadCredentials(JSON.nullNode(), inputVariables);
+	}
+
+	@Test(expected = AttributeException.class)
+	public void loadCredentialsShouldThrowAttributeExceptionWhenNoWalletFileLocationSpecified()
+			throws AttributeException {
+		ObjectNode wallet = JSON.objectNode();
+		wallet.put(WALLET_PASS, "");
+		Map<String, JsonNode> inputVariables = new HashMap<String, JsonNode>();
+		inputVariables.put(ETHEREUM_WALLET, wallet);
+		EthereumPipFunctions.loadCredentials(JSON.nullNode(), inputVariables);
+	}
+
+	@Test(expected = AttributeException.class)
+	public void loadCredentialsShouldThrowAttributeExceptionWhenNoWalletPassword() throws AttributeException {
+		ObjectNode wallet = JSON.objectNode();
+		wallet.put(WALLET_FILE, KEYSTORE + USER1WALLET);
+		Map<String, JsonNode> inputVariables = new HashMap<String, JsonNode>();
+		inputVariables.put(ETHEREUM_WALLET, wallet);
+		EthereumPipFunctions.loadCredentials(JSON.nullNode(), inputVariables);
+	}
+
+	@Test(expected = AttributeException.class)
+	public void loadCredentialsShouldThrowAttributeExceptionWhenNoWalletFile() throws AttributeException {
+		ObjectNode wallet = JSON.objectNode();
+		wallet.put(WALLET_FILE, KEYSTORE + "nonExistingWallet");
+		wallet.put(WALLET_PASS, "");
+		Map<String, JsonNode> inputVariables = new HashMap<String, JsonNode>();
+		inputVariables.put(ETHEREUM_WALLET, wallet);
+		EthereumPipFunctions.loadCredentials(JSON.nullNode(), inputVariables);
+	}
+
+	@Test(expected = AttributeException.class)
+	public void loadCredentialsShouldThrowAttributeExceptionWhenWrongPassword() throws AttributeException {
+		ObjectNode wallet = JSON.objectNode();
+		wallet.put(WALLET_FILE, KEYSTORE + USER1WALLET);
+		wallet.put(WALLET_PASS, "wrongPassword");
+		Map<String, JsonNode> inputVariables = new HashMap<String, JsonNode>();
+		inputVariables.put(ETHEREUM_WALLET, wallet);
+		EthereumPipFunctions.loadCredentials(JSON.nullNode(), inputVariables);
 	}
 
 	private static byte[] hexStringToByteArray(String s) {
