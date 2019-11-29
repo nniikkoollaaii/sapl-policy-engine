@@ -15,57 +15,96 @@ All types that can be used are listed in the convertToType-method of the [Ethere
 For examples of how to use the types with correct values you can have a look at the [EthereumPipFunctionsTest](https://github.com/heutelbeck/sapl-policy-engine/blob/sapl-ethereum/sapl-ethereum/src/test/java/io/sapl/interpreter/pip/EthereumPipFunctionsTest.java).
 
  
-Let's assume that you want to call the function `isAuthorized` from the following contract:
+Let's assume that you want to call the function `hasCertificate` from the following contract:
 
 ```solidity
-contract Authorization {
+contract Device_Operator_Certificate {
 
-  struct User {
-    bool authorized;
+  // The certification authority decides who can issue a certificate
+  address public certificationAuthority;
+
+  string public certificateName = "Device_Operator_Certificate";
+
+  uint public timeValid = 365 days;
+
+  struct Certificate {
+    bool obtained;
+    address issuer;
+    uint issueTime;
   }
 
-  address public admin;
+  // contains true for addresses that are authorized to issue a certificate
+  mapping (address => bool) authorizedIssuers;
 
-  mapping(address => User) public users;
+  // contains all certificates that have been issued
+  mapping (address => Certificate) certificateHolders;
 
+  // The creator of the contract is also the certification authority
   constructor() public {
-    admin = msg.sender;
+    certificationAuthority = msg.sender;
   }
 
-  function authorize (address user) public {
+  function issueCertificate (address graduate) public {
     require(
-      msg.sender == admin,
-      "Only the admin can authorize users."
+      authorizedIssuers[msg.sender],
+      "Only the authorized issuers can issue certificates."
     );
 
-    users[user].authorized = true;
+    certificateHolders[graduate].obtained = true;
+    certificateHolders[graduate].issuer = msg.sender;
+    // The issue time is the timestamp of the block which contains the
+    // transaction that actually issues the certificate
+    certificateHolders[graduate].issueTime = block.timestamp;
   }
 
-  function unauthorize (address user) public {
+  function revokeCertificate (address graduate) public {
     require(
-      msg.sender == admin,
-      "Only the admin can unauthorize users."
-    );
-
-    users[user].authorized = false;
+      certificateHolders[graduate].issuer == msg.sender,
+      "Only the issuer can revoke the certificate."
+      );
+    certificateHolders[graduate].obtained = false;
   }
 
-  function isAuthorized(address user) public view
-          returns (bool authorized_) {
-    authorized_ = users[user].authorized;
+
+  function hasCertificate(address graduate) public view
+          returns (bool certificateOwned) {
+    // verifies if the certificate is still valid
+    // here block.timestamp refers to the timestamp of the block the request
+    // is made to (usually the latest)
+    if (block.timestamp < certificateHolders[graduate].issueTime + timeValid) {
+      return certificateHolders[graduate].obtained;
+    }
+    return false;
   }
+
+  function addIssuer (address newIssuer) public {
+    require(
+      msg.sender == certificationAuthority,
+      "Only the Certification Authority can name new certificate issuers."
+      );
+    authorizedIssuers[newIssuer] = true;
+  }
+
+  function removeIssuer (address issuerToRemove) public {
+    require(
+      msg.sender == certificationAuthority,
+      "Only the Certification Authority can remove certificate issuers."
+      );
+    authorizedIssuers[issuerToRemove] = false;
+  }
+
 }
 ```
 
 The contract has been published to the address `0x2d53b58c67ba813c2d1962f8a712ef5533c07c59`.
-Furthermore, you want to know if the Ethereum user with the address `3f2cbea2185089ea5bbabbcd7616b215b724885c` is authorized.
+Furthermore, you want to know if the Ethereum user with the address `3f2cbea2185089ea5bbabbcd7616b215b724885c` has a valid certificate.
 In this case your JsonNode should look like that:
 
 
 ```json
 {
 	"contractAddress":"0x2d53b58c67ba813c2d1962f8a712ef5533c07c59",
-	"functionName":"isAuthorized",
+	"functionName":"hasCertificate",
 	"inputParams":[{"type":"address","value":"3f2cbea2185089ea5bbabbcd7616b215b724885c"}],
 	"outputParams":["bool"]
 }
@@ -84,15 +123,15 @@ Using this in your Application you could have a policy set like this one:
 set "ethereumPolicies"
 deny-unless-permit
 //for subject.contractAddress == "0x2d53b58c67ba813c2d1962f8a712ef5533c07c59"
-//var authorization = "0x2d53b58c67ba813c2d1962f8a712ef5533c07c59";
+//var certificate_contract = "0x2d53b58c67ba813c2d1962f8a712ef5533c07c59";
 
 
 policy "test_eth_policy"
 permit
-  action=="access" & resource=="ethereum"
+  action=="operate" & resource=="device"
 where
-//  subject.contractAddress == authorization &&
-//  subject.functionName == "isAuthorized" &&
+//  subject.contractAddress == certificate_contract &&
+//  subject.functionName == "hasCertificate" &&
   subject.<ethereum.contract>[0].value;
 ```
 

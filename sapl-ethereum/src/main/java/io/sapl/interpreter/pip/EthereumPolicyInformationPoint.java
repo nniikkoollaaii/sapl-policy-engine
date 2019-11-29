@@ -182,7 +182,6 @@ public class EthereumPolicyInformationPoint {
 					.ethCall(org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction(fromAccount,
 							contractAddress, encodedFunction), extractDefaultBlockParameter(saplObject))
 					.send();
-
 			List<Type> output = FunctionReturnDecoder.decode(response.getValue(), function.getOutputParameters());
 
 			return convertToFlux(output);
