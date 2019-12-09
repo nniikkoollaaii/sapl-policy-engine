@@ -11,10 +11,13 @@ import java.math.BigInteger;
 import java.util.List;
 
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.WalletUtils;
 import org.web3j.protocol.Web3j;
@@ -23,6 +26,7 @@ import org.web3j.protocol.exceptions.TransactionException;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.tx.Transfer;
 import org.web3j.tx.gas.DefaultGasProvider;
+import org.web3j.utils.Async;
 import org.web3j.utils.Convert;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -145,9 +149,17 @@ public class EthereumIntegrationTest {
 	// blockchain. If you used the script, the leftovers of the blockchain should be
 	// automatically deleted.
 
+	@ClassRule
+	public static final GenericContainer besuContainer = new GenericContainer("hyperledger/besu:1.3.7-S")
+			.withExposedPorts(8545, 8546)
+			.withCommand("--miner-enabled", "--miner-coinbase=0xfe3b557e8fb62b89f4916b721be55ceb828dbd73",
+					"--rpc-http-enabled", "--network=dev")
+			.waitingFor(Wait.forHttp("/liveness").forStatusCode(200).forPort(8545));
+
 	@BeforeClass
 	public static void init() throws InterruptedException, TransactionException, Exception {
-		web3j = Web3j.build(new HttpService());
+		final Integer port = besuContainer.getMappedPort(8545);
+		web3j = Web3j.build(new HttpService("http://localhost:" + port), 500, Async.defaultExecutorService());
 		ethPip = new EthereumPolicyInformationPoint(new HttpService());
 
 		String path = "src/test/resources";

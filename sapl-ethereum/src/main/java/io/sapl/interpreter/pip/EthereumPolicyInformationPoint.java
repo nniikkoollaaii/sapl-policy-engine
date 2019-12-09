@@ -144,8 +144,8 @@ public class EthereumPolicyInformationPoint {
 	 * "inputParams" : A Json ArrayNode that contains a tuple of "type" and "value" for each input parameter. Example:
 	 * [{"type" : "uint32", "value" : 45},{"type" : "bool", "value" : "true"}] <br>
 	 * "outputParams" : A Json ArrayNode that contains the return types. Example: ["address","bool"] <br>
-	 * All types that can be used are listed in the getType-method of the <a href=
-	 * "https://github.com/web3j/web3j/blob/master/abi/src/main/java/org/web3j/abi/datatypes/AbiTypes.java">AbiTypes</a>.
+	 * All types that can be used are listed in the convertToType-method of the <a href=
+	 * "https://github.com/heutelbeck/sapl-policy-engine/blob/sapl-ethereum/sapl-ethereum/src/main/java/io/sapl/interpreter/pip/EthereumPipFunctions.java">EthereumPipFunctions</a>.
 	 * @param variables is unused here
 	 * @return The return value(s) of the called contract function as an Array Node. Each node entry contains two
 	 * values, "value" with the return value and "typeAsString" with the return type. Example for a node entry:
@@ -254,7 +254,7 @@ public class EthereumPolicyInformationPoint {
 	public Flux<JsonNode> ethProtocolVersion(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
-			return convertToFlux(web3j.ethProtocolVersion().send());
+			return convertToFlux(web3j.ethProtocolVersion().send().getProtocolVersion());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -266,7 +266,7 @@ public class EthereumPolicyInformationPoint {
 	@Attribute(name = "eth_syncing", docs = "Returns an object with data about the sync status or false.")
 	public Flux<JsonNode> ethSyncing(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
 		try {
-			return convertToFlux(web3j.ethSyncing().send());
+			return convertToFlux(web3j.ethSyncing().send().isSyncing());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -278,7 +278,7 @@ public class EthereumPolicyInformationPoint {
 	@Attribute(name = "eth_coinbase", docs = "Returns the client coinbase address.")
 	public Flux<JsonNode> ethCoinbase(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
 		try {
-			return convertToFlux(web3j.ethCoinbase().send());
+			return convertToFlux(web3j.ethCoinbase().send().getResult());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -290,7 +290,7 @@ public class EthereumPolicyInformationPoint {
 	@Attribute(name = "eth_mining", docs = "Returns true if client is actively mining new blocks.")
 	public Flux<JsonNode> ethMining(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
 		try {
-			return convertToFlux(web3j.ethMining().send());
+			return convertToFlux(web3j.ethMining().send().isMining());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -302,7 +302,7 @@ public class EthereumPolicyInformationPoint {
 	@Attribute(name = "eth_hashrate", docs = "Returns the number of hashes per second that the node is mining with.")
 	public Flux<JsonNode> ethHashrate(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
 		try {
-			return convertToFlux(web3j.ethHashrate().send());
+			return convertToFlux(web3j.ethHashrate().send().getHashrate());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -314,7 +314,7 @@ public class EthereumPolicyInformationPoint {
 	@Attribute(name = "eth_gasPrice", docs = "Returns the current price per gas in wei.")
 	public Flux<JsonNode> ethGasPrice(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
 		try {
-			return convertToFlux(web3j.ethGasPrice().send());
+			return convertToFlux(web3j.ethGasPrice().send().getGasPrice());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -326,7 +326,7 @@ public class EthereumPolicyInformationPoint {
 	@Attribute(name = "eth_accounts", docs = "Returns a list of addresses owned by client.")
 	public Flux<JsonNode> ethAccounts(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
 		try {
-			return convertToFlux(web3j.ethAccounts().send());
+			return convertToFlux(web3j.ethAccounts().send().getResult());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -339,7 +339,7 @@ public class EthereumPolicyInformationPoint {
 	public Flux<JsonNode> ethBlockNumber(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
-			return convertToFlux(web3j.ethBlockNumber().send());
+			return convertToFlux(web3j.ethBlockNumber().send().getBlockNumber());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -354,7 +354,7 @@ public class EthereumPolicyInformationPoint {
 		try {
 			return convertToFlux(
 					web3j.ethGetBalance(getStringFrom(saplObject, ADDRESS), extractDefaultBlockParameter(saplObject))
-							.send());
+							.send().getBalance());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -368,7 +368,8 @@ public class EthereumPolicyInformationPoint {
 			throws AttributeException {
 		try {
 			return convertToFlux(web3j.ethGetStorageAt(getStringFrom(saplObject, ADDRESS),
-					saplObject.get(POSITION).bigIntegerValue(), extractDefaultBlockParameter(saplObject)).send());
+					saplObject.get(POSITION).bigIntegerValue(), extractDefaultBlockParameter(saplObject)).send()
+					.getData());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -382,7 +383,7 @@ public class EthereumPolicyInformationPoint {
 			throws AttributeException {
 		try {
 			return convertToFlux(web3j.ethGetTransactionCount(getStringFrom(saplObject, ADDRESS),
-					extractDefaultBlockParameter(saplObject)).send());
+					extractDefaultBlockParameter(saplObject)).send().getTransactionCount());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -395,7 +396,8 @@ public class EthereumPolicyInformationPoint {
 	public Flux<JsonNode> ethGetBlockTransactionCountByHash(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
-			return convertToFlux(web3j.ethGetBlockTransactionCountByHash(getStringFrom(saplObject, BLOCK_HASH)).send());
+			return convertToFlux(web3j.ethGetBlockTransactionCountByHash(getStringFrom(saplObject, BLOCK_HASH)).send()
+					.getTransactionCount());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -408,8 +410,8 @@ public class EthereumPolicyInformationPoint {
 	public Flux<JsonNode> ethGetBlockTransactionCountByNumber(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
-			return convertToFlux(
-					web3j.ethGetBlockTransactionCountByNumber(extractDefaultBlockParameter(saplObject)).send());
+			return convertToFlux(web3j.ethGetBlockTransactionCountByNumber(extractDefaultBlockParameter(saplObject))
+					.send().getTransactionCount());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -422,7 +424,8 @@ public class EthereumPolicyInformationPoint {
 	public Flux<JsonNode> ethGetUncleCountByBlockHash(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
-			return convertToFlux(web3j.ethGetUncleCountByBlockHash(getStringFrom(saplObject, BLOCK_HASH)).send());
+			return convertToFlux(
+					web3j.ethGetUncleCountByBlockHash(getStringFrom(saplObject, BLOCK_HASH)).send().getUncleCount());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -435,7 +438,8 @@ public class EthereumPolicyInformationPoint {
 	public Flux<JsonNode> ethGetUncleCountByBlockNumber(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
-			return convertToFlux(web3j.ethGetUncleCountByBlockNumber(extractDefaultBlockParameter(saplObject)).send());
+			return convertToFlux(web3j.ethGetUncleCountByBlockNumber(extractDefaultBlockParameter(saplObject)).send()
+					.getUncleCount());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -447,8 +451,9 @@ public class EthereumPolicyInformationPoint {
 	@Attribute(name = "eth_getCode", docs = "Returns code at a given address.")
 	public Flux<JsonNode> ethGetCode(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
 		try {
-			return convertToFlux(web3j
-					.ethGetCode(getStringFrom(saplObject, ADDRESS), extractDefaultBlockParameter(saplObject)).send());
+			return convertToFlux(
+					web3j.ethGetCode(getStringFrom(saplObject, ADDRESS), extractDefaultBlockParameter(saplObject))
+							.send().getCode());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -462,7 +467,7 @@ public class EthereumPolicyInformationPoint {
 		try {
 			return convertToFlux(web3j
 					.ethSign(getStringFrom(saplObject, ADDRESS), getStringFrom(saplObject, SHA3_HASH_OF_DATA_TO_SIGN))
-					.send());
+					.send().getSignature());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -478,7 +483,7 @@ public class EthereumPolicyInformationPoint {
 			return convertToFlux(web3j
 					.ethSendTransaction(
 							mapper.convertValue(saplObject, org.web3j.protocol.core.methods.request.Transaction.class))
-					.send());
+					.send().getTransactionHash());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -491,7 +496,7 @@ public class EthereumPolicyInformationPoint {
 	public Flux<JsonNode> ethSendRawTransaction(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
-			return convertToFlux(web3j.ethSendRawTransaction(saplObject.textValue()).send());
+			return convertToFlux(web3j.ethSendRawTransaction(saplObject.textValue()).send().getTransactionHash());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -506,7 +511,7 @@ public class EthereumPolicyInformationPoint {
 			return convertToFlux(web3j.ethCall(
 					mapper.convertValue(saplObject.get(TRANSACTION),
 							org.web3j.protocol.core.methods.request.Transaction.class),
-					extractDefaultBlockParameter(saplObject)).send());
+					extractDefaultBlockParameter(saplObject)).send().getResult());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -520,7 +525,7 @@ public class EthereumPolicyInformationPoint {
 			throws AttributeException {
 		try {
 			return convertToFlux(web3j.ethEstimateGas(mapper.convertValue(saplObject.get(TRANSACTION),
-					org.web3j.protocol.core.methods.request.Transaction.class)).send());
+					org.web3j.protocol.core.methods.request.Transaction.class)).send().getAmountUsed());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -534,7 +539,7 @@ public class EthereumPolicyInformationPoint {
 			throws AttributeException {
 		try {
 			return convertToFlux(web3j.ethGetBlockByHash(getStringFrom(saplObject, BLOCK_HASH),
-					saplObject.get(RETURN_FULL_TRANSACTION_OBJECTS).asBoolean(false)).send());
+					saplObject.get(RETURN_FULL_TRANSACTION_OBJECTS).asBoolean(false)).send().getBlock());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -548,7 +553,7 @@ public class EthereumPolicyInformationPoint {
 			throws AttributeException {
 		try {
 			return convertToFlux(web3j.ethGetBlockByNumber(extractDefaultBlockParameter(saplObject),
-					saplObject.get(RETURN_FULL_TRANSACTION_OBJECTS).asBoolean(false)).send());
+					saplObject.get(RETURN_FULL_TRANSACTION_OBJECTS).asBoolean(false)).send().getBlock());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -561,7 +566,7 @@ public class EthereumPolicyInformationPoint {
 	public Flux<JsonNode> ethGetTransactionByHash(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
-			return convertToFlux(web3j.ethGetTransactionByHash(saplObject.textValue()).send());
+			return convertToFlux(web3j.ethGetTransactionByHash(saplObject.textValue()).send().getTransaction());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -575,7 +580,7 @@ public class EthereumPolicyInformationPoint {
 			throws AttributeException {
 		try {
 			return convertToFlux(web3j.ethGetTransactionByBlockHashAndIndex(getStringFrom(saplObject, BLOCK_HASH),
-					getBigIntFrom(saplObject, TRANSACTION_INDEX)).send());
+					getBigIntFrom(saplObject, TRANSACTION_INDEX)).send().getTransaction());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -589,7 +594,7 @@ public class EthereumPolicyInformationPoint {
 			throws AttributeException {
 		try {
 			return convertToFlux(web3j.ethGetTransactionByBlockNumberAndIndex(extractDefaultBlockParameter(saplObject),
-					getBigIntFrom(saplObject, TRANSACTION_INDEX)).send());
+					getBigIntFrom(saplObject, TRANSACTION_INDEX)).send().getTransaction());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -602,7 +607,7 @@ public class EthereumPolicyInformationPoint {
 	public Flux<JsonNode> ethGetTransactionReceipt(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
-			return convertToFlux(web3j.ethGetTransactionReceipt(saplObject.textValue()).send());
+			return convertToFlux(web3j.ethGetTransactionReceipt(saplObject.textValue()).send().getTransactionReceipt());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -623,7 +628,7 @@ public class EthereumPolicyInformationPoint {
 			throws AttributeException {
 		try {
 			return convertToFlux(web3j.ethGetUncleByBlockHashAndIndex(getStringFrom(saplObject, BLOCK_HASH),
-					getBigIntFrom(saplObject, TRANSACTION_INDEX)).send());
+					getBigIntFrom(saplObject, TRANSACTION_INDEX)).send().getBlock());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -637,7 +642,7 @@ public class EthereumPolicyInformationPoint {
 			throws AttributeException {
 		try {
 			return convertToFlux(web3j.ethGetUncleByBlockNumberAndIndex(extractDefaultBlockParameter(saplObject),
-					getBigIntFrom(saplObject, TRANSACTION_INDEX)).send());
+					getBigIntFrom(saplObject, TRANSACTION_INDEX)).send().getBlock());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -650,7 +655,7 @@ public class EthereumPolicyInformationPoint {
 	public Flux<JsonNode> ethNewBlockFilter(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
-			return convertToFlux(web3j.ethNewBlockFilter().send());
+			return convertToFlux(web3j.ethNewBlockFilter().send().getFilterId());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -663,7 +668,7 @@ public class EthereumPolicyInformationPoint {
 	public Flux<JsonNode> ethNewPendingTransactionFilter(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
-			return convertToFlux(web3j.ethNewPendingTransactionFilter().send());
+			return convertToFlux(web3j.ethNewPendingTransactionFilter().send().getFilterId());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -676,7 +681,7 @@ public class EthereumPolicyInformationPoint {
 	public Flux<JsonNode> ethUninstallFilter(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
-			return convertToFlux(web3j.ethUninstallFilter(getBigIntFrom(saplObject, FILTER_ID)).send());
+			return convertToFlux(web3j.ethUninstallFilter(getBigIntFrom(saplObject, FILTER_ID)).send().getResult());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -689,7 +694,7 @@ public class EthereumPolicyInformationPoint {
 	public Flux<JsonNode> ethGetFilterChanges(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
-			return convertToFlux(web3j.ethGetFilterChanges(getBigIntFrom(saplObject, FILTER_ID)).send());
+			return convertToFlux(web3j.ethGetFilterChanges(getBigIntFrom(saplObject, FILTER_ID)).send().getLogs());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -702,7 +707,7 @@ public class EthereumPolicyInformationPoint {
 	public Flux<JsonNode> ethGetFilterLogs(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
-			return convertToFlux(web3j.ethGetFilterLogs(getBigIntFrom(saplObject, FILTER_ID)).send());
+			return convertToFlux(web3j.ethGetFilterLogs(getBigIntFrom(saplObject, FILTER_ID)).send().getLogs());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -714,7 +719,7 @@ public class EthereumPolicyInformationPoint {
 	@Attribute(name = "eth_getLogs", docs = "Returns an array of all logs matching a given filter object.")
 	public Flux<JsonNode> ethGetLogs(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
 		try {
-			return convertToFlux(web3j.ethGetLogs(mapper.convertValue(saplObject, EthFilter.class)).send());
+			return convertToFlux(web3j.ethGetLogs(mapper.convertValue(saplObject, EthFilter.class)).send().getLogs());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -726,7 +731,7 @@ public class EthereumPolicyInformationPoint {
 	@Attribute(name = "eth_getWork", docs = "Returns the hash of the current block, the seedHash, and the boundary condition to be met (\"target\").")
 	public Flux<JsonNode> ethGetWork(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
 		try {
-			return convertToFlux(web3j.ethGetWork().send());
+			return convertToFlux(web3j.ethGetWork().send().getResult());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -739,8 +744,9 @@ public class EthereumPolicyInformationPoint {
 	public Flux<JsonNode> ethSubmitWork(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
-			return convertToFlux(web3j.ethSubmitWork(getStringFrom(saplObject, NONCE),
-					getStringFrom(saplObject, HEADER_POW_HASH), getStringFrom(saplObject, MIX_DIGEST)).send());
+			return convertToFlux(
+					web3j.ethSubmitWork(getStringFrom(saplObject, NONCE), getStringFrom(saplObject, HEADER_POW_HASH),
+							getStringFrom(saplObject, MIX_DIGEST)).send().getResult());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -755,7 +761,7 @@ public class EthereumPolicyInformationPoint {
 		try {
 			return convertToFlux(
 					web3j.ethSubmitHashrate(getStringFrom(saplObject, HASHRATE), getStringFrom(saplObject, CLIENT_ID))
-							.send());
+							.send().getResult());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -767,7 +773,7 @@ public class EthereumPolicyInformationPoint {
 	@Attribute(name = "shh_version", docs = "Returns the current whisper protocol version.")
 	public Flux<JsonNode> shhVersion(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
 		try {
-			return convertToFlux(web3j.shhVersion().send());
+			return convertToFlux(web3j.shhVersion().send().getVersion());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -780,7 +786,7 @@ public class EthereumPolicyInformationPoint {
 	public Flux<JsonNode> shhPost(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
 
 		try {
-			return convertToFlux(web3j.shhPost(mapper.convertValue(saplObject, ShhPost.class)).send());
+			return convertToFlux(web3j.shhPost(mapper.convertValue(saplObject, ShhPost.class)).send().getResult());
 		}
 		catch (IllegalArgumentException | IOException e) {
 			throw new AttributeException(e);
@@ -792,7 +798,7 @@ public class EthereumPolicyInformationPoint {
 	public Flux<JsonNode> shhNewIdentity(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
-			return convertToFlux(web3j.shhNewIdentity().send());
+			return convertToFlux(web3j.shhNewIdentity().send().getResult());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -805,7 +811,7 @@ public class EthereumPolicyInformationPoint {
 	public Flux<JsonNode> shhHasIdentity(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
-			return convertToFlux(web3j.shhHasIdentity(saplObject.textValue()).send());
+			return convertToFlux(web3j.shhHasIdentity(saplObject.textValue()).send().getResult());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -817,7 +823,7 @@ public class EthereumPolicyInformationPoint {
 	@Attribute(name = "shh_newGroup", docs = "Creates a new group.")
 	public Flux<JsonNode> shhNewGroup(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
 		try {
-			return convertToFlux(web3j.shhNewGroup().send());
+			return convertToFlux(web3j.shhNewGroup().send().getResult());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -830,7 +836,7 @@ public class EthereumPolicyInformationPoint {
 	public Flux<JsonNode> shhAddToGroup(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
-			return convertToFlux(web3j.shhAddToGroup(saplObject.textValue()).send());
+			return convertToFlux(web3j.shhAddToGroup(saplObject.textValue()).send().getResult());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -842,7 +848,8 @@ public class EthereumPolicyInformationPoint {
 	@Attribute(name = "shh_newFilter", docs = "Creates filter to notify, when client receives whisper message matching the filter options.")
 	public Flux<JsonNode> shhNewFilter(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
 		try {
-			return convertToFlux(web3j.shhNewFilter(mapper.convertValue(saplObject, ShhFilter.class)).send());
+			return convertToFlux(
+					web3j.shhNewFilter(mapper.convertValue(saplObject, ShhFilter.class)).send().getFilterId());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -855,7 +862,7 @@ public class EthereumPolicyInformationPoint {
 	public Flux<JsonNode> shhUninstallFilter(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
-			return convertToFlux(web3j.shhUninstallFilter(saplObject.bigIntegerValue()).send());
+			return convertToFlux(web3j.shhUninstallFilter(saplObject.bigIntegerValue()).send().getResult());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -868,7 +875,7 @@ public class EthereumPolicyInformationPoint {
 	public Flux<JsonNode> shhGetFilterChanges(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
-			return convertToFlux(web3j.shhGetFilterChanges(saplObject.bigIntegerValue()).send());
+			return convertToFlux(web3j.shhGetFilterChanges(saplObject.bigIntegerValue()).send().getMessages());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -881,7 +888,7 @@ public class EthereumPolicyInformationPoint {
 	public Flux<JsonNode> shhGetMessages(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
 		try {
-			return convertToFlux(web3j.shhGetMessages(saplObject.bigIntegerValue()).send());
+			return convertToFlux(web3j.shhGetMessages(saplObject.bigIntegerValue()).send().getMessages());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
