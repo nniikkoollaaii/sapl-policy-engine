@@ -8,7 +8,6 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.List;
 
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -19,7 +18,6 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.web3j.crypto.Credentials;
-import org.web3j.crypto.WalletUtils;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.exceptions.TransactionException;
@@ -47,6 +45,8 @@ import reactor.test.StepVerifier;
 
 @Ignore
 public class EthereumIntegrationTest {
+
+	private static final String HTTP_LOCALHOST = "http://localhost:";
 
 	private static final String CERTIFICATION = "certification";
 
@@ -78,16 +78,6 @@ public class EthereumIntegrationTest {
 
 	private static final String TYPE = "type";
 
-	private static final String KEYSTORE = "ethereum-testnet/ptn/keystore/";
-
-	private static final String USER1WALLET = "UTC--2019-05-10T11-32-05.64000000Z--70b6613e37616045a80a97e08e930e1e4d800039.json";
-
-	private static final String USER2WALLET = "UTC--2019-05-10T11-32-55.438000000Z--3f2cbea2185089ea5bbabbcd7616b215b724885c.json";
-
-	private static final String USER3WALLET = "UTC--2019-05-10T11-33-01.363000000Z--2978263a3ecacb01c75e51e3f74b37016ee3904c.json";
-
-	private static final String USER4WALLET = "UTC--2019-05-10T11-33-10.665000000Z--23a28c4cbad79cf61c8ad2e47d5134b06ef0bb73.json";
-
 	private static final String TEST_VALUE = "testValue";
 
 	private static final String TO_ACCOUNT = "toAccount";
@@ -104,6 +94,18 @@ public class EthereumIntegrationTest {
 
 	private static final String IS_AUTHORIZED = "isAuthorized";
 
+	private static final String USER1_ADDRESS = "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73";
+
+	private static final String USER1_PRIVATE_KEY = "0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63";
+
+	private static final String USER2_ADDRESS = "0x627306090abaB3A6e1400e9345bC60c78a8BEf57";
+
+	private static final String USER2_PRIVATE_KEY = "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3";
+
+	private static final String USER3_ADDRESS = "0xf17f52151EbEF6C7334FAD080c5704D77216b732";
+
+	private static final String USER3_PRIVATE_KEY = "0xae6ae8e5ccbfb04590405997ee2d52d2b330726137b875053c36d94e974d162f";
+
 	private static Web3j web3j;
 
 	private static EthereumPolicyInformationPoint ethPip;
@@ -114,14 +116,6 @@ public class EthereumIntegrationTest {
 
 	private static final Logger logger = LoggerFactory.getLogger(EthereumIntegrationTest.class);
 
-	private static String user1Address;
-
-	private static String user2Address;
-
-	private static String user3Address;
-
-	private static String user4Address;
-
 	private static String authContractAddress;
 
 	private static String certContractAddress;
@@ -130,37 +124,17 @@ public class EthereumIntegrationTest {
 
 	private static TransactionReceipt transactionReceiptUser3;
 
-	private static TransactionReceipt transactionReceiptUser4;
-
-	// TEST INFORMATION: Before launching the test please start the local Ethereum
-	// private testnet via one of the startChain scripts
-	// inside the folder ethereum-testnet.
-	// For the scripts to work properly please follow these steps:
-	// 1. Download and install Geth
-	// (https://geth.ethereum.org/downloads/) (This has
-	// been tested with version 1.9.7).
-	// 2. Navigate to the ethereum-testnet folder inside the project in a terminal
-	// or the PowerShell.
-	// 3. Execute the startChain script to initialize and start a private, local version
-	// of the Ethereum
-	// blockchain.
-	// 4. Run the test.
-	// 5. After the test has finished, type exit in the Geth console to stop the
-	// blockchain. If you used the script, the leftovers of the blockchain should be
-	// automatically deleted.
-
 	@ClassRule
-	public static final GenericContainer besuContainer = new GenericContainer("hyperledger/besu:1.3.7-S")
+	public static final GenericContainer besuContainer = new GenericContainer("hyperledger/besu:latest")
 			.withExposedPorts(8545, 8546)
-			.withCommand("--miner-enabled", "--miner-coinbase=0xfe3b557e8fb62b89f4916b721be55ceb828dbd73",
-					"--rpc-http-enabled", "--network=dev")
+			.withCommand("--miner-enabled", "--miner-coinbase=" + USER1_ADDRESS, "--rpc-http-enabled", "--network=dev")
 			.waitingFor(Wait.forHttp("/liveness").forStatusCode(200).forPort(8545));
 
 	@BeforeClass
 	public static void init() throws InterruptedException, TransactionException, Exception {
 		final Integer port = besuContainer.getMappedPort(8545);
-		web3j = Web3j.build(new HttpService("http://localhost:" + port), 500, Async.defaultExecutorService());
-		ethPip = new EthereumPolicyInformationPoint(new HttpService());
+		web3j = Web3j.build(new HttpService(HTTP_LOCALHOST + port), 500, Async.defaultExecutorService());
+		ethPip = new EthereumPolicyInformationPoint(new HttpService(HTTP_LOCALHOST + port));
 
 		String path = "src/test/resources";
 		File file = new File(path);
@@ -170,40 +144,27 @@ public class EthereumIntegrationTest {
 				.withFilesystemPolicyRetrievalPoint(absolutePath + "/policies", IndexType.SIMPLE)
 				.withPolicyInformationPoint(ethPip).build();
 
-		// TODO Automatically start a local Ethereum private testnet
-
-		// In this first section we load the accounts from the blockchain
-		List<String> accounts;
-
-		accounts = web3j.ethAccounts().send().getAccounts();
-		user1Address = accounts.get(0);
-		user2Address = accounts.get(1);
-		user3Address = accounts.get(2);
-		user4Address = accounts.get(3);
-
 		// Now we make some transactions
-		Credentials credentials = WalletUtils.loadCredentials("", KEYSTORE + USER1WALLET);
+
+		Credentials credentials = Credentials.create(USER1_PRIVATE_KEY);
 		transactionReceiptUser2 = Transfer
-				.sendFunds(web3j, credentials, user2Address, BigDecimal.valueOf(2.0), Convert.Unit.ETHER).send();
+				.sendFunds(web3j, credentials, USER2_ADDRESS, BigDecimal.valueOf(2.0), Convert.Unit.ETHER).send();
 		transactionReceiptUser3 = Transfer
-				.sendFunds(web3j, credentials, user3Address, BigDecimal.valueOf(3.3), Convert.Unit.ETHER).send();
-		transactionReceiptUser4 = Transfer
-				.sendFunds(web3j, credentials, user4Address, BigDecimal.valueOf(4.444), Convert.Unit.ETHER).send();
+				.sendFunds(web3j, credentials, USER3_ADDRESS, BigDecimal.valueOf(3.3), Convert.Unit.ETHER).send();
 
 		// Now we deploy a contract and make some changes
 		Authorization authContract = Authorization.deploy(web3j, credentials, new DefaultGasProvider()).send();
 		authContractAddress = authContract.getContractAddress();
-		authContract.authorize(user2Address).send();
+		authContract.authorize(USER2_ADDRESS).send();
 
 		// Deploying the Certification contract
 		Certification certContract = Certification.deploy(web3j, credentials, new DefaultGasProvider()).send();
 		certContractAddress = certContract.getContractAddress();
-		certContract.issueCertificate(user2Address, SAPL_CERTIFICATE);
-		certContract.issueCertificate(user2Address, ETHEREUM_CERTIFICATE);
-		certContract.issueCertificate(user3Address, ETHEREUM_CERTIFICATE);
-		credentials = WalletUtils.loadCredentials("", KEYSTORE + USER2WALLET);
-		certContract.issueCertificate(user3Address, INCREDIBLE_CERTIFICATE);
-		certContract.issueCertificate(user4Address, INCREDIBLE_CERTIFICATE);
+		certContract.issueCertificate(USER2_ADDRESS, SAPL_CERTIFICATE);
+		certContract.issueCertificate(USER2_ADDRESS, ETHEREUM_CERTIFICATE);
+		certContract.issueCertificate(USER3_ADDRESS, ETHEREUM_CERTIFICATE);
+		credentials = Credentials.create(USER2_PRIVATE_KEY);
+		certContract.issueCertificate(USER3_ADDRESS, INCREDIBLE_CERTIFICATE);
 
 	}
 
@@ -214,23 +175,26 @@ public class EthereumIntegrationTest {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(CONTRACT_ADDRESS, certContractAddress);
 		saplObject.put(FUNCTION_NAME, HAS_CERTIFICATE);
+
 		ArrayNode inputParams = JSON.arrayNode();
 		ObjectNode input1 = JSON.objectNode();
 		input1.put(TYPE, ADDRESS);
-		input1.put(VALUE, user2Address.substring(2));
+		input1.put(VALUE, USER2_ADDRESS.substring(2));
 		inputParams.add(input1);
 		ObjectNode input2 = JSON.objectNode();
 		input2.put(TYPE, ADDRESS);
-		input2.put(VALUE, user1Address.substring(2));
+		input2.put(VALUE, USER1_ADDRESS.substring(2));
 		inputParams.add(input2);
 		ObjectNode input3 = JSON.objectNode();
 		input3.put(TYPE, STRING);
 		input3.put(VALUE, SAPL_CERTIFICATE);
 		inputParams.add(input3);
 		saplObject.set(INPUT_PARAMS, inputParams);
+
 		ArrayNode outputParams = JSON.arrayNode();
 		outputParams.add(BOOL);
 		saplObject.set(OUTPUT_PARAMS, outputParams);
+
 		AuthorizationSubscription authzSubscription = new AuthorizationSubscription(saplObject, JSON.textNode(ACCESS),
 				JSON.textNode(CERTIFICATION), null);
 		final Flux<AuthorizationDecision> decision = pdp.decide(authzSubscription);
@@ -247,7 +211,7 @@ public class EthereumIntegrationTest {
 		ArrayNode inputParams = JSON.arrayNode();
 		ObjectNode input1 = JSON.objectNode();
 		input1.put(TYPE, ADDRESS);
-		input1.put(VALUE, user2Address.substring(2));
+		input1.put(VALUE, USER2_ADDRESS.substring(2));
 		inputParams.add(input1);
 		saplObject.set(INPUT_PARAMS, inputParams);
 		ArrayNode outputParams = JSON.arrayNode();
@@ -266,8 +230,8 @@ public class EthereumIntegrationTest {
 	public void verifyTransactionShouldReturnTrueWithCorrectTransaction() {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(TRANSACTION_HASH, transactionReceiptUser2.getTransactionHash());
-		saplObject.put(FROM_ACCOUNT, user1Address);
-		saplObject.put(TO_ACCOUNT, user2Address);
+		saplObject.put(FROM_ACCOUNT, USER1_ADDRESS);
+		saplObject.put(TO_ACCOUNT, USER2_ADDRESS);
 		saplObject.put(TRANSACTION_VALUE, new BigInteger("2000000000000000000"));
 		boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
 		assertTrue("Transaction was not validated as true although it is correct.", result);
@@ -278,8 +242,8 @@ public class EthereumIntegrationTest {
 	public void verifyTransactionShouldReturnFalseWithFalseValue() {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(TRANSACTION_HASH, transactionReceiptUser2.getTransactionHash());
-		saplObject.put(FROM_ACCOUNT, user1Address);
-		saplObject.put(TO_ACCOUNT, user2Address);
+		saplObject.put(FROM_ACCOUNT, USER1_ADDRESS);
+		saplObject.put(TO_ACCOUNT, USER2_ADDRESS);
 		saplObject.put(TRANSACTION_VALUE, new BigInteger("25"));
 		boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
 		assertFalse("Transaction was not validated as false although the value was false.", result);
@@ -290,8 +254,8 @@ public class EthereumIntegrationTest {
 	public void verifyTransactionShouldReturnFalseWithFalseSender() {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(TRANSACTION_HASH, transactionReceiptUser2.getTransactionHash());
-		saplObject.put(FROM_ACCOUNT, user3Address);
-		saplObject.put(TO_ACCOUNT, user2Address);
+		saplObject.put(FROM_ACCOUNT, USER3_ADDRESS);
+		saplObject.put(TO_ACCOUNT, USER2_ADDRESS);
 		saplObject.put(TRANSACTION_VALUE, new BigInteger("2000000000000000000"));
 		boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
 		assertFalse("Transaction was not validated as false although the sender was false.", result);
@@ -302,8 +266,8 @@ public class EthereumIntegrationTest {
 	public void verifyTransactionShouldReturnFalseWithFalseRecipient() {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(TRANSACTION_HASH, transactionReceiptUser2.getTransactionHash());
-		saplObject.put(FROM_ACCOUNT, user1Address);
-		saplObject.put(TO_ACCOUNT, user3Address);
+		saplObject.put(FROM_ACCOUNT, USER1_ADDRESS);
+		saplObject.put(TO_ACCOUNT, USER3_ADDRESS);
 		saplObject.put(TRANSACTION_VALUE, new BigInteger("2000000000000000000"));
 		boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
 		assertFalse("Transaction was not validated as false although the recipient was false.", result);
@@ -314,8 +278,8 @@ public class EthereumIntegrationTest {
 	public void verifyTransactionShouldReturnFalseWithFalseTransactionHash() {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(TRANSACTION_HASH, transactionReceiptUser3.getTransactionHash());
-		saplObject.put(FROM_ACCOUNT, user1Address);
-		saplObject.put(TO_ACCOUNT, user2Address);
+		saplObject.put(FROM_ACCOUNT, USER1_ADDRESS);
+		saplObject.put(TO_ACCOUNT, USER2_ADDRESS);
 		saplObject.put(TRANSACTION_VALUE, new BigInteger("2000000000000000000"));
 		boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
 		assertFalse("Transaction was not validated as false although the TransactionHash was false.", result);
@@ -333,8 +297,8 @@ public class EthereumIntegrationTest {
 	public void verifyTransactionShouldReturnFalseWithWrongInput() {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(WRONG_NAME, transactionReceiptUser2.getTransactionHash());
-		saplObject.put(FROM_ACCOUNT, user1Address);
-		saplObject.put(TO_ACCOUNT, user2Address);
+		saplObject.put(FROM_ACCOUNT, USER1_ADDRESS);
+		saplObject.put(TO_ACCOUNT, USER2_ADDRESS);
 		saplObject.put(TRANSACTION_VALUE, new BigInteger("2000000000000000000"));
 		boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
 		assertFalse("Transaction was not validated as false although the input was erroneous.", result);
@@ -350,7 +314,7 @@ public class EthereumIntegrationTest {
 		ArrayNode inputParams = JSON.arrayNode();
 		ObjectNode input1 = JSON.objectNode();
 		input1.put(TYPE, ADDRESS);
-		input1.put(VALUE, user2Address.substring(2));
+		input1.put(VALUE, USER2_ADDRESS.substring(2));
 		inputParams.add(input1);
 		saplObject.set(INPUT_PARAMS, inputParams);
 		ArrayNode outputParams = JSON.arrayNode();
@@ -371,11 +335,11 @@ public class EthereumIntegrationTest {
 		ArrayNode inputParams = JSON.arrayNode();
 		ObjectNode input1 = JSON.objectNode();
 		input1.put(TYPE, ADDRESS);
-		input1.put(VALUE, user2Address.substring(2));
+		input1.put(VALUE, USER2_ADDRESS.substring(2));
 		inputParams.add(input1);
 		ObjectNode input2 = JSON.objectNode();
 		input2.put(TYPE, ADDRESS);
-		input2.put(VALUE, user1Address.substring(2));
+		input2.put(VALUE, USER1_ADDRESS.substring(2));
 		inputParams.add(input2);
 		ObjectNode input3 = JSON.objectNode();
 		input3.put(TYPE, STRING);
@@ -399,7 +363,7 @@ public class EthereumIntegrationTest {
 		ArrayNode inputParams = JSON.arrayNode();
 		ObjectNode input1 = JSON.objectNode();
 		input1.put(TYPE, ADDRESS);
-		input1.put(VALUE, user2Address.substring(2));
+		input1.put(VALUE, USER2_ADDRESS.substring(2));
 		inputParams.add(input1);
 		saplObject.set(INPUT_PARAMS, inputParams);
 		ArrayNode outputParams = JSON.arrayNode();

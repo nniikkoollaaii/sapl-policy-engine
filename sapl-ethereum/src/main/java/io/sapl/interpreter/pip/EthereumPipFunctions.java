@@ -212,7 +212,7 @@ public class EthereumPipFunctions {
 
 	}
 
-	public static Type convertToType(JsonNode inputParam) throws AttributeException, IOException {
+	public static Type convertToType(JsonNode inputParam) throws AttributeException {
 		if (inputParam == null) {
 			throw new AttributeException("An input Parameter for convertToType was null");
 		}
@@ -224,7 +224,13 @@ public class EthereumPipFunctions {
 			BigInteger bigIntegerValue = value.bigIntegerValue();
 			byte[] binaryValue = new byte[0];
 			if (value.isBinary()) {
-				binaryValue = value.binaryValue();
+				try {
+					binaryValue = value.binaryValue();
+				}
+				catch (IOException e) {
+					throw new AttributeException(
+							"Error in convertToType while converting " + value + " to binary value.", e);
+				}
 			}
 
 			switch (solidityType) {

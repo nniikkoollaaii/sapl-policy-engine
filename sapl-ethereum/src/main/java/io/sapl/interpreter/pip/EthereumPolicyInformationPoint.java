@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.FunctionReturnDecoder;
@@ -26,6 +27,7 @@ import org.web3j.protocol.core.methods.response.Transaction;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 import io.sapl.api.pip.Attribute;
 import io.sapl.api.pip.AttributeException;
@@ -48,10 +50,6 @@ import reactor.core.publisher.Flux;
 @Slf4j
 @PolicyInformationPoint(name = "ethereum", description = "Connects to the Ethereum Blockchain.")
 public class EthereumPolicyInformationPoint {
-
-	private static final ObjectMapper mapper = new ObjectMapper();
-
-	private Web3j web3j;
 
 	private static final String ADDRESS = "address";
 
@@ -96,6 +94,12 @@ public class EthereumPolicyInformationPoint {
 	private static final String CLIENT_ID = "clientId";
 
 	private static final String VERIFY_TRANSACTION_WARNING = "There was an error during verifyTransaction. By default false is returned but the transaction could have taken place.";
+
+	private static final ObjectMapper mapper = new ObjectMapper();
+
+	private static final JsonNodeFactory JSON = JsonNodeFactory.instance;
+
+	private Web3j web3j;
 
 	public EthereumPolicyInformationPoint(Web3jService web3jService) {
 		web3j = Web3j.build(web3jService);
@@ -155,17 +159,17 @@ public class EthereumPolicyInformationPoint {
 	@Attribute(name = "contract", docs = "Returns the result of a function call of a specified contract.")
 	public Flux<JsonNode> loadContractInformation(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			String fromAccount = getStringFrom(saplObject, FROM_ACCOUNT);
-			String contractAddress = getStringFrom(saplObject, CONTRACT_ADDRESS);
+		String fromAccount = getStringFrom(saplObject, FROM_ACCOUNT);
+		String contractAddress = getStringFrom(saplObject, CONTRACT_ADDRESS);
 
-			List<Type> inputParameters = new ArrayList<>();
-			JsonNode inputNode = saplObject.get(INPUT_PARAMS);
-			if (inputNode.isArray()) {
-				for (JsonNode inputParam : inputNode) {
-					inputParameters.add(convertToType(inputParam));
-				}
+		List<Type> inputParameters = new ArrayList<>();
+		JsonNode inputNode = saplObject.get(INPUT_PARAMS);
+		if (inputNode.isArray()) {
+			for (JsonNode inputParam : inputNode) {
+				inputParameters.add(convertToType(inputParam));
 			}
+		}
+		try {
 
 			List<TypeReference<?>> outputParameters = new ArrayList<>();
 			JsonNode outputNode = saplObject.get(OUTPUT_PARAMS);
@@ -195,11 +199,16 @@ public class EthereumPolicyInformationPoint {
 	@Attribute(name = "web3_clientVersion", docs = "Returns the current client version.")
 	public Flux<JsonNode> web3ClientVersion(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
+		Stream<JsonNode> stream = Stream.generate(this::withWeb3ClientVersionSupplier);
+		return Flux.fromStream(stream);
+	}
+
+	private JsonNode withWeb3ClientVersionSupplier() {
 		try {
-			return convertToFlux(web3j.web3ClientVersion().send().getWeb3ClientVersion());
+			return convertToJsonNode(web3j.web3ClientVersion().send().getWeb3ClientVersion());
 		}
 		catch (IOException e) {
-			throw new AttributeException(e);
+			return JSON.nullNode();
 		}
 	}
 
@@ -899,6 +908,10 @@ public class EthereumPolicyInformationPoint {
 
 	private static Flux<JsonNode> convertToFlux(Object o) {
 		return Flux.just(mapper.convertValue(o, JsonNode.class));
+	}
+
+	private static JsonNode convertToJsonNode(Object o) {
+		return mapper.convertValue(o, JsonNode.class);
 	}
 
 	private static String getStringFrom(JsonNode saplObject, String stringName) {
