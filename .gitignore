@@ -25,6 +25,4 @@ sapl-grammar/.antlr-generator-3.2.0-patch.jar
 phantomjsdriver.log
 node_modules/
 sapl-ethereum/sonarAnalyse.sh
-sapl-ethereum/solidity/abi-bin/**
-sapl-ethereum/solidity/web3j**
-sapl-ethereum/solidity/linux_convert.sh
+
