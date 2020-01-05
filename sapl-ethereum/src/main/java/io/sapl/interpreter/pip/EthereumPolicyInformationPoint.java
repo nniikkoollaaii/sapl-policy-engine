@@ -17,13 +17,10 @@ import org.slf4j.LoggerFactory;
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.TypeReference;
-import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.Type;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.Web3jService;
 import org.web3j.protocol.core.methods.request.EthFilter;
-import org.web3j.protocol.core.methods.request.ShhFilter;
-import org.web3j.protocol.core.methods.request.ShhPost;
 import org.web3j.protocol.core.methods.response.EthCall;
 import org.web3j.protocol.core.methods.response.Transaction;
 
@@ -40,20 +37,24 @@ import reactor.core.publisher.Flux;
  * The Ethereum Policy Information Point gives access to most methods of the JSON-RPC Ethereum API
  * (https://github.com/ethereum/wiki/wiki/JSON-RPC)
  *
- * Excluded are the deprecated methods eth_getCompilers, eth_compileSolidity, eth_compileLLL and eth_compileSerpent.
- * Further excluded are all db_ methods as they are deprecated and will be removed. Also excluded is the eth_getProof
- * method as at time of writing this there doesn't exist an implementation in the Web3j API.
+ * Excluded are all methods that would change the state of the blockchain as it doesn't make sense to use them during a
+ * policy evaluation. These methods are eth_sendTransaction, eth_sendRawTransaction, eth_submitWork and
+ * eth_submitHashrate. The methods that are changing something in the node are excluded, because creating or managing
+ * filters and shh identities should not be done inside a policy. These methods are eth_newFilter, eth_newBlockFilter,
+ * eth_newPendingTransactionFilter, eth_uninstallFilter, shh_post, shh_newIdentity, shh_addToGroup, shh_newFilter and
+ * shh_uninstallFilter. Also excluded are the deprecated methods eth_getCompilers, eth_compileSolidity, eth_compileLLL
+ * and eth_compileSerpent. Further excluded are all db_ methods as they are deprecated and will be removed. Also
+ * excluded is the eth_getProof method as at time of writing this there doesn't exist an implementation in the Web3j
+ * API.
  *
- * Furthermore the methods verifyTransaction and loadContractInformation are not part of the JSON RPC API but are
- * considered to be a more user friendly implementation of the most common use cases.
+ * Finally the methods verifyTransaction and loadContractInformation are not part of the JSON RPC API but are considered
+ * to be a more user friendly implementation of the most common use cases.
  */
 
 @PolicyInformationPoint(name = "ethereum", description = "Connects to the Ethereum Blockchain.")
 public class EthereumPolicyInformationPoint {
 
 	private static final long DEFAULT_ETH_POLLING_INTERVAL = 5000L;
-
-	private static final int DEFAULT_THREAD_POOL_SIZE = 4;
 
 	private static final String ADDRESS = "address";
 
@@ -87,16 +88,6 @@ public class EthereumPolicyInformationPoint {
 
 	private static final String FILTER_ID = "filterId";
 
-	private static final String NONCE = "nonce";
-
-	private static final String HEADER_POW_HASH = "headerPowHash";
-
-	private static final String MIX_DIGEST = "mixDigest";
-
-	private static final String HASHRATE = "hashrate";
-
-	private static final String CLIENT_ID = "clientId";
-
 	private static final String VERIFY_TRANSACTION_WARNING = "There was an error during verifyTransaction. By default false is returned but the transaction could have taken place.";
 
 	private static final ObjectMapper mapper = new ObjectMapper();
@@ -105,7 +96,7 @@ public class EthereumPolicyInformationPoint {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(EthereumPolicyInformationPoint.class);
 
-	private final Duration ethPollingInterval;
+	private final Flux<Long> timer;
 
 	private Web3j web3j;
 
@@ -115,7 +106,7 @@ public class EthereumPolicyInformationPoint {
 
 	public EthereumPolicyInformationPoint(Web3jService web3jService, long ethereumPollingIntervalInMs) {
 		web3j = Web3j.build(web3jService);
-		ethPollingInterval = Duration.ofMillis(ethereumPollingIntervalInMs);
+		timer = Flux.interval(Duration.ZERO, Duration.ofMillis(ethereumPollingIntervalInMs));
 	}
 
 	/**
@@ -139,23 +130,13 @@ public class EthereumPolicyInformationPoint {
 			try {
 				Optional<Transaction> optionalTransactionFromChain = web3j
 						.ethGetTransactionByHash(getStringFrom(saplObject, TRANSACTION_HASH)).send().getTransaction();
-				System.out.println(optionalTransactionFromChain);
-				System.out.println(saplObject);
 				if (optionalTransactionFromChain.isPresent()) {
 					Transaction transactionFromChain = optionalTransactionFromChain.get();
-					System.out.println(transactionFromChain.getFrom());
-					System.out.println(getStringFrom(saplObject, FROM_ACCOUNT));
-					System.out.println(transactionFromChain.getTo());
-					System.out.println(getStringFrom(saplObject, TO_ACCOUNT));
-					System.out.println(transactionFromChain.getValue());
-					System.out.println(getBigIntFrom(saplObject, TRANSACTION_VALUE));
-					System.out.println();
 					if (transactionFromChain.getFrom().toLowerCase()
 							.equals(getStringFrom(saplObject, FROM_ACCOUNT).toLowerCase())
 							&& transactionFromChain.getTo().toLowerCase()
 									.equals(getStringFrom(saplObject, TO_ACCOUNT).toLowerCase())
 							&& transactionFromChain.getValue().equals(getBigIntFrom(saplObject, TRANSACTION_VALUE))) {
-						System.out.println("Returning true node.");
 						return JSON.booleanNode(true);
 					}
 				}
@@ -163,7 +144,6 @@ public class EthereumPolicyInformationPoint {
 			catch (IOException | NullPointerException e) {
 				LOGGER.warn(VERIFY_TRANSACTION_WARNING);
 			}
-			System.out.println("Returning false node.");
 			return JSON.booleanNode(false);
 		};
 	}
@@ -188,50 +168,58 @@ public class EthereumPolicyInformationPoint {
 	@Attribute(name = "contract", docs = "Returns the result of a function call of a specified contract.")
 	public Flux<JsonNode> loadContractInformation(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		String fromAccount = getStringFrom(saplObject, FROM_ACCOUNT);
-		String contractAddress = getStringFrom(saplObject, CONTRACT_ADDRESS);
+		return scheduledFlux(withInformationFromContract(saplObject));
+	}
 
-		List<Type> inputParameters = new ArrayList<>();
-		JsonNode inputNode = saplObject.get(INPUT_PARAMS);
-		if (inputNode.isArray()) {
-			for (JsonNode inputParam : inputNode) {
-				inputParameters.add(convertToType(inputParam));
-			}
-		}
-		try {
+	private Callable<JsonNode> withInformationFromContract(JsonNode saplObject) {
+		return () -> {
+			String fromAccount = getStringFrom(saplObject, FROM_ACCOUNT);
+			String contractAddress = getStringFrom(saplObject, CONTRACT_ADDRESS);
 
-			List<TypeReference<?>> outputParameters = new ArrayList<>();
-			JsonNode outputNode = saplObject.get(OUTPUT_PARAMS);
-			if (outputNode.isArray()) {
-				for (JsonNode solidityType : outputNode) {
-					outputParameters.add(TypeReference.makeTypeReference(solidityType.textValue()));
+			List<Type> inputParameters = new ArrayList<>();
+			JsonNode inputNode = saplObject.get(INPUT_PARAMS);
+			if (inputNode.isArray()) {
+				for (JsonNode inputParam : inputNode) {
+					inputParameters.add(convertToType(inputParam));
 				}
 			}
-			Function function = new Function(getStringFrom(saplObject, FUNCTION_NAME), inputParameters,
-					outputParameters);
+			try {
 
-			String encodedFunction = FunctionEncoder.encode(function);
-			EthCall response = web3j
-					.ethCall(org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction(fromAccount,
-							contractAddress, encodedFunction), extractDefaultBlockParameter(saplObject))
-					.send();
-			List<Type> output = FunctionReturnDecoder.decode(response.getValue(), function.getOutputParameters());
+				List<TypeReference<?>> outputParameters = new ArrayList<>();
+				JsonNode outputNode = saplObject.get(OUTPUT_PARAMS);
+				if (outputNode.isArray()) {
+					for (JsonNode solidityType : outputNode) {
+						outputParameters.add(TypeReference.makeTypeReference(solidityType.textValue()));
+					}
+				}
 
-			return convertToFlux(output);
+				org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+						getStringFrom(saplObject, FUNCTION_NAME), inputParameters, outputParameters);
+				String encodedFunction = FunctionEncoder.encode(function);
+				EthCall response = web3j
+						.ethCall(
+								org.web3j.protocol.core.methods.request.Transaction
+										.createEthCallTransaction(fromAccount, contractAddress, encodedFunction),
+								extractDefaultBlockParameter(saplObject))
+						.send();
+				List<Type> output = FunctionReturnDecoder.decode(response.getValue(), function.getOutputParameters());
 
-		}
-		catch (IOException | ClassNotFoundException e) {
-			throw new AttributeException(e);
-		}
+				return convertToJsonNode(output);
+
+			}
+			catch (IOException | ClassNotFoundException e) {
+				throw new AttributeException(e);
+			}
+		};
 	}
 
 	@Attribute(name = "web3_clientVersion", docs = "Returns the current client version.")
 	public Flux<JsonNode> web3ClientVersion(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		return scheduledFlux(withWeb3ClientVersionSupplier());
+		return scheduledFlux(withWeb3ClientVersion());
 	}
 
-	private Callable<JsonNode> withWeb3ClientVersionSupplier() {
+	private Callable<JsonNode> withWeb3ClientVersion() {
 
 		return () -> convertToJsonNode(web3j.web3ClientVersion().send().getWeb3ClientVersion());
 
@@ -239,414 +227,387 @@ public class EthereumPolicyInformationPoint {
 
 	@Attribute(name = "web3_sha3", docs = "Returns Keccak-256 (not the standardized SHA3-256) of the given data.")
 	public Flux<JsonNode> web3Sha3(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
-		try {
-			return convertToFlux(web3j.web3Sha3(saplObject.textValue()).send().getResult());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
-		}
+		return scheduledFlux(withWeb3Sha3(saplObject));
 
+	}
+
+	private Callable<JsonNode> withWeb3Sha3(JsonNode saplObject) {
+		return () -> convertToJsonNode(web3j.web3Sha3(saplObject.textValue()).send().getResult());
 	}
 
 	@Attribute(name = "net_version", docs = "Returns the current network id.")
 	public Flux<JsonNode> netVersion(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
-		try {
-			return convertToFlux(web3j.netVersion().send().getNetVersion());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withNetVersion());
 
-		}
+	}
+
+	private Callable<JsonNode> withNetVersion() {
+
+		return () -> convertToJsonNode(web3j.netVersion().send().getNetVersion());
 
 	}
 
 	@Attribute(name = "net_listening", docs = "Returns true if client is actively listening for network connections.")
 	public Flux<JsonNode> netListening(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
-		try {
-			return convertToFlux(web3j.netListening().send().isListening());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withNetListening());
 
-		}
+	}
+
+	private Callable<JsonNode> withNetListening() {
+
+		return () -> convertToJsonNode(web3j.netListening().send().isListening());
 
 	}
 
 	@Attribute(name = "net_peerCount", docs = "Returns number of peers currently connected to the client.")
 	public Flux<JsonNode> netPeerCount(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
-		try {
-			return convertToFlux(web3j.netPeerCount().send().getQuantity());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withNetPeerCount());
 
-		}
+	}
+
+	private Callable<JsonNode> withNetPeerCount() {
+
+		return () -> convertToJsonNode(web3j.netPeerCount().send().getQuantity());
 
 	}
 
 	@Attribute(name = "eth_protocolVersion", docs = "Returns the current ethereum protocol version.")
 	public Flux<JsonNode> ethProtocolVersion(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethProtocolVersion().send().getProtocolVersion());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withEthProtocolVersion());
 
-		}
+	}
+
+	private Callable<JsonNode> withEthProtocolVersion() {
+
+		return () -> convertToJsonNode(web3j.ethProtocolVersion().send().getProtocolVersion());
 
 	}
 
 	@Attribute(name = "eth_syncing", docs = "Returns an object with data about the sync status or false.")
 	public Flux<JsonNode> ethSyncing(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethSyncing().send().isSyncing());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withEthSyncing());
 
-		}
+	}
+
+	private Callable<JsonNode> withEthSyncing() {
+
+		return () -> convertToJsonNode(web3j.ethSyncing().send().isSyncing());
 
 	}
 
 	@Attribute(name = "eth_coinbase", docs = "Returns the client coinbase address.")
 	public Flux<JsonNode> ethCoinbase(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethCoinbase().send().getResult());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withEthCoinbase());
 
-		}
+	}
+
+	private Callable<JsonNode> withEthCoinbase() {
+
+		return () -> convertToJsonNode(web3j.ethCoinbase().send().getResult());
 
 	}
 
 	@Attribute(name = "eth_mining", docs = "Returns true if client is actively mining new blocks.")
 	public Flux<JsonNode> ethMining(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethMining().send().isMining());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withEthMining());
 
-		}
+	}
+
+	private Callable<JsonNode> withEthMining() {
+
+		return () -> convertToJsonNode(web3j.ethMining().send().isMining());
 
 	}
 
 	@Attribute(name = "eth_hashrate", docs = "Returns the number of hashes per second that the node is mining with.")
 	public Flux<JsonNode> ethHashrate(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethHashrate().send().getHashrate());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withEthHashrate());
 
-		}
+	}
+
+	private Callable<JsonNode> withEthHashrate() {
+
+		return () -> convertToJsonNode(web3j.ethHashrate().send().getHashrate());
 
 	}
 
 	@Attribute(name = "eth_gasPrice", docs = "Returns the current price per gas in wei.")
 	public Flux<JsonNode> ethGasPrice(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethGasPrice().send().getGasPrice());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withEthGasPrice());
 
-		}
+	}
+
+	private Callable<JsonNode> withEthGasPrice() {
+
+		return () -> convertToJsonNode(web3j.ethGasPrice().send().getGasPrice());
 
 	}
 
 	@Attribute(name = "eth_accounts", docs = "Returns a list of addresses owned by client.")
 	public Flux<JsonNode> ethAccounts(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethAccounts().send().getResult());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withEthAccounts());
 
-		}
+	}
+
+	private Callable<JsonNode> withEthAccounts() {
+
+		return () -> convertToJsonNode(web3j.ethAccounts().send().getResult());
 
 	}
 
 	@Attribute(name = "eth_blockNumber", docs = "Returns the number of most recent block.")
 	public Flux<JsonNode> ethBlockNumber(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethBlockNumber().send().getBlockNumber());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withEthBlockNumber());
 
-		}
+	}
+
+	private Callable<JsonNode> withEthBlockNumber() {
+
+		return () -> convertToJsonNode(web3j.ethBlockNumber().send().getBlockNumber());
 
 	}
 
 	@Attribute(name = "eth_getBalance", docs = "Returns the balance of the account of given address.")
 	public Flux<JsonNode> ethGetBalance(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(
-					web3j.ethGetBalance(getStringFrom(saplObject, ADDRESS), extractDefaultBlockParameter(saplObject))
-							.send().getBalance());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withAccountBalance(saplObject));
 
-		}
+	}
+
+	private Callable<JsonNode> withAccountBalance(JsonNode saplObject) {
+
+		return () -> convertToJsonNode(
+				web3j.ethGetBalance(getStringFrom(saplObject, ADDRESS), extractDefaultBlockParameter(saplObject)).send()
+						.getBalance());
 
 	}
 
 	@Attribute(name = "eth_getStorageAt", docs = "Returns the value from a storage position at a given address.")
 	public Flux<JsonNode> ethGetStorageAt(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethGetStorageAt(getStringFrom(saplObject, ADDRESS),
-					saplObject.get(POSITION).bigIntegerValue(), extractDefaultBlockParameter(saplObject)).send()
-					.getData());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withStorageAt(saplObject));
 
-		}
+	}
+
+	private Callable<JsonNode> withStorageAt(JsonNode saplObject) {
+
+		return () -> convertToJsonNode(web3j.ethGetStorageAt(getStringFrom(saplObject, ADDRESS),
+				saplObject.get(POSITION).bigIntegerValue(), extractDefaultBlockParameter(saplObject)).send().getData());
 
 	}
 
 	@Attribute(name = "eth_getTransactionCount", docs = "Returns the number of transactions sent from an address.")
 	public Flux<JsonNode> ethGetTransactionCount(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethGetTransactionCount(getStringFrom(saplObject, ADDRESS),
-					extractDefaultBlockParameter(saplObject)).send().getTransactionCount());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withTransactionCount(saplObject));
 
-		}
+	}
+
+	private Callable<JsonNode> withTransactionCount(JsonNode saplObject) {
+
+		return () -> convertToJsonNode(web3j
+				.ethGetTransactionCount(getStringFrom(saplObject, ADDRESS), extractDefaultBlockParameter(saplObject))
+				.send().getTransactionCount());
 
 	}
 
 	@Attribute(name = "eth_getBlockTransactionCountByHash", docs = "Returns the number of transactions in a block from a block matching the given block hash.")
 	public Flux<JsonNode> ethGetBlockTransactionCountByHash(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethGetBlockTransactionCountByHash(getStringFrom(saplObject, BLOCK_HASH)).send()
-					.getTransactionCount());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withBlockTransactionCountByHash(saplObject));
 
-		}
+	}
+
+	private Callable<JsonNode> withBlockTransactionCountByHash(JsonNode saplObject) {
+
+		return () -> convertToJsonNode(web3j.ethGetBlockTransactionCountByHash(getStringFrom(saplObject, BLOCK_HASH))
+				.send().getTransactionCount());
 
 	}
 
 	@Attribute(name = "eth_getBlockTransactionCountByNumber", docs = "Returns the number of transactions in a block matching the given block number.")
 	public Flux<JsonNode> ethGetBlockTransactionCountByNumber(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethGetBlockTransactionCountByNumber(extractDefaultBlockParameter(saplObject))
-					.send().getTransactionCount());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withBlockTransactionCountByNumber(saplObject));
 
-		}
+	}
+
+	private Callable<JsonNode> withBlockTransactionCountByNumber(JsonNode saplObject) {
+
+		return () -> convertToJsonNode(
+				web3j.ethGetBlockTransactionCountByNumber(extractDefaultBlockParameter(saplObject)).send()
+						.getTransactionCount());
 
 	}
 
 	@Attribute(name = "eth_getUncleCountByBlockHash", docs = "Returns the number of uncles in a block from a block matching the given block hash.")
 	public Flux<JsonNode> ethGetUncleCountByBlockHash(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(
-					web3j.ethGetUncleCountByBlockHash(getStringFrom(saplObject, BLOCK_HASH)).send().getUncleCount());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withUncleCountByBlockHash(saplObject));
 
-		}
+	}
+
+	private Callable<JsonNode> withUncleCountByBlockHash(JsonNode saplObject) {
+
+		return () -> convertToJsonNode(
+				web3j.ethGetUncleCountByBlockHash(getStringFrom(saplObject, BLOCK_HASH)).send().getUncleCount());
 
 	}
 
 	@Attribute(name = "eth_getUncleCountByBlockNumber", docs = "Returns the number of uncles in a block from a block matching the given block number.")
 	public Flux<JsonNode> ethGetUncleCountByBlockNumber(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethGetUncleCountByBlockNumber(extractDefaultBlockParameter(saplObject)).send()
-					.getUncleCount());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withUncleCountByBlockNumber(saplObject));
 
-		}
+	}
+
+	private Callable<JsonNode> withUncleCountByBlockNumber(JsonNode saplObject) {
+
+		return () -> convertToJsonNode(
+				web3j.ethGetUncleCountByBlockNumber(extractDefaultBlockParameter(saplObject)).send().getUncleCount());
 
 	}
 
 	@Attribute(name = "eth_getCode", docs = "Returns code at a given address.")
 	public Flux<JsonNode> ethGetCode(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
-		try {
-			return convertToFlux(
-					web3j.ethGetCode(getStringFrom(saplObject, ADDRESS), extractDefaultBlockParameter(saplObject))
-							.send().getCode());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withCode(saplObject));
 
-		}
+	}
+
+	private Callable<JsonNode> withCode(JsonNode saplObject) {
+
+		return () -> convertToJsonNode(
+				web3j.ethGetCode(getStringFrom(saplObject, ADDRESS), extractDefaultBlockParameter(saplObject)).send()
+						.getCode());
 
 	}
 
 	@Attribute(name = "eth_sign", docs = "The sign method calculates an Ethereum specific signature.")
 	public Flux<JsonNode> ethSign(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
-		try {
-			return convertToFlux(web3j
-					.ethSign(getStringFrom(saplObject, ADDRESS), getStringFrom(saplObject, SHA3_HASH_OF_DATA_TO_SIGN))
-					.send().getSignature());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
-
-		}
+		return scheduledFlux(withSignature(saplObject));
 
 	}
 
-	@Attribute(name = "eth_sendTransaction", docs = "Creates new message call transaction or a contract creation, if the data field contains code.")
-	public Flux<JsonNode> ethSendTransaction(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
-		try {
-			return convertToFlux(web3j
-					.ethSendTransaction(
-							mapper.convertValue(saplObject, org.web3j.protocol.core.methods.request.Transaction.class))
-					.send().getTransactionHash());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+	private Callable<JsonNode> withSignature(JsonNode saplObject) {
 
-		}
-
-	}
-
-	@Attribute(name = "eth_sendRawTransaction", docs = "Creates new message call transaction or a contract creation for signed transactions.")
-	public Flux<JsonNode> ethSendRawTransaction(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethSendRawTransaction(saplObject.textValue()).send().getTransactionHash());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
-
-		}
+		return () -> convertToJsonNode(
+				web3j.ethSign(getStringFrom(saplObject, ADDRESS), getStringFrom(saplObject, SHA3_HASH_OF_DATA_TO_SIGN))
+						.send().getSignature());
 
 	}
 
 	@Attribute(name = "eth_call", docs = "Executes a new message call immediately without creating a transaction on the block chain.")
 	public Flux<JsonNode> ethCall(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethCall(
-					mapper.convertValue(saplObject.get(TRANSACTION),
-							org.web3j.protocol.core.methods.request.Transaction.class),
-					extractDefaultBlockParameter(saplObject)).send().getResult());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withCallResult(saplObject));
 
-		}
+	}
+
+	private Callable<JsonNode> withCallResult(JsonNode saplObject) {
+
+		return () -> convertToJsonNode(web3j.ethCall(
+				mapper.convertValue(saplObject.get(TRANSACTION),
+						org.web3j.protocol.core.methods.request.Transaction.class),
+				extractDefaultBlockParameter(saplObject)).send().getResult());
 
 	}
 
 	@Attribute(name = "eth_estimateGas", docs = "Generates and returns an estimate of how much gas is necessary to allow the transaction to complete.")
 	public Flux<JsonNode> ethEstimateGas(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethEstimateGas(mapper.convertValue(saplObject.get(TRANSACTION),
-					org.web3j.protocol.core.methods.request.Transaction.class)).send().getAmountUsed());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withEstimatedGas(saplObject));
 
-		}
+	}
+
+	private Callable<JsonNode> withEstimatedGas(JsonNode saplObject) {
+
+		return () -> convertToJsonNode(web3j.ethEstimateGas(mapper.convertValue(saplObject.get(TRANSACTION),
+				org.web3j.protocol.core.methods.request.Transaction.class)).send().getAmountUsed());
 
 	}
 
 	@Attribute(name = "eth_getBlockByHash", docs = "Returns information about a block by hash.")
 	public Flux<JsonNode> ethGetBlockByHash(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethGetBlockByHash(getStringFrom(saplObject, BLOCK_HASH),
-					saplObject.get(RETURN_FULL_TRANSACTION_OBJECTS).asBoolean(false)).send().getBlock());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withBlockByHash(saplObject));
 
-		}
+	}
+
+	private Callable<JsonNode> withBlockByHash(JsonNode saplObject) {
+
+		return () -> convertToJsonNode(web3j.ethGetBlockByHash(getStringFrom(saplObject, BLOCK_HASH),
+				saplObject.get(RETURN_FULL_TRANSACTION_OBJECTS).asBoolean(false)).send().getBlock());
 
 	}
 
 	@Attribute(name = "eth_getBlockByNumber", docs = "Returns information about a block by block number.")
 	public Flux<JsonNode> ethGetBlockByNumber(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethGetBlockByNumber(extractDefaultBlockParameter(saplObject),
-					saplObject.get(RETURN_FULL_TRANSACTION_OBJECTS).asBoolean(false)).send().getBlock());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withBlockByNumber(saplObject));
 
-		}
+	}
+
+	private Callable<JsonNode> withBlockByNumber(JsonNode saplObject) {
+
+		return () -> convertToJsonNode(web3j.ethGetBlockByNumber(extractDefaultBlockParameter(saplObject),
+				saplObject.get(RETURN_FULL_TRANSACTION_OBJECTS).asBoolean(false)).send().getBlock());
 
 	}
 
 	@Attribute(name = "eth_getTransactionByHash", docs = "Returns the information about a transaction requested by transaction hash.")
 	public Flux<JsonNode> ethGetTransactionByHash(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethGetTransactionByHash(saplObject.textValue()).send().getTransaction());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withTransactionByHash(saplObject));
 
-		}
+	}
+
+	private Callable<JsonNode> withTransactionByHash(JsonNode saplObject) {
+
+		return () -> convertToJsonNode(web3j.ethGetTransactionByHash(saplObject.textValue()).send().getTransaction());
 
 	}
 
 	@Attribute(name = "eth_getTransactionByBlockHashAndIndex", docs = "Returns information about a transaction by block hash and transaction index position.")
 	public Flux<JsonNode> ethGetTransactionByBlockHashAndIndex(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethGetTransactionByBlockHashAndIndex(getStringFrom(saplObject, BLOCK_HASH),
-					getBigIntFrom(saplObject, TRANSACTION_INDEX)).send().getTransaction());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withTransactionByBlockHashAndIndex(saplObject));
 
-		}
+	}
+
+	private Callable<JsonNode> withTransactionByBlockHashAndIndex(JsonNode saplObject) {
+
+		return () -> convertToJsonNode(web3j.ethGetTransactionByBlockHashAndIndex(getStringFrom(saplObject, BLOCK_HASH),
+				getBigIntFrom(saplObject, TRANSACTION_INDEX)).send().getTransaction());
 
 	}
 
 	@Attribute(name = "eth_getTransactionByBlockNumberAndIndex", docs = "Returns information about a transaction by block number and transaction index position.")
 	public Flux<JsonNode> ethGetTransactionByBlockNumberAndIndex(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethGetTransactionByBlockNumberAndIndex(extractDefaultBlockParameter(saplObject),
-					getBigIntFrom(saplObject, TRANSACTION_INDEX)).send().getTransaction());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withTransactionByBlockNumberAndIndex(saplObject));
 
-		}
+	}
+
+	private Callable<JsonNode> withTransactionByBlockNumberAndIndex(JsonNode saplObject) {
+
+		return () -> convertToJsonNode(
+				web3j.ethGetTransactionByBlockNumberAndIndex(extractDefaultBlockParameter(saplObject),
+						getBigIntFrom(saplObject, TRANSACTION_INDEX)).send().getTransaction());
 
 	}
 
 	@Attribute(name = "eth_getTransactionReceipt", docs = "Returns the receipt of a transaction by transaction hash.")
 	public Flux<JsonNode> ethGetTransactionReceipt(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethGetTransactionReceipt(saplObject.textValue()).send().getTransactionReceipt());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withTransactionReceipt(saplObject));
 
-		}
+	}
+
+	private Callable<JsonNode> withTransactionReceipt(JsonNode saplObject) {
+
+		return () -> convertToJsonNode(
+				web3j.ethGetTransactionReceipt(saplObject.textValue()).send().getTransactionReceipt());
 
 	}
 
@@ -660,291 +621,143 @@ public class EthereumPolicyInformationPoint {
 	@Attribute(name = "eth_getUncleByBlockHashAndIndex", docs = "Returns information about a uncle of a block by hash and uncle index position.")
 	public Flux<JsonNode> ethGetUncleByBlockHashAndIndex(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethGetUncleByBlockHashAndIndex(getStringFrom(saplObject, BLOCK_HASH),
-					getBigIntFrom(saplObject, TRANSACTION_INDEX)).send().getBlock());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withUncleByBlockHashAndIndex(saplObject));
 
-		}
+	}
+
+	private Callable<JsonNode> withUncleByBlockHashAndIndex(JsonNode saplObject) {
+
+		return () -> convertToJsonNode(web3j.ethGetUncleByBlockHashAndIndex(getStringFrom(saplObject, BLOCK_HASH),
+				getBigIntFrom(saplObject, TRANSACTION_INDEX)).send().getBlock());
 
 	}
 
 	@Attribute(name = "eth_getUncleByBlockNumberAndIndex", docs = "Returns information about a uncle of a block by number and uncle index position.")
 	public Flux<JsonNode> ethGetUncleByBlockNumberAndIndex(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethGetUncleByBlockNumberAndIndex(extractDefaultBlockParameter(saplObject),
-					getBigIntFrom(saplObject, TRANSACTION_INDEX)).send().getBlock());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
-
-		}
+		return scheduledFlux(withUncleByBlockNumberAndIndex(saplObject));
 
 	}
 
-	@Attribute(name = "eth_newBlockFilter", docs = "Creates a filter in the node, to notify when a new block arrives. To check if the state has changed, call eth_getFilterChanges.")
-	public Flux<JsonNode> ethNewBlockFilter(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethNewBlockFilter().send().getFilterId());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+	private Callable<JsonNode> withUncleByBlockNumberAndIndex(JsonNode saplObject) {
 
-		}
-
-	}
-
-	@Attribute(name = "eth_newPendingTransactionFilter", docs = "Creates a filter in the node, to notify when new pending transactions arrive. To check if the state has changed, call eth_getFilterChanges.")
-	public Flux<JsonNode> ethNewPendingTransactionFilter(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethNewPendingTransactionFilter().send().getFilterId());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
-
-		}
-
-	}
-
-	@Attribute(name = "eth_uninstallFilter", docs = "Uninstalls a filter with given id. Should always be called when watch is no longer needed. Additonally Filters timeout when they aren't requested with eth_getFilterChanges for a period of time.")
-	public Flux<JsonNode> ethUninstallFilter(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethUninstallFilter(getBigIntFrom(saplObject, FILTER_ID)).send().getResult());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
-
-		}
+		return () -> convertToJsonNode(web3j.ethGetUncleByBlockNumberAndIndex(extractDefaultBlockParameter(saplObject),
+				getBigIntFrom(saplObject, TRANSACTION_INDEX)).send().getBlock());
 
 	}
 
 	@Attribute(name = "eth_getFilterChanges", docs = "Polling method for a filter, which returns an array of logs which occurred since last poll.")
 	public Flux<JsonNode> ethGetFilterChanges(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethGetFilterChanges(getBigIntFrom(saplObject, FILTER_ID)).send().getLogs());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withFilterChanges(saplObject));
 
-		}
+	}
+
+	private Callable<JsonNode> withFilterChanges(JsonNode saplObject) {
+
+		return () -> convertToJsonNode(
+				web3j.ethGetFilterChanges(getBigIntFrom(saplObject, FILTER_ID)).send().getLogs());
 
 	}
 
 	@Attribute(name = "eth_getFilterLogs", docs = "Returns an array of all logs matching filter with given id.")
 	public Flux<JsonNode> ethGetFilterLogs(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethGetFilterLogs(getBigIntFrom(saplObject, FILTER_ID)).send().getLogs());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withFilterLogs(saplObject));
 
-		}
+	}
+
+	private Callable<JsonNode> withFilterLogs(JsonNode saplObject) {
+
+		return () -> convertToJsonNode(web3j.ethGetFilterLogs(getBigIntFrom(saplObject, FILTER_ID)).send().getLogs());
 
 	}
 
 	@Attribute(name = "eth_getLogs", docs = "Returns an array of all logs matching a given filter object.")
 	public Flux<JsonNode> ethGetLogs(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethGetLogs(mapper.convertValue(saplObject, EthFilter.class)).send().getLogs());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withLogs(saplObject));
 
-		}
+	}
+
+	private Callable<JsonNode> withLogs(JsonNode saplObject) {
+
+		return () -> convertToJsonNode(
+				web3j.ethGetLogs(mapper.convertValue(saplObject, EthFilter.class)).send().getLogs());
 
 	}
 
 	@Attribute(name = "eth_getWork", docs = "Returns the hash of the current block, the seedHash, and the boundary condition to be met (\"target\").")
 	public Flux<JsonNode> ethGetWork(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
-		try {
-			return convertToFlux(web3j.ethGetWork().send().getResult());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
-
-		}
+		return scheduledFlux(withWork());
 
 	}
 
-	@Attribute(name = "eth_submitWork", docs = "Used for submitting a proof-of-work solution.")
-	public Flux<JsonNode> ethSubmitWork(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
-		try {
-			return convertToFlux(
-					web3j.ethSubmitWork(getStringFrom(saplObject, NONCE), getStringFrom(saplObject, HEADER_POW_HASH),
-							getStringFrom(saplObject, MIX_DIGEST)).send().getResult());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+	private Callable<JsonNode> withWork() {
 
-		}
-
-	}
-
-	@Attribute(name = "eth_submitHashrate", docs = "Used for submitting mining hashrate.")
-	public Flux<JsonNode> ethSubmitHashrate(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
-		try {
-			return convertToFlux(
-					web3j.ethSubmitHashrate(getStringFrom(saplObject, HASHRATE), getStringFrom(saplObject, CLIENT_ID))
-							.send().getResult());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
-
-		}
+		return () -> convertToJsonNode(web3j.ethGetWork().send().getResult());
 
 	}
 
 	@Attribute(name = "shh_version", docs = "Returns the current whisper protocol version.")
 	public Flux<JsonNode> shhVersion(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
-		try {
-			return convertToFlux(web3j.shhVersion().send().getVersion());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
-
-		}
+		return scheduledFlux(withShhVersion());
 
 	}
 
-	@Attribute(name = "shh_post", docs = "Sends a whisper message.")
-	public Flux<JsonNode> shhPost(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
+	private Callable<JsonNode> withShhVersion() {
 
-		try {
-			return convertToFlux(web3j.shhPost(mapper.convertValue(saplObject, ShhPost.class)).send().getResult());
-		}
-		catch (IllegalArgumentException | IOException e) {
-			throw new AttributeException(e);
-		}
-
-	}
-
-	@Attribute(name = "shh_newIdentity", docs = "Creates new whisper identity in the client.")
-	public Flux<JsonNode> shhNewIdentity(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
-		try {
-			return convertToFlux(web3j.shhNewIdentity().send().getResult());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
-
-		}
+		return () -> convertToJsonNode(web3j.shhVersion().send().getVersion());
 
 	}
 
 	@Attribute(name = "shh_hasIdentity", docs = "Checks if the client hold the private keys for a given identity.")
 	public Flux<JsonNode> shhHasIdentity(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(web3j.shhHasIdentity(saplObject.textValue()).send().getResult());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
-
-		}
+		return scheduledFlux(withHasIdentity(saplObject));
 
 	}
 
-	@Attribute(name = "shh_newGroup", docs = "Creates a new group.")
-	public Flux<JsonNode> shhNewGroup(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
-		try {
-			return convertToFlux(web3j.shhNewGroup().send().getResult());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+	private Callable<JsonNode> withHasIdentity(JsonNode saplObject) {
 
-		}
-
-	}
-
-	@Attribute(name = "shh_addToGroup", docs = "Adds a whisper identity to the group.")
-	public Flux<JsonNode> shhAddToGroup(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
-		try {
-			return convertToFlux(web3j.shhAddToGroup(saplObject.textValue()).send().getResult());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
-
-		}
-
-	}
-
-	@Attribute(name = "shh_newFilter", docs = "Creates filter to notify, when client receives whisper message matching the filter options.")
-	public Flux<JsonNode> shhNewFilter(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
-		try {
-			return convertToFlux(
-					web3j.shhNewFilter(mapper.convertValue(saplObject, ShhFilter.class)).send().getFilterId());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
-
-		}
-
-	}
-
-	@Attribute(name = "shh_uninstallFilter", docs = "Uninstalls a filter with given id. Should always be called when watch is no longer needed. Additonally Filters timeout when they aren't requested with shh_getFilterChanges for a period of time.")
-	public Flux<JsonNode> shhUninstallFilter(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
-		try {
-			return convertToFlux(web3j.shhUninstallFilter(saplObject.bigIntegerValue()).send().getResult());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
-
-		}
+		return () -> convertToJsonNode(web3j.shhHasIdentity(saplObject.textValue()).send().getResult());
 
 	}
 
 	@Attribute(name = "shh_getFilterChanges", docs = "Polling method for whisper filters. Returns new messages since the last call of this method.")
 	public Flux<JsonNode> shhGetFilterChanges(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(web3j.shhGetFilterChanges(saplObject.bigIntegerValue()).send().getMessages());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
+		return scheduledFlux(withShhFilterChanges(saplObject));
 
-		}
+	}
+
+	private Callable<JsonNode> withShhFilterChanges(JsonNode saplObject) {
+
+		return () -> convertToJsonNode(web3j.shhGetFilterChanges(saplObject.bigIntegerValue()).send().getMessages());
 
 	}
 
 	@Attribute(name = "shh_getMessages", docs = "Get all messages matching a filter. Unlike shh_getFilterChanges this returns all messages.")
 	public Flux<JsonNode> shhGetMessages(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		try {
-			return convertToFlux(web3j.shhGetMessages(saplObject.bigIntegerValue()).send().getMessages());
-		}
-		catch (IOException e) {
-			throw new AttributeException(e);
-
-		}
+		return scheduledFlux(withShhMessages(saplObject));
 
 	}
 
-	private static Flux<JsonNode> convertToFlux(Object o) {
-		return Flux.just(mapper.convertValue(o, JsonNode.class));
+	private Callable<JsonNode> withShhMessages(JsonNode saplObject) {
+
+		return () -> convertToJsonNode(web3j.shhGetMessages(saplObject.bigIntegerValue()).send().getMessages());
+
 	}
 
 	private Flux<JsonNode> scheduledFlux(Callable<JsonNode> functionToCall) {
-		Flux<Long> timer = Flux.interval(Duration.ZERO, ethPollingInterval);
 		Flux<JsonNode> returnFlux = timer.map((i) -> {
 			try {
 				return functionToCall.call();
 			}
 			catch (Exception e) {
-				LOGGER.warn("There has been a function that couldn't be called correctly.");
-				return JSON.nullNode();
+				LOGGER.warn("The following exception has been thrown:\n" + e);
 			}
+			return JSON.nullNode();
 		});
 
 		return returnFlux;

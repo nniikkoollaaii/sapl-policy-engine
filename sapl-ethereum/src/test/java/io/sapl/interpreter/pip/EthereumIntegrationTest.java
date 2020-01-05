@@ -13,8 +13,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.web3j.crypto.Credentials;
@@ -37,7 +35,7 @@ import io.sapl.api.pdp.AuthorizationSubscription;
 import io.sapl.api.pdp.Decision;
 import io.sapl.api.pip.AttributeException;
 import io.sapl.interpreter.pip.contracts.Authorization;
-import io.sapl.interpreter.pip.contracts.Certification;
+import io.sapl.interpreter.pip.contracts.DeviceOperatorCertificate;
 import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint;
 import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint.Builder.IndexType;
 import reactor.core.publisher.Flux;
@@ -55,21 +53,14 @@ import reactor.test.StepVerifier;
  * DO NOT USE THESES ACCOUNTS IN THE MAIN NET. ANY ETHER SENT TO THESE ACCOUNTS WILL BE LOST.
  *
  */
+@SuppressWarnings("rawtypes")
 public class EthereumIntegrationTest {
 
 	private static final String HTTP_LOCALHOST = "http://localhost:";
 
 	private static final String CERTIFICATION = "certification";
 
-	private static final String STRING = "string";
-
 	private static final String HAS_CERTIFICATE = "hasCertificate";
-
-	private static final String INCREDIBLE_CERTIFICATE = "Incredible_Certificate";
-
-	private static final String ETHEREUM_CERTIFICATE = "Ethereum_Certificate";
-
-	private static final String SAPL_CERTIFICATE = "SAPL_Certificate";
 
 	private static final String WRONG_NAME = "wrongName";
 
@@ -88,8 +79,6 @@ public class EthereumIntegrationTest {
 	private static final String ADDRESS = "address";
 
 	private static final String TYPE = "type";
-
-	private static final String TEST_VALUE = "testValue";
 
 	private static final String TO_ACCOUNT = "toAccount";
 
@@ -126,8 +115,6 @@ public class EthereumIntegrationTest {
 	private static EmbeddedPolicyDecisionPoint pdp;
 
 	private static final JsonNodeFactory JSON = JsonNodeFactory.instance;
-
-	private static final Logger logger = LoggerFactory.getLogger(EthereumIntegrationTest.class);
 
 	private static String authContractAddress;
 
@@ -167,13 +154,11 @@ public class EthereumIntegrationTest {
 		authContractAddress = authContract.getContractAddress();
 		authContract.authorize(USER2_ADDRESS).send();
 
-		Certification certContract = Certification.deploy(web3j, credentials, new DefaultGasProvider()).send();
+		DeviceOperatorCertificate certContract = DeviceOperatorCertificate
+				.deploy(web3j, credentials, new DefaultGasProvider()).send();
 		certContractAddress = certContract.getContractAddress();
-		certContract.issueCertificate(USER2_ADDRESS, SAPL_CERTIFICATE);
-		certContract.issueCertificate(USER2_ADDRESS, ETHEREUM_CERTIFICATE);
-		certContract.issueCertificate(USER3_ADDRESS, ETHEREUM_CERTIFICATE);
-		credentials = Credentials.create(USER2_PRIVATE_KEY);
-		certContract.issueCertificate(USER3_ADDRESS, INCREDIBLE_CERTIFICATE);
+		certContract.addIssuer(USER1_ADDRESS);
+		certContract.issueCertificate(USER2_ADDRESS);
 
 	}
 
@@ -181,7 +166,7 @@ public class EthereumIntegrationTest {
 
 	@Test
 	@Ignore
-	public void loadContractInformationShouldWorkInCertificationPolicy() {
+	public void loadContractInformationShouldWorkInCertificatePolicy() {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(CONTRACT_ADDRESS, certContractAddress);
 		saplObject.put(FUNCTION_NAME, HAS_CERTIFICATE);
@@ -191,14 +176,6 @@ public class EthereumIntegrationTest {
 		input1.put(TYPE, ADDRESS);
 		input1.put(VALUE, USER2_ADDRESS.substring(2));
 		inputParams.add(input1);
-		ObjectNode input2 = JSON.objectNode();
-		input2.put(TYPE, ADDRESS);
-		input2.put(VALUE, USER1_ADDRESS.substring(2));
-		inputParams.add(input2);
-		ObjectNode input3 = JSON.objectNode();
-		input3.put(TYPE, STRING);
-		input3.put(VALUE, SAPL_CERTIFICATE);
-		inputParams.add(input3);
 		saplObject.set(INPUT_PARAMS, inputParams);
 
 		ArrayNode outputParams = JSON.arrayNode();
@@ -234,11 +211,58 @@ public class EthereumIntegrationTest {
 				.thenCancel().verify();
 	}
 
+	// Timed Testing
+
+	// loadContractInformation
+
+	@Test
+	public void loadContractInformationWithAuthorizationShouldReturnCorrectValue() throws AttributeException {
+		ObjectNode saplObject = JSON.objectNode();
+		saplObject.put(CONTRACT_ADDRESS, authContractAddress);
+		saplObject.put(FUNCTION_NAME, IS_AUTHORIZED);
+		ArrayNode inputParams = JSON.arrayNode();
+		ObjectNode input1 = JSON.objectNode();
+		input1.put(TYPE, ADDRESS);
+		input1.put(VALUE, USER2_ADDRESS.substring(2));
+		inputParams.add(input1);
+		saplObject.set(INPUT_PARAMS, inputParams);
+		ArrayNode outputParams = JSON.arrayNode();
+		outputParams.add(BOOL);
+		saplObject.set(OUTPUT_PARAMS, outputParams);
+		JsonNode result = ethPip.loadContractInformation(saplObject, null).blockFirst();
+
+		assertTrue("False was returned although user2 was authorized and result should have been true.",
+				result.get(0).get(VALUE).asBoolean());
+
+	}
+
+	@Test
+	@Ignore
+	public void loadContractInformationShouldWorkWithCertificateContract() throws AttributeException {
+		ObjectNode saplObject = JSON.objectNode();
+		saplObject.put(CONTRACT_ADDRESS, certContractAddress);
+		saplObject.put(FUNCTION_NAME, HAS_CERTIFICATE);
+
+		ArrayNode inputParams = JSON.arrayNode();
+		ObjectNode input1 = JSON.objectNode();
+		input1.put(TYPE, ADDRESS);
+		input1.put(VALUE, USER2_ADDRESS.substring(2));
+		inputParams.add(input1);
+		saplObject.set(INPUT_PARAMS, inputParams);
+
+		ArrayNode outputParams = JSON.arrayNode();
+		outputParams.add(BOOL);
+		saplObject.set(OUTPUT_PARAMS, outputParams);
+		JsonNode result = ethPip.loadContractInformation(saplObject, null).blockFirst();
+
+		assertTrue("False was returned although user2 was certified and result should have been true.",
+				result.get(0).get(VALUE).asBoolean());
+	}
+
 	// verifyTransaction
 
 	@Test
 	public void verifyTransactionShouldReturnTrueWithCorrectTransaction() {
-		System.out.println("THIS IS THE ONE:");
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(TRANSACTION_HASH, transactionReceiptUser2.getTransactionHash());
 		saplObject.put(FROM_ACCOUNT, USER1_ADDRESS);
@@ -314,57 +338,6 @@ public class EthereumIntegrationTest {
 		boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
 		assertFalse("Transaction was not validated as false although the input was erroneous.", result);
 
-	}
-
-	// loadContractInformation
-	@Test
-	public void loadContractInformationShouldReturnCorrectValue() throws AttributeException {
-		ObjectNode saplObject = JSON.objectNode();
-		saplObject.put(CONTRACT_ADDRESS, authContractAddress);
-		saplObject.put(FUNCTION_NAME, IS_AUTHORIZED);
-		ArrayNode inputParams = JSON.arrayNode();
-		ObjectNode input1 = JSON.objectNode();
-		input1.put(TYPE, ADDRESS);
-		input1.put(VALUE, USER2_ADDRESS.substring(2));
-		inputParams.add(input1);
-		saplObject.set(INPUT_PARAMS, inputParams);
-		ArrayNode outputParams = JSON.arrayNode();
-		outputParams.add(BOOL);
-		saplObject.set(OUTPUT_PARAMS, outputParams);
-		JsonNode result = ethPip.loadContractInformation(saplObject, null).blockFirst();
-
-		assertTrue("False was returned although user2 was authorized and result should have been true.",
-				result.get(0).get(VALUE).asBoolean());
-
-	}
-
-	@Test
-	@Ignore
-	public void loadContractInformationShouldWorkWithCertificationContract() throws AttributeException {
-		ObjectNode saplObject = JSON.objectNode();
-		saplObject.put(CONTRACT_ADDRESS, certContractAddress);
-		saplObject.put(FUNCTION_NAME, HAS_CERTIFICATE);
-		ArrayNode inputParams = JSON.arrayNode();
-		ObjectNode input1 = JSON.objectNode();
-		input1.put(TYPE, ADDRESS);
-		input1.put(VALUE, USER2_ADDRESS.substring(2));
-		inputParams.add(input1);
-		ObjectNode input2 = JSON.objectNode();
-		input2.put(TYPE, ADDRESS);
-		input2.put(VALUE, USER1_ADDRESS.substring(2));
-		inputParams.add(input2);
-		ObjectNode input3 = JSON.objectNode();
-		input3.put(TYPE, STRING);
-		input3.put(VALUE, SAPL_CERTIFICATE);
-		inputParams.add(input3);
-		saplObject.set(INPUT_PARAMS, inputParams);
-		ArrayNode outputParams = JSON.arrayNode();
-		outputParams.add(BOOL);
-		saplObject.set(OUTPUT_PARAMS, outputParams);
-		JsonNode result = ethPip.loadContractInformation(saplObject, null).blockFirst();
-
-		assertTrue("False was returned although user2 was certified and result should have been true.",
-				result.get(0).get(VALUE).asBoolean());
 	}
 
 	// web3_clientVersion

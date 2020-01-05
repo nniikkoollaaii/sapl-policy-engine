@@ -1,6 +1,6 @@
 pragma solidity >=0.4.16 <0.7.0;
 
-contract Device_Operator_Certificate {
+contract DeviceOperatorCertificate {
 
   // The certification authority decides who can issue a certificate
   address public certificationAuthority;
