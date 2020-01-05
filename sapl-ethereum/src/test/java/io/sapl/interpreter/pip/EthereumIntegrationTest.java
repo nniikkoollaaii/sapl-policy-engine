@@ -43,7 +43,18 @@ import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint.Builder.IndexType;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
-@Ignore
+/**
+ * Testing the EthereumPIP with an ethereum blockchain node running in a Docker container. The node is the hyperledger
+ * besu implemenation (https://besu.hyperledger.org/en/stable/)
+ *
+ * This test requires running Docker with version at least 1.6.0 and Docker environment should have more than 2GB free
+ * disk space.
+ *
+ * The accounts used for testing are publicly known from the besu website
+ * (https://besu.hyperledger.org/en/stable/Reference/Accounts-for-Testing/) <br>
+ * DO NOT USE THESES ACCOUNTS IN THE MAIN NET. ANY ETHER SENT TO THESE ACCOUNTS WILL BE LOST.
+ *
+ */
 public class EthereumIntegrationTest {
 
 	private static final String HTTP_LOCALHOST = "http://localhost:";
@@ -106,6 +117,8 @@ public class EthereumIntegrationTest {
 
 	private static final String USER3_PRIVATE_KEY = "0xae6ae8e5ccbfb04590405997ee2d52d2b330726137b875053c36d94e974d162f";
 
+	private static final BigInteger TRANSACTION1_VALUE = new BigInteger("2000000000000000000");
+
 	private static Web3j web3j;
 
 	private static EthereumPolicyInformationPoint ethPip;
@@ -144,20 +157,16 @@ public class EthereumIntegrationTest {
 				.withFilesystemPolicyRetrievalPoint(absolutePath + "/policies", IndexType.SIMPLE)
 				.withPolicyInformationPoint(ethPip).build();
 
-		// Now we make some transactions
-
 		Credentials credentials = Credentials.create(USER1_PRIVATE_KEY);
-		transactionReceiptUser2 = Transfer
-				.sendFunds(web3j, credentials, USER2_ADDRESS, BigDecimal.valueOf(2.0), Convert.Unit.ETHER).send();
+		transactionReceiptUser2 = Transfer.sendFunds(web3j, credentials, USER2_ADDRESS,
+				BigDecimal.valueOf(TRANSACTION1_VALUE.doubleValue()), Convert.Unit.WEI).send();
 		transactionReceiptUser3 = Transfer
 				.sendFunds(web3j, credentials, USER3_ADDRESS, BigDecimal.valueOf(3.3), Convert.Unit.ETHER).send();
 
-		// Now we deploy a contract and make some changes
 		Authorization authContract = Authorization.deploy(web3j, credentials, new DefaultGasProvider()).send();
 		authContractAddress = authContract.getContractAddress();
 		authContract.authorize(USER2_ADDRESS).send();
 
-		// Deploying the Certification contract
 		Certification certContract = Certification.deploy(web3j, credentials, new DefaultGasProvider()).send();
 		certContractAddress = certContract.getContractAddress();
 		certContract.issueCertificate(USER2_ADDRESS, SAPL_CERTIFICATE);
@@ -171,6 +180,7 @@ public class EthereumIntegrationTest {
 	// Test with Policy
 
 	@Test
+	@Ignore
 	public void loadContractInformationShouldWorkInCertificationPolicy() {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(CONTRACT_ADDRESS, certContractAddress);
@@ -228,11 +238,12 @@ public class EthereumIntegrationTest {
 
 	@Test
 	public void verifyTransactionShouldReturnTrueWithCorrectTransaction() {
+		System.out.println("THIS IS THE ONE:");
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(TRANSACTION_HASH, transactionReceiptUser2.getTransactionHash());
 		saplObject.put(FROM_ACCOUNT, USER1_ADDRESS);
 		saplObject.put(TO_ACCOUNT, USER2_ADDRESS);
-		saplObject.put(TRANSACTION_VALUE, new BigInteger("2000000000000000000"));
+		saplObject.put(TRANSACTION_VALUE, TRANSACTION1_VALUE);
 		boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
 		assertTrue("Transaction was not validated as true although it is correct.", result);
 
@@ -328,6 +339,7 @@ public class EthereumIntegrationTest {
 	}
 
 	@Test
+	@Ignore
 	public void loadContractInformationShouldWorkWithCertificationContract() throws AttributeException {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(CONTRACT_ADDRESS, certContractAddress);
@@ -355,26 +367,6 @@ public class EthereumIntegrationTest {
 				result.get(0).get(VALUE).asBoolean());
 	}
 
-	@Test
-	public void loadContractInformationShouldReturnIssuer() throws AttributeException {
-		ObjectNode saplObject = JSON.objectNode();
-		saplObject.put(CONTRACT_ADDRESS, certContractAddress);
-		saplObject.put(FUNCTION_NAME, "certIssuerAddress");
-		ArrayNode inputParams = JSON.arrayNode();
-		ObjectNode input1 = JSON.objectNode();
-		input1.put(TYPE, ADDRESS);
-		input1.put(VALUE, USER2_ADDRESS.substring(2));
-		inputParams.add(input1);
-		saplObject.set(INPUT_PARAMS, inputParams);
-		ArrayNode outputParams = JSON.arrayNode();
-		outputParams.add(ADDRESS);
-		saplObject.set(OUTPUT_PARAMS, outputParams);
-		JsonNode result = ethPip.loadContractInformation(saplObject, null).blockFirst();
-
-		assertTrue("False was returned although user2 was certified and result should have been true.",
-				result.get(0).get(VALUE).asBoolean());
-	}
-
 	// web3_clientVersion
 
 	@Test
@@ -388,9 +380,9 @@ public class EthereumIntegrationTest {
 	// web3_sha3
 	@Test
 	public void web3Sha3ShouldReturnCorrectValuer() throws IOException, AttributeException {
-		JsonNode saplObject = JSON.textNode(TEST_VALUE);
+		JsonNode saplObject = JSON.textNode(USER3_PRIVATE_KEY);
 		String pipResult = ethPip.web3Sha3(saplObject, null).blockFirst().textValue();
-		String web3jResult = web3j.web3Sha3(TEST_VALUE).send().getResult();
+		String web3jResult = web3j.web3Sha3(USER3_PRIVATE_KEY).send().getResult();
 		assertEquals("The web3Sha3 method did not work correctly.", pipResult, web3jResult);
 	}
 

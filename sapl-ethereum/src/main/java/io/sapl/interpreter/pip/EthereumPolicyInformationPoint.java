@@ -5,12 +5,15 @@ import static io.sapl.interpreter.pip.EthereumPipFunctions.extractDefaultBlockPa
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.concurrent.Callable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.TypeReference;
@@ -22,7 +25,6 @@ import org.web3j.protocol.core.methods.request.EthFilter;
 import org.web3j.protocol.core.methods.request.ShhFilter;
 import org.web3j.protocol.core.methods.request.ShhPost;
 import org.web3j.protocol.core.methods.response.EthCall;
-import org.web3j.protocol.core.methods.response.EthTransaction;
 import org.web3j.protocol.core.methods.response.Transaction;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -32,7 +34,6 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.sapl.api.pip.Attribute;
 import io.sapl.api.pip.AttributeException;
 import io.sapl.api.pip.PolicyInformationPoint;
-import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 
 /**
@@ -47,9 +48,12 @@ import reactor.core.publisher.Flux;
  * considered to be a more user friendly implementation of the most common use cases.
  */
 
-@Slf4j
 @PolicyInformationPoint(name = "ethereum", description = "Connects to the Ethereum Blockchain.")
 public class EthereumPolicyInformationPoint {
+
+	private static final long DEFAULT_ETH_POLLING_INTERVAL = 5000L;
+
+	private static final int DEFAULT_THREAD_POOL_SIZE = 4;
 
 	private static final String ADDRESS = "address";
 
@@ -99,10 +103,19 @@ public class EthereumPolicyInformationPoint {
 
 	private static final JsonNodeFactory JSON = JsonNodeFactory.instance;
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(EthereumPolicyInformationPoint.class);
+
+	private final Duration ethPollingInterval;
+
 	private Web3j web3j;
 
 	public EthereumPolicyInformationPoint(Web3jService web3jService) {
+		this(web3jService, DEFAULT_ETH_POLLING_INTERVAL);
+	}
+
+	public EthereumPolicyInformationPoint(Web3jService web3jService, long ethereumPollingIntervalInMs) {
 		web3j = Web3j.build(web3jService);
+		ethPollingInterval = Duration.ofMillis(ethereumPollingIntervalInMs);
 	}
 
 	/**
@@ -118,25 +131,41 @@ public class EthereumPolicyInformationPoint {
 	 */
 	@Attribute(name = "transaction", docs = "Returns true, if a transaction has taken place and false otherwise.")
 	public Flux<JsonNode> verifyTransaction(JsonNode saplObject, Map<String, JsonNode> variables) {
-		try {
+		return scheduledFlux(withVerifiedTransaction(saplObject));
+	}
 
-			EthTransaction ethTransaction = web3j.ethGetTransactionByHash(getStringFrom(saplObject, TRANSACTION_HASH))
-					.send();
-			Optional<Transaction> optionalTransactionFromChain = ethTransaction.getTransaction();
-			if (optionalTransactionFromChain.isPresent()) {
-				Transaction transactionFromChain = optionalTransactionFromChain.get();
-				if (transactionFromChain.getFrom().equals(getStringFrom(saplObject, FROM_ACCOUNT))
-						&& transactionFromChain.getTo().equals(getStringFrom(saplObject, TO_ACCOUNT))
-						&& transactionFromChain.getValue().equals(getBigIntFrom(saplObject, TRANSACTION_VALUE))) {
-					return convertToFlux(true);
+	private Callable<JsonNode> withVerifiedTransaction(JsonNode saplObject) {
+		return () -> {
+			try {
+				Optional<Transaction> optionalTransactionFromChain = web3j
+						.ethGetTransactionByHash(getStringFrom(saplObject, TRANSACTION_HASH)).send().getTransaction();
+				System.out.println(optionalTransactionFromChain);
+				System.out.println(saplObject);
+				if (optionalTransactionFromChain.isPresent()) {
+					Transaction transactionFromChain = optionalTransactionFromChain.get();
+					System.out.println(transactionFromChain.getFrom());
+					System.out.println(getStringFrom(saplObject, FROM_ACCOUNT));
+					System.out.println(transactionFromChain.getTo());
+					System.out.println(getStringFrom(saplObject, TO_ACCOUNT));
+					System.out.println(transactionFromChain.getValue());
+					System.out.println(getBigIntFrom(saplObject, TRANSACTION_VALUE));
+					System.out.println();
+					if (transactionFromChain.getFrom().toLowerCase()
+							.equals(getStringFrom(saplObject, FROM_ACCOUNT).toLowerCase())
+							&& transactionFromChain.getTo().toLowerCase()
+									.equals(getStringFrom(saplObject, TO_ACCOUNT).toLowerCase())
+							&& transactionFromChain.getValue().equals(getBigIntFrom(saplObject, TRANSACTION_VALUE))) {
+						System.out.println("Returning true node.");
+						return JSON.booleanNode(true);
+					}
 				}
 			}
-		}
-		catch (IOException | NullPointerException e) {
-			LOGGER.warn(VERIFY_TRANSACTION_WARNING);
-		}
-
-		return convertToFlux(false);
+			catch (IOException | NullPointerException e) {
+				LOGGER.warn(VERIFY_TRANSACTION_WARNING);
+			}
+			System.out.println("Returning false node.");
+			return JSON.booleanNode(false);
+		};
 	}
 
 	/**
@@ -199,23 +228,19 @@ public class EthereumPolicyInformationPoint {
 	@Attribute(name = "web3_clientVersion", docs = "Returns the current client version.")
 	public Flux<JsonNode> web3ClientVersion(JsonNode saplObject, Map<String, JsonNode> variables)
 			throws AttributeException {
-		Stream<JsonNode> stream = Stream.generate(this::withWeb3ClientVersionSupplier);
-		return Flux.fromStream(stream);
+		return scheduledFlux(withWeb3ClientVersionSupplier());
 	}
 
-	private JsonNode withWeb3ClientVersionSupplier() {
-		try {
-			return convertToJsonNode(web3j.web3ClientVersion().send().getWeb3ClientVersion());
-		}
-		catch (IOException e) {
-			return JSON.nullNode();
-		}
+	private Callable<JsonNode> withWeb3ClientVersionSupplier() {
+
+		return () -> convertToJsonNode(web3j.web3ClientVersion().send().getWeb3ClientVersion());
+
 	}
 
 	@Attribute(name = "web3_sha3", docs = "Returns Keccak-256 (not the standardized SHA3-256) of the given data.")
 	public Flux<JsonNode> web3Sha3(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
 		try {
-			return convertToFlux(web3j.web3Sha3(saplObject.textValue()).send());
+			return convertToFlux(web3j.web3Sha3(saplObject.textValue()).send().getResult());
 		}
 		catch (IOException e) {
 			throw new AttributeException(e);
@@ -908,6 +933,22 @@ public class EthereumPolicyInformationPoint {
 
 	private static Flux<JsonNode> convertToFlux(Object o) {
 		return Flux.just(mapper.convertValue(o, JsonNode.class));
+	}
+
+	private Flux<JsonNode> scheduledFlux(Callable<JsonNode> functionToCall) {
+		Flux<Long> timer = Flux.interval(Duration.ZERO, ethPollingInterval);
+		Flux<JsonNode> returnFlux = timer.map((i) -> {
+			try {
+				return functionToCall.call();
+			}
+			catch (Exception e) {
+				LOGGER.warn("There has been a function that couldn't be called correctly.");
+				return JSON.nullNode();
+			}
+		});
+
+		return returnFlux;
+
 	}
 
 	private static JsonNode convertToJsonNode(Object o) {
