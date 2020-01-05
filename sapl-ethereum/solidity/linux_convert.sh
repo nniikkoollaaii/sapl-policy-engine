@@ -1,7 +1,7 @@
 #!/bin/bash
 # A tool to convert Solidity Contracts to their Java from usable with Web3j.
 # The Converter creates abi and bin files in ./abi-bin and saves the Java form
-# directly in ../src/main/java/io/sapl/ethereum/contracts
+# directly in ../src/test/java/io/sapl/ethereum/contracts
 # Needed input is the name of the contract (without .sol)
 # solc compiler needs to be installed
 # (https://solidity.readthedocs.io/en/v0.5.7/installing-solidity.html)
