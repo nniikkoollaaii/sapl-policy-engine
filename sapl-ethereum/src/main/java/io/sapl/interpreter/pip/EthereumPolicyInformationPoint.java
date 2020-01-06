@@ -284,7 +284,7 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
-	@Attribute(name = "syncing", docs = "Returns an object with data about the sync status or false.")
+	@Attribute(name = "syncing", docs = "Returns true if the client is syncing or false otherwise.")
 	public Flux<JsonNode> ethSyncing(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
 		return scheduledFlux(withEthSyncing());
 
