@@ -58,7 +58,6 @@ import reactor.test.StepVerifier;
  * DO NOT USE THESES ACCOUNTS IN THE MAIN NET. ANY ETHER SENT TO THESE ACCOUNTS WILL BE LOST.
  *
  */
-@SuppressWarnings("rawtypes")
 public class EthereumIntegrationTest {
 
 	private static final String HTTP_LOCALHOST = "http://localhost:";
@@ -140,10 +139,11 @@ public class EthereumIntegrationTest {
 	private static TransactionReceipt transactionReceiptUser3;
 
 	@ClassRule
-	public static final GenericContainer besuContainer = new GenericContainer("hyperledger/besu:latest")
-			.withExposedPorts(8545, 8546)
-			.withCommand("--miner-enabled", "--miner-coinbase=" + USER1_ADDRESS, "--rpc-http-enabled", "--network=dev")
-			.waitingFor(Wait.forHttp("/liveness").forStatusCode(200).forPort(8545));
+	public static final GenericContainer<? extends GenericContainer<?>> besuContainer = new GenericContainer<>(
+			"hyperledger/besu:latest").withExposedPorts(8545, 8546)
+					.withCommand("--miner-enabled", "--miner-coinbase=" + USER1_ADDRESS, "--rpc-http-enabled",
+							"--network=dev")
+					.waitingFor(Wait.forHttp("/liveness").forStatusCode(200).forPort(8545));
 
 	@BeforeClass
 	public static void init() throws InterruptedException, TransactionException, Exception {

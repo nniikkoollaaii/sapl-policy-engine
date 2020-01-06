@@ -213,7 +213,7 @@ public class EthereumPipFunctions {
 
 	}
 
-	public static Type convertToType(JsonNode inputParam) throws AttributeException {
+	public static Type<?> convertToType(JsonNode inputParam) throws AttributeException {
 		if (inputParam == null) {
 			throw new AttributeException("An input Parameter for convertToType was null");
 		}

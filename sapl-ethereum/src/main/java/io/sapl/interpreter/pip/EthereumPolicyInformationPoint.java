@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.TypeReference;
+import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.Type;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.Web3jService;
@@ -190,8 +191,8 @@ public class EthereumPolicyInformationPoint {
 					}
 				}
 
-				org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
-						getStringFrom(saplObject, FUNCTION_NAME), inputParameters, outputParameters);
+				org.web3j.abi.datatypes.Function function = new Function(getStringFrom(saplObject, FUNCTION_NAME),
+						inputParameters, outputParameters);
 				String encodedFunction = FunctionEncoder.encode(function);
 				EthCall response = web3j
 						.ethCall(
