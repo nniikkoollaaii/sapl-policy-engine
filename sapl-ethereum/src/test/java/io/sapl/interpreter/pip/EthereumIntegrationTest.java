@@ -594,4 +594,15 @@ public class EthereumIntegrationTest {
 				web3jResult);
 	}
 
+	// code
+	@Test
+	public void ethGetCodeShouldReturnTheCorrectValue() throws AttributeException, IOException {
+		ObjectNode saplObject = JSON.objectNode();
+		saplObject.put(ADDRESS, authContractAddress);
+		String pipResult = ethPip.ethGetCode(saplObject, null).blockFirst().textValue();
+		String web3jResult = web3j.ethGetCode(authContractAddress, DefaultBlockParameter.valueOf(LATEST)).send()
+				.getCode();
+		assertEquals("The ethGetCode method did not return the correct value.", pipResult, web3jResult);
+	}
+
 }

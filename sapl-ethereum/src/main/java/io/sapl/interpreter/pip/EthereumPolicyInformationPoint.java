@@ -117,8 +117,7 @@ public class EthereumPolicyInformationPoint {
 	 * "toAccount" : The adress of the account that receives the transaction <br>
 	 * "transactionValue" : A BigInteger that represents the value of the transaction in Wei
 	 * @param variables is unused here
-	 * @return A single JsonNode that has boolean value true if the transaction has taken place and false otherwise
-	 * @throws AttributeException
+	 * @return A Flux of JsonNodes that have boolean value true if the transaction has taken place and false otherwise @
 	 */
 	@Attribute(name = "transaction", docs = "Returns true, if a transaction has taken place and false otherwise.")
 	public Flux<JsonNode> verifyTransaction(JsonNode saplObject, Map<String, JsonNode> variables) {
@@ -160,14 +159,12 @@ public class EthereumPolicyInformationPoint {
 	 * All types that can be used are listed in the convertToType-method of the <a href=
 	 * "https://github.com/heutelbeck/sapl-policy-engine/blob/sapl-ethereum/sapl-ethereum/src/main/java/io/sapl/interpreter/pip/EthereumPipFunctions.java">EthereumPipFunctions</a>.
 	 * @param variables is unused here
-	 * @return The return value(s) of the called contract function as an Array Node. Each node entry contains two
-	 * values, "value" with the return value and "typeAsString" with the return type. Example for a node entry:
-	 * {"value":true,"typeAsString":"bool"}
-	 * @throws AttributeException
+	 * @return A Flux of ArrayNodes that contain the return value(s) of the called contract function. Each node entry
+	 * contains two values, "value" with the return value and "typeAsString" with the return type. Example for a return
+	 * array: [{"value":true,"typeAsString":"bool"}, {"value":324,"typeAsString":"uint"}] @
 	 */
 	@Attribute(name = "contract", docs = "Returns the result of a function call of a specified contract.")
-	public Flux<JsonNode> loadContractInformation(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> loadContractInformation(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withInformationFromContract(saplObject));
 	}
 
@@ -213,9 +210,14 @@ public class EthereumPolicyInformationPoint {
 		};
 	}
 
+	/**
+	 * This simply returns the version of the client running the node that the EthPip connects to.
+	 * @param saplObject is unused here
+	 * @param variables is unused here
+	 * @return A Flux of JsonNodes containing a string with the clientVersion
+	 */
 	@Attribute(name = "clientVersion", docs = "Returns the current client version.")
-	public Flux<JsonNode> web3ClientVersion(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> web3ClientVersion(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withWeb3ClientVersion());
 	}
 
@@ -225,8 +227,15 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 * Thie function can be used to get the Keccak-256 Hash (which is commonly used in Ethereum) of a given hex value.
+	 * @param saplObject should contain only a string that has to be a hex value, otherwise the hash can't be
+	 * calculated.
+	 * @param variables is unused here
+	 * @return Flux of JsonNodes containing a string with the hash value of the data.
+	 */
 	@Attribute(name = "sha3", docs = "Returns Keccak-256 (not the standardized SHA3-256) of the given data.")
-	public Flux<JsonNode> web3Sha3(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
+	public Flux<JsonNode> web3Sha3(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withWeb3Sha3(saplObject));
 
 	}
@@ -235,8 +244,16 @@ public class EthereumPolicyInformationPoint {
 		return () -> convertToJsonNode(web3j.web3Sha3(saplObject.textValue()).send().getResult());
 	}
 
+	/**
+	 * Method for querying the id of the network the client is connected to. Common network ids are 1 for the Ethereum
+	 * Mainnet, 3 for Ropsten Tesnet, 4 for Rinkeby testnet and 42 for Kovan Testnet. Any other id most probably refers
+	 * to a private testnet.
+	 * @param saplObject is unused here
+	 * @param variables is unused here
+	 * @return Flux of JsonNodes containing a string with the current network id.
+	 */
 	@Attribute(name = "netVersion", docs = "Returns the current network id.")
-	public Flux<JsonNode> netVersion(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
+	public Flux<JsonNode> netVersion(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withNetVersion());
 
 	}
@@ -247,8 +264,14 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 * A simple method that checks if the client is listening for network connections.
+	 * @param saplObject is unused here
+	 * @param variables is unused here
+	 * @return Flux of JsonNodes with boolean value true if listening and false otherwise.
+	 */
 	@Attribute(name = "listening", docs = "Returns true if client is actively listening for network connections.")
-	public Flux<JsonNode> netListening(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
+	public Flux<JsonNode> netListening(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withNetListening());
 
 	}
@@ -259,8 +282,14 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 * Method to find out the number of connected peers.
+	 * @param saplObject is unused here
+	 * @param variables is unused here
+	 * @return Flux of JsonNodes with the number of connected peers as BigInteger value.
+	 */
 	@Attribute(name = "peerCount", docs = "Returns number of peers currently connected to the client.")
-	public Flux<JsonNode> netPeerCount(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
+	public Flux<JsonNode> netPeerCount(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withNetPeerCount());
 
 	}
@@ -271,9 +300,14 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 * Method for querying the version of the currently used ethereum protocol.
+	 * @param saplObject is unused here
+	 * @param variables is unused here
+	 * @return Flux of JsonNodes that contain the protocol version as a String
+	 */
 	@Attribute(name = "protocolVersion", docs = "Returns the current ethereum protocol version.")
-	public Flux<JsonNode> ethProtocolVersion(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> ethProtocolVersion(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withEthProtocolVersion());
 
 	}
@@ -284,8 +318,14 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 * Simple method to check if the client is currently syncing with the network.
+	 * @param saplObject is unused here
+	 * @param variables is unused here
+	 * @return Flux of JsonNodes with boolean value true if syncing and false otherwise.
+	 */
 	@Attribute(name = "syncing", docs = "Returns true if the client is syncing or false otherwise.")
-	public Flux<JsonNode> ethSyncing(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
+	public Flux<JsonNode> ethSyncing(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withEthSyncing());
 
 	}
@@ -296,8 +336,14 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 * Method for retrieving the address of the client coinbase.
+	 * @param saplObject is unused here
+	 * @param variables is unused here
+	 * @return Flux of JsonNodes containing the address of the client coinbase as a String.
+	 */
 	@Attribute(name = "coinbase", docs = "Returns the client coinbase address.")
-	public Flux<JsonNode> ethCoinbase(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
+	public Flux<JsonNode> ethCoinbase(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withEthCoinbase());
 
 	}
@@ -308,8 +354,14 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 * Simple method to check if the client is mining.
+	 * @param saplObject is unused here
+	 * @param variables is unused here
+	 * @return Flux of JsonNodes with boolean value true if mining and false otherwise.
+	 */
 	@Attribute(name = "mining", docs = "Returns true if client is actively mining new blocks.")
-	public Flux<JsonNode> ethMining(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
+	public Flux<JsonNode> ethMining(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withEthMining());
 
 	}
@@ -320,8 +372,14 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 * Method for querying the number of hashes per second that the client is mining with.
+	 * @param saplObject is unused here
+	 * @param variables is unused here
+	 * @return Flux of JsonNodes with the hashrate as BigInteger value.
+	 */
 	@Attribute(name = "hashrate", docs = "Returns the number of hashes per second that the node is mining with.")
-	public Flux<JsonNode> ethHashrate(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
+	public Flux<JsonNode> ethHashrate(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withEthHashrate());
 
 	}
@@ -332,8 +390,14 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 * Method for querying the current gas price in wei.
+	 * @param saplObject is unused here
+	 * @param variables is unused here
+	 * @return Flux of JsonNodes containing the gas price as BigInteger value.
+	 */
 	@Attribute(name = "gasPrice", docs = "Returns the current price per gas in wei.")
-	public Flux<JsonNode> ethGasPrice(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
+	public Flux<JsonNode> ethGasPrice(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withEthGasPrice());
 
 	}
@@ -344,8 +408,14 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 * Method for returning all addresses owned by the client.
+	 * @param saplObject is unused here
+	 * @param variables is unused here
+	 * @return Flux of ArrayNodes that contain the owned addresses as Strings.
+	 */
 	@Attribute(name = "accounts", docs = "Returns a list of addresses owned by client.")
-	public Flux<JsonNode> ethAccounts(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
+	public Flux<JsonNode> ethAccounts(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withEthAccounts());
 
 	}
@@ -356,9 +426,14 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 * Method for receiving the number of the most recent block.
+	 * @param saplObject is unused here
+	 * @param variables is unused here
+	 * @return Flux of JsonNodes containing the blocknumber as BigInteger.
+	 */
 	@Attribute(name = "blockNumber", docs = "Returns the number of most recent block.")
-	public Flux<JsonNode> ethBlockNumber(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> ethBlockNumber(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withEthBlockNumber());
 
 	}
@@ -369,9 +444,20 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 * Method for querying the balance of an account at a given block. If no DefaultBlockParameter is provided the
+	 * latest Block will be queried.
+	 * @param saplObject needs to have the following values: <br>
+	 * "address": The address of the account that you want to get the balance of. <br>
+	 * An optional DefaultBlockParameter. More information on how to provide it can be found in the
+	 * extractDefaultBlockParameter method.
+	 * @param variables
+	 * @return Flux of JsonNodes holding the balance in wei as BigInteger.
+	 * @see io.sapl.interpreter.pip.EthereumPipFunctions#extractDefaultBlockParameter(JsonNode)
+	 * extractDefaultBlockParameter
+	 */
 	@Attribute(name = "balance", docs = "Returns the balance of the account of given address.")
-	public Flux<JsonNode> ethGetBalance(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> ethGetBalance(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withAccountBalance(saplObject));
 
 	}
@@ -385,8 +471,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "storage", docs = "Returns the value from a storage position at a given address.")
-	public Flux<JsonNode> ethGetStorageAt(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> ethGetStorageAt(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withStorageAt(saplObject));
 
 	}
@@ -399,8 +484,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "transactionCount", docs = "Returns the number of transactions sent from an address.")
-	public Flux<JsonNode> ethGetTransactionCount(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> ethGetTransactionCount(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withTransactionCount(saplObject));
 
 	}
@@ -414,8 +498,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "blockTransactionCountByHash", docs = "Returns the number of transactions in a block from a block matching the given block hash.")
-	public Flux<JsonNode> ethGetBlockTransactionCountByHash(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> ethGetBlockTransactionCountByHash(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withBlockTransactionCountByHash(saplObject));
 
 	}
@@ -428,8 +511,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "blockTransactionCountByNumber", docs = "Returns the number of transactions in a block matching the given block number.")
-	public Flux<JsonNode> ethGetBlockTransactionCountByNumber(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> ethGetBlockTransactionCountByNumber(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withBlockTransactionCountByNumber(saplObject));
 
 	}
@@ -443,8 +525,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "uncleCountByBlockHash", docs = "Returns the number of uncles in a block from a block matching the given block hash.")
-	public Flux<JsonNode> ethGetUncleCountByBlockHash(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> ethGetUncleCountByBlockHash(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withUncleCountByBlockHash(saplObject));
 
 	}
@@ -457,8 +538,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "uncleCountByBlockNumber", docs = "Returns the number of uncles in a block from a block matching the given block number.")
-	public Flux<JsonNode> ethGetUncleCountByBlockNumber(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> ethGetUncleCountByBlockNumber(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withUncleCountByBlockNumber(saplObject));
 
 	}
@@ -471,7 +551,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "code", docs = "Returns code at a given address.")
-	public Flux<JsonNode> ethGetCode(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
+	public Flux<JsonNode> ethGetCode(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withCode(saplObject));
 
 	}
@@ -485,7 +565,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "sign", docs = "The sign method calculates an Ethereum specific signature.")
-	public Flux<JsonNode> ethSign(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
+	public Flux<JsonNode> ethSign(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withSignature(saplObject));
 
 	}
@@ -499,7 +579,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "call", docs = "Executes a new message call immediately without creating a transaction on the block chain.")
-	public Flux<JsonNode> ethCall(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
+	public Flux<JsonNode> ethCall(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withCallResult(saplObject));
 
 	}
@@ -514,8 +594,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "estimateGas", docs = "Generates and returns an estimate of how much gas is necessary to allow the transaction to complete.")
-	public Flux<JsonNode> ethEstimateGas(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> ethEstimateGas(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withEstimatedGas(saplObject));
 
 	}
@@ -528,8 +607,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "blockByHash", docs = "Returns information about a block by hash.")
-	public Flux<JsonNode> ethGetBlockByHash(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> ethGetBlockByHash(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withBlockByHash(saplObject));
 
 	}
@@ -542,8 +620,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "blockByNumber", docs = "Returns information about a block by block number.")
-	public Flux<JsonNode> ethGetBlockByNumber(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> ethGetBlockByNumber(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withBlockByNumber(saplObject));
 
 	}
@@ -556,8 +633,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "transactionByHash", docs = "Returns the information about a transaction requested by transaction hash.")
-	public Flux<JsonNode> ethGetTransactionByHash(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> ethGetTransactionByHash(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withTransactionByHash(saplObject));
 
 	}
@@ -569,8 +645,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "transactionByBlockHashAndIndex", docs = "Returns information about a transaction by block hash and transaction index position.")
-	public Flux<JsonNode> ethGetTransactionByBlockHashAndIndex(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> ethGetTransactionByBlockHashAndIndex(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withTransactionByBlockHashAndIndex(saplObject));
 
 	}
@@ -583,8 +658,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "transactionByBlockNumberAndIndex", docs = "Returns information about a transaction by block number and transaction index position.")
-	public Flux<JsonNode> ethGetTransactionByBlockNumberAndIndex(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> ethGetTransactionByBlockNumberAndIndex(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withTransactionByBlockNumberAndIndex(saplObject));
 
 	}
@@ -598,8 +672,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "transactionReceipt", docs = "Returns the receipt of a transaction by transaction hash.")
-	public Flux<JsonNode> ethGetTransactionReceipt(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> ethGetTransactionReceipt(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withTransactionReceipt(saplObject));
 
 	}
@@ -619,8 +692,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "uncleByBlockHashAndIndex", docs = "Returns information about a uncle of a block by hash and uncle index position.")
-	public Flux<JsonNode> ethGetUncleByBlockHashAndIndex(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> ethGetUncleByBlockHashAndIndex(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withUncleByBlockHashAndIndex(saplObject));
 
 	}
@@ -633,8 +705,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "uncleByBlockNumberAndIndex", docs = "Returns information about a uncle of a block by number and uncle index position.")
-	public Flux<JsonNode> ethGetUncleByBlockNumberAndIndex(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> ethGetUncleByBlockNumberAndIndex(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withUncleByBlockNumberAndIndex(saplObject));
 
 	}
@@ -647,8 +718,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "ethFilterChanges", docs = "Polling method for a filter, which returns an array of logs which occurred since last poll.")
-	public Flux<JsonNode> ethGetFilterChanges(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> ethGetFilterChanges(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withFilterChanges(saplObject));
 
 	}
@@ -661,8 +731,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "ethFilterLogs", docs = "Returns an array of all logs matching filter with given id.")
-	public Flux<JsonNode> ethGetFilterLogs(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> ethGetFilterLogs(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withFilterLogs(saplObject));
 
 	}
@@ -674,7 +743,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "logs", docs = "Returns an array of all logs matching a given filter object.")
-	public Flux<JsonNode> ethGetLogs(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
+	public Flux<JsonNode> ethGetLogs(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withLogs(saplObject));
 
 	}
@@ -687,7 +756,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "work", docs = "Returns the hash of the current block, the seedHash, and the boundary condition to be met (\"target\").")
-	public Flux<JsonNode> ethGetWork(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
+	public Flux<JsonNode> ethGetWork(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withWork());
 
 	}
@@ -699,7 +768,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "shhVersion", docs = "Returns the current whisper protocol version.")
-	public Flux<JsonNode> shhVersion(JsonNode saplObject, Map<String, JsonNode> variables) throws AttributeException {
+	public Flux<JsonNode> shhVersion(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withShhVersion());
 
 	}
@@ -711,8 +780,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "hasIdentity", docs = "Checks if the client hold the private keys for a given identity.")
-	public Flux<JsonNode> shhHasIdentity(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> shhHasIdentity(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withHasIdentity(saplObject));
 
 	}
@@ -724,8 +792,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "shhFilterChanges", docs = "Polling method for whisper filters. Returns new messages since the last call of this method.")
-	public Flux<JsonNode> shhGetFilterChanges(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> shhGetFilterChanges(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withShhFilterChanges(saplObject));
 
 	}
@@ -737,8 +804,7 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	@Attribute(name = "messages", docs = "Get all messages matching a filter. Unlike shh_getFilterChanges this returns all messages.")
-	public Flux<JsonNode> shhGetMessages(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws AttributeException {
+	public Flux<JsonNode> shhGetMessages(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withShhMessages(saplObject));
 
 	}
@@ -755,7 +821,9 @@ public class EthereumPolicyInformationPoint {
 				return functionToCall.call();
 			}
 			catch (Exception e) {
-				LOGGER.warn("The following exception has been thrown:\n" + e);
+				LOGGER.warn(
+						"An error occurred, so by default a Json NullNode is returned. The following exception has been thrown:\n"
+								+ e);
 			}
 			return JSON.nullNode();
 		});

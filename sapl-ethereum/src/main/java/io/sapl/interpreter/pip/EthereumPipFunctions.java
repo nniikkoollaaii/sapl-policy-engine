@@ -157,10 +157,11 @@ public class EthereumPipFunctions {
 	 * number or one of the Strings "latest", "earliest" or "pending". If the DefaultBlockParameter is not provided in
 	 * the policy, the latest Block is used. In this case there is also a warning.
 	 *
-	 * Please use the following names in your SAPL Object: The above mentioned value of DBPBI if you want to use a
-	 * BigInteger. The above mentioned value of DBPS if you want to use a String.
-	 * @param saplObject
-	 * @return
+	 * @param saplObject should hold one of the following values: <br>
+	 * "defaultBlockParameterBigInt": BigInteger value of the desired block number. <br>
+	 * <b>or</b> <br>
+	 * "defaultBlockParameterString": Holding one of the strings "latest", "earliest", or "pending".
+	 * @return The DefaultBlockParameter corresponding to the input.
 	 */
 	protected static DefaultBlockParameter extractDefaultBlockParameter(JsonNode saplObject) {
 		if (saplObject.has(DEFAULT_BLOCK_PARAMETER_BIG_INT)) {
