@@ -329,12 +329,48 @@ public class EthereumIntegrationTest {
 	}
 
 	@Test
-	public void verifyTransactionShouldReturnFalseWithWrongInput() {
+	public void verifyTransactionShouldReturnFalseWithWrongInput1() {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(WRONG_NAME, transactionReceiptUser2.getTransactionHash());
 		saplObject.put(FROM_ACCOUNT, USER1_ADDRESS);
 		saplObject.put(TO_ACCOUNT, USER2_ADDRESS);
 		saplObject.put(TRANSACTION_VALUE, new BigInteger("2000000000000000000"));
+		boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
+		assertFalse("Transaction was not validated as false although the input was erroneous.", result);
+
+	}
+
+	@Test
+	public void verifyTransactionShouldReturnFalseWithWrongInput2() {
+		ObjectNode saplObject = JSON.objectNode();
+		saplObject.put(TRANSACTION_HASH, transactionReceiptUser2.getTransactionHash());
+		saplObject.put(WRONG_NAME, USER1_ADDRESS);
+		saplObject.put(TO_ACCOUNT, USER2_ADDRESS);
+		saplObject.put(TRANSACTION_VALUE, new BigInteger("2000000000000000000"));
+		boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
+		assertFalse("Transaction was not validated as false although the input was erroneous.", result);
+
+	}
+
+	@Test
+	public void verifyTransactionShouldReturnFalseWithWrongInput3() {
+		ObjectNode saplObject = JSON.objectNode();
+		saplObject.put(TRANSACTION_HASH, transactionReceiptUser2.getTransactionHash());
+		saplObject.put(FROM_ACCOUNT, USER1_ADDRESS);
+		saplObject.put(WRONG_NAME, USER2_ADDRESS);
+		saplObject.put(TRANSACTION_VALUE, new BigInteger("2000000000000000000"));
+		boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
+		assertFalse("Transaction was not validated as false although the input was erroneous.", result);
+
+	}
+
+	@Test
+	public void verifyTransactionShouldReturnFalseWithWrongInput4() {
+		ObjectNode saplObject = JSON.objectNode();
+		saplObject.put(TRANSACTION_HASH, transactionReceiptUser2.getTransactionHash());
+		saplObject.put(FROM_ACCOUNT, USER1_ADDRESS);
+		saplObject.put(TO_ACCOUNT, USER2_ADDRESS);
+		saplObject.put(WRONG_NAME, new BigInteger("2000000000000000000"));
 		boolean result = ethPip.verifyTransaction(saplObject, null).blockFirst().asBoolean();
 		assertFalse("Transaction was not validated as false although the input was erroneous.", result);
 
