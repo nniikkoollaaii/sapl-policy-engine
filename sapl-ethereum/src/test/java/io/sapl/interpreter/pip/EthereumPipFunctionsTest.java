@@ -1,6 +1,7 @@
 package io.sapl.interpreter.pip;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -162,25 +163,28 @@ public class EthereumPipFunctionsTest {
 
 	// convertToType
 
-	@Test(expected = AttributeException.class)
+	@Test
 	public void convertToTypeShouldThrowAttributeExceptionIfTypeIsNotPresent() throws IOException, AttributeException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(VALUE, 25);
-		EthereumPipFunctions.convertToType(inputParam);
+		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
+		assertNull("ConvertToType didn't return null when type field was not present in input.", result);
 
 	}
 
-	@Test(expected = AttributeException.class)
-	public void convertToTypeShouldThrowAttributeExceptionIfValueIsNotPresent() throws IOException, AttributeException {
+	@Test
+	public void convertToTypeShouldReturnNullIfValueIsNotPresent() throws IOException, AttributeException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "aString");
-		EthereumPipFunctions.convertToType(inputParam);
+		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
+		assertNull("ConvertToType didn't return null when field value was not present in input.", result);
 
 	}
 
-	@Test(expected = AttributeException.class)
-	public void convertToTypeShouldThrowAttributeExceptionWithNullInput() throws IOException, AttributeException {
-		EthereumPipFunctions.convertToType(null);
+	@Test
+	public void convertToTypeShouldReturnNullWithNullInput() throws IOException, AttributeException {
+		Type<?> result = EthereumPipFunctions.convertToType(null);
+		assertNull("ConvertToType didn't return null with null input.", result);
 
 	}
 
@@ -190,7 +194,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, ADDRESS);
 		inputParam.put(VALUE, TEST_ADDRESS);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Address correctly.", result, new Address(TEST_ADDRESS));
+		assertEquals("ConvertToType didn't return the Address correctly.", result, new Address(TEST_ADDRESS));
 	}
 
 	@Test
@@ -199,7 +203,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, BOOL);
 		inputParam.put(VALUE, true);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bool correctly.", result, new Bool(true));
+		assertEquals("ConvertToType didn't return the Bool correctly.", result, new Bool(true));
 	}
 
 	@Test
@@ -208,7 +212,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, STRING);
 		inputParam.put(VALUE, SOME_STRING);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the String correctly.", result, new Utf8String(SOME_STRING));
+		assertEquals("ConvertToType didn't return the String correctly.", result, new Utf8String(SOME_STRING));
 	}
 
 	@Test
@@ -217,8 +221,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes");
 		inputParam.put(VALUE, BYTE_ARRAY);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the DynamicBytes correctly.", result,
-				new DynamicBytes(BYTE_ARRAY));
+		assertEquals("ConvertToType didn't return the DynamicBytes correctly.", result, new DynamicBytes(BYTE_ARRAY));
 	}
 
 	@Test
@@ -228,7 +231,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "byte");
 		inputParam.put(VALUE, testByte);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Byte correctly.", result,
+		assertEquals("ConvertToType didn't return the Byte correctly.", result,
 				new org.web3j.abi.datatypes.primitive.Byte(testByte));
 	}
 
@@ -238,15 +241,16 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "char");
 		inputParam.put(VALUE, "a");
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Char correctly.", result, new Char('a'));
+		assertEquals("ConvertToType didn't return the Char correctly.", result, new Char('a'));
 	}
 
-	@Test(expected = AttributeException.class)
-	public void convertToTypeCharShouldWorkWithEmptyString() throws IOException, AttributeException {
+	@Test
+	public void convertToTypeCharShouldReturnNullWithEmptyString() throws IOException, AttributeException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "char");
 		inputParam.put(VALUE, "");
-		EthereumPipFunctions.convertToType(inputParam);
+		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
+		assertNull("ConvertToType didn't return the Char correctly.", result);
 	}
 
 	@Test
@@ -255,7 +259,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "double");
 		inputParam.put(VALUE, Double.valueOf(1.789));
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Double correctly.", result,
+		assertEquals("ConvertToType didn't return the Double correctly.", result,
 				new org.web3j.abi.datatypes.primitive.Double(1.789));
 	}
 
@@ -265,7 +269,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "float");
 		inputParam.put(VALUE, Float.valueOf("7.654321"));
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Float correctly.", result,
+		assertEquals("ConvertToType didn't return the Float correctly.", result,
 				new org.web3j.abi.datatypes.primitive.Float(Float.valueOf("7.654321")));
 	}
 
@@ -275,7 +279,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint");
 		inputParam.put(VALUE, TEST_BIG_INT);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint correctly.", result, new Uint(TEST_BIG_INT));
+		assertEquals("ConvertToType didn't return the Uint correctly.", result, new Uint(TEST_BIG_INT));
 	}
 
 	@Test
@@ -284,7 +288,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int");
 		inputParam.put(VALUE, TEST_BIG_INT);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int correctly.", result, new Int(TEST_BIG_INT));
+		assertEquals("ConvertToType didn't return the Int correctly.", result, new Int(TEST_BIG_INT));
 	}
 
 	@Test
@@ -293,7 +297,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "long");
 		inputParam.put(VALUE, Long.valueOf(9786135));
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Long correctly.", result,
+		assertEquals("ConvertToType didn't return the Long correctly.", result,
 				new org.web3j.abi.datatypes.primitive.Long(Long.valueOf(9786135)));
 	}
 
@@ -303,7 +307,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "short");
 		inputParam.put(VALUE, Short.valueOf("111"));
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Short correctly.", result,
+		assertEquals("ConvertToType didn't return the Short correctly.", result,
 				new org.web3j.abi.datatypes.primitive.Short(Short.valueOf("111")));
 	}
 
@@ -313,7 +317,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint8");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint8 correctly.", result, new Uint8(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint8 correctly.", result, new Uint8(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -322,7 +326,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int8");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int8 correctly.", result, new Int8(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int8 correctly.", result, new Int8(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -331,7 +335,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint16");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint16 correctly.", result, new Uint16(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint16 correctly.", result, new Uint16(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -340,7 +344,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int16");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int16 correctly.", result, new Int16(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int16 correctly.", result, new Int16(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -349,7 +353,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint24");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint24 correctly.", result, new Uint24(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint24 correctly.", result, new Uint24(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -358,7 +362,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int24");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int24 correctly.", result, new Int24(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int24 correctly.", result, new Int24(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -367,7 +371,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint32");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint32 correctly.", result, new Uint32(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint32 correctly.", result, new Uint32(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -376,7 +380,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int32");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int32 correctly.", result, new Int32(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int32 correctly.", result, new Int32(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -385,7 +389,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint40");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint40 correctly.", result, new Uint40(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint40 correctly.", result, new Uint40(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -394,7 +398,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int40");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int40 correctly.", result, new Int40(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int40 correctly.", result, new Int40(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -403,7 +407,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint48");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint48 correctly.", result, new Uint48(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint48 correctly.", result, new Uint48(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -412,7 +416,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int48");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int48 correctly.", result, new Int48(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int48 correctly.", result, new Int48(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -421,7 +425,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint56");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint56 correctly.", result, new Uint56(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint56 correctly.", result, new Uint56(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -430,7 +434,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int56");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int56 correctly.", result, new Int56(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int56 correctly.", result, new Int56(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -439,7 +443,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint64");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint64 correctly.", result, new Uint64(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint64 correctly.", result, new Uint64(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -448,7 +452,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int64");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int64 correctly.", result, new Int64(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int64 correctly.", result, new Int64(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -457,7 +461,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint72");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint72 correctly.", result, new Uint72(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint72 correctly.", result, new Uint72(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -466,7 +470,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int72");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int72 correctly.", result, new Int72(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int72 correctly.", result, new Int72(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -475,7 +479,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint80");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint80 correctly.", result, new Uint80(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint80 correctly.", result, new Uint80(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -484,7 +488,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int80");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int80 correctly.", result, new Int80(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int80 correctly.", result, new Int80(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -493,7 +497,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint88");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint88 correctly.", result, new Uint88(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint88 correctly.", result, new Uint88(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -502,7 +506,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int88");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int88 correctly.", result, new Int88(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int88 correctly.", result, new Int88(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -511,7 +515,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint96");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint96 correctly.", result, new Uint96(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint96 correctly.", result, new Uint96(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -520,7 +524,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int96");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int96 correctly.", result, new Int96(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int96 correctly.", result, new Int96(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -529,7 +533,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint104");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint104 correctly.", result, new Uint104(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint104 correctly.", result, new Uint104(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -538,7 +542,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int104");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int104 correctly.", result, new Int104(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int104 correctly.", result, new Int104(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -547,7 +551,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint112");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint112 correctly.", result, new Uint112(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint112 correctly.", result, new Uint112(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -556,7 +560,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int112");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int112 correctly.", result, new Int112(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int112 correctly.", result, new Int112(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -565,7 +569,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint120");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint120 correctly.", result, new Uint120(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint120 correctly.", result, new Uint120(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -574,7 +578,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int120");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int120 correctly.", result, new Int120(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int120 correctly.", result, new Int120(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -583,7 +587,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint128");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint128 correctly.", result, new Uint128(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint128 correctly.", result, new Uint128(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -592,7 +596,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int128");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int128 correctly.", result, new Int128(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int128 correctly.", result, new Int128(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -601,7 +605,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint136");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint136 correctly.", result, new Uint136(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint136 correctly.", result, new Uint136(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -610,7 +614,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int136");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int136 correctly.", result, new Int136(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int136 correctly.", result, new Int136(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -619,7 +623,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint144");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint144 correctly.", result, new Uint144(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint144 correctly.", result, new Uint144(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -628,7 +632,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int144");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int144 correctly.", result, new Int144(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int144 correctly.", result, new Int144(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -637,7 +641,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint152");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint152 correctly.", result, new Uint152(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint152 correctly.", result, new Uint152(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -646,7 +650,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int152");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int152 correctly.", result, new Int152(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int152 correctly.", result, new Int152(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -655,7 +659,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint160");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint160 correctly.", result, new Uint160(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint160 correctly.", result, new Uint160(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -664,7 +668,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int160");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int160 correctly.", result, new Int160(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int160 correctly.", result, new Int160(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -673,7 +677,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint168");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint168 correctly.", result, new Uint168(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint168 correctly.", result, new Uint168(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -682,7 +686,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int168");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int168 correctly.", result, new Int168(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int168 correctly.", result, new Int168(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -691,7 +695,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint176");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint176 correctly.", result, new Uint176(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint176 correctly.", result, new Uint176(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -700,7 +704,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int176");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int176 correctly.", result, new Int176(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int176 correctly.", result, new Int176(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -709,7 +713,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint184");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint184 correctly.", result, new Uint184(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint184 correctly.", result, new Uint184(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -718,7 +722,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int184");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int184 correctly.", result, new Int184(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int184 correctly.", result, new Int184(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -727,7 +731,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint192");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint192 correctly.", result, new Uint192(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint192 correctly.", result, new Uint192(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -736,7 +740,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int192");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int192 correctly.", result, new Int192(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int192 correctly.", result, new Int192(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -745,7 +749,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint200");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint200 correctly.", result, new Uint200(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint200 correctly.", result, new Uint200(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -754,7 +758,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int200");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int200 correctly.", result, new Int200(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int200 correctly.", result, new Int200(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -763,7 +767,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint208");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint208 correctly.", result, new Uint208(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint208 correctly.", result, new Uint208(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -772,7 +776,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int208");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int208 correctly.", result, new Int208(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int208 correctly.", result, new Int208(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -781,7 +785,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint216");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint216 correctly.", result, new Uint216(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint216 correctly.", result, new Uint216(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -790,7 +794,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int216");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int216 correctly.", result, new Int216(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int216 correctly.", result, new Int216(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -799,7 +803,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint224");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint224 correctly.", result, new Uint224(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint224 correctly.", result, new Uint224(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -808,7 +812,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int224");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int224 correctly.", result, new Int224(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int224 correctly.", result, new Int224(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -817,7 +821,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint232");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint232 correctly.", result, new Uint232(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint232 correctly.", result, new Uint232(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -826,7 +830,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int232");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int232 correctly.", result, new Int232(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int232 correctly.", result, new Int232(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -835,7 +839,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint240");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint240 correctly.", result, new Uint240(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint240 correctly.", result, new Uint240(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -844,7 +848,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int240");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int240 correctly.", result, new Int240(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int240 correctly.", result, new Int240(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -853,7 +857,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint248");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint248 correctly.", result, new Uint248(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint248 correctly.", result, new Uint248(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -862,7 +866,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int248");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int248 correctly.", result, new Int248(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int248 correctly.", result, new Int248(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -871,7 +875,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "uint256");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Uint256 correctly.", result, new Uint256(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint256 correctly.", result, new Uint256(UINT_TEST_VALUE));
 	}
 
 	@Test
@@ -880,7 +884,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "int256");
 		inputParam.put(VALUE, INT_TEST_VALUE);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Int256 correctly.", result, new Int256(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int256 correctly.", result, new Int256(INT_TEST_VALUE));
 	}
 
 	@Test
@@ -891,7 +895,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes1");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes1 correctly.", result, new Bytes1(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes1 correctly.", result, new Bytes1(bytesArray));
 	}
 
 	@Test
@@ -902,7 +906,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes2");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes2 correctly.", result, new Bytes2(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes2 correctly.", result, new Bytes2(bytesArray));
 	}
 
 	@Test
@@ -912,7 +916,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes3");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes3 correctly.", result, new Bytes3(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes3 correctly.", result, new Bytes3(bytesArray));
 	}
 
 	@Test
@@ -922,7 +926,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes4");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes4 correctly.", result, new Bytes4(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes4 correctly.", result, new Bytes4(bytesArray));
 	}
 
 	@Test
@@ -932,7 +936,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes5");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes5 correctly.", result, new Bytes5(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes5 correctly.", result, new Bytes5(bytesArray));
 	}
 
 	@Test
@@ -942,7 +946,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes6");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes6 correctly.", result, new Bytes6(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes6 correctly.", result, new Bytes6(bytesArray));
 	}
 
 	@Test
@@ -952,7 +956,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes7");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes7 correctly.", result, new Bytes7(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes7 correctly.", result, new Bytes7(bytesArray));
 	}
 
 	@Test
@@ -962,7 +966,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes8");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes8 correctly.", result, new Bytes8(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes8 correctly.", result, new Bytes8(bytesArray));
 	}
 
 	@Test
@@ -972,7 +976,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes9");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes9 correctly.", result, new Bytes9(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes9 correctly.", result, new Bytes9(bytesArray));
 	}
 
 	@Test
@@ -982,7 +986,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes10");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes10 correctly.", result, new Bytes10(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes10 correctly.", result, new Bytes10(bytesArray));
 	}
 
 	@Test
@@ -992,7 +996,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes11");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes11 correctly.", result, new Bytes11(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes11 correctly.", result, new Bytes11(bytesArray));
 	}
 
 	@Test
@@ -1002,7 +1006,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes12");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes12 correctly.", result, new Bytes12(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes12 correctly.", result, new Bytes12(bytesArray));
 	}
 
 	@Test
@@ -1012,7 +1016,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes13");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes13 correctly.", result, new Bytes13(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes13 correctly.", result, new Bytes13(bytesArray));
 	}
 
 	@Test
@@ -1022,7 +1026,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes14");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes14 correctly.", result, new Bytes14(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes14 correctly.", result, new Bytes14(bytesArray));
 	}
 
 	@Test
@@ -1032,7 +1036,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes15");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes15 correctly.", result, new Bytes15(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes15 correctly.", result, new Bytes15(bytesArray));
 	}
 
 	@Test
@@ -1042,7 +1046,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes16");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes16 correctly.", result, new Bytes16(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes16 correctly.", result, new Bytes16(bytesArray));
 	}
 
 	@Test
@@ -1052,7 +1056,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes17");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes17 correctly.", result, new Bytes17(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes17 correctly.", result, new Bytes17(bytesArray));
 	}
 
 	@Test
@@ -1062,7 +1066,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes18");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes18 correctly.", result, new Bytes18(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes18 correctly.", result, new Bytes18(bytesArray));
 	}
 
 	@Test
@@ -1072,7 +1076,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes19");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes19 correctly.", result, new Bytes19(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes19 correctly.", result, new Bytes19(bytesArray));
 	}
 
 	@Test
@@ -1082,7 +1086,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes20");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes20 correctly.", result, new Bytes20(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes20 correctly.", result, new Bytes20(bytesArray));
 	}
 
 	@Test
@@ -1092,7 +1096,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes21");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes21 correctly.", result, new Bytes21(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes21 correctly.", result, new Bytes21(bytesArray));
 	}
 
 	@Test
@@ -1102,7 +1106,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes22");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes22 correctly.", result, new Bytes22(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes22 correctly.", result, new Bytes22(bytesArray));
 	}
 
 	@Test
@@ -1112,7 +1116,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes23");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes23 correctly.", result, new Bytes23(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes23 correctly.", result, new Bytes23(bytesArray));
 	}
 
 	@Test
@@ -1122,7 +1126,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes24");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes24 correctly.", result, new Bytes24(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes24 correctly.", result, new Bytes24(bytesArray));
 	}
 
 	@Test
@@ -1132,7 +1136,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes25");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes25 correctly.", result, new Bytes25(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes25 correctly.", result, new Bytes25(bytesArray));
 	}
 
 	@Test
@@ -1142,7 +1146,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes26");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes26 correctly.", result, new Bytes26(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes26 correctly.", result, new Bytes26(bytesArray));
 	}
 
 	@Test
@@ -1152,7 +1156,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes27");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes27 correctly.", result, new Bytes27(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes27 correctly.", result, new Bytes27(bytesArray));
 	}
 
 	@Test
@@ -1162,7 +1166,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes28");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes28 correctly.", result, new Bytes28(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes28 correctly.", result, new Bytes28(bytesArray));
 	}
 
 	@Test
@@ -1172,7 +1176,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes29");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes29 correctly.", result, new Bytes29(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes29 correctly.", result, new Bytes29(bytesArray));
 	}
 
 	@Test
@@ -1182,7 +1186,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes30");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes30 correctly.", result, new Bytes30(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes30 correctly.", result, new Bytes30(bytesArray));
 	}
 
 	@Test
@@ -1192,7 +1196,7 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes31");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes31 correctly.", result, new Bytes31(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes31 correctly.", result, new Bytes31(bytesArray));
 	}
 
 	@Test
@@ -1202,15 +1206,16 @@ public class EthereumPipFunctionsTest {
 		inputParam.put(TYPE, "bytes32");
 		inputParam.put(VALUE, bytesArray);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType<?> didn't return the Bytes32 correctly.", result, new Bytes32(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes32 correctly.", result, new Bytes32(bytesArray));
 	}
 
-	@Test(expected = AttributeException.class)
-	public void falseSolidityTypeShouldThrowAttributeException() throws AttributeException, IOException {
+	@Test
+	public void falseSolidityTypeShouldReturnNull() throws AttributeException, IOException {
 		ObjectNode inputParam = JSON.objectNode();
-		inputParam.put(TYPE, "wrongType<?>");
+		inputParam.put(TYPE, "wrongType");
 		inputParam.put(VALUE, "anyValue");
-		EthereumPipFunctions.convertToType(inputParam);
+		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
+		assertNull("ConvertToType didn't return null when non-existing solidity type was provided.", result);
 	}
 
 	// loadCredentials

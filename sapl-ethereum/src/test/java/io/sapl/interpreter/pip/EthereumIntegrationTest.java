@@ -19,9 +19,15 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.web3j.abi.FunctionEncoder;
+import org.web3j.abi.TypeReference;
+import org.web3j.abi.datatypes.Address;
+import org.web3j.abi.datatypes.Function;
+import org.web3j.abi.datatypes.Type;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
+import org.web3j.protocol.core.methods.request.Transaction;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.exceptions.TransactionException;
 import org.web3j.protocol.http.HttpService;
@@ -31,6 +37,7 @@ import org.web3j.utils.Async;
 import org.web3j.utils.Convert;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -59,6 +66,8 @@ import reactor.test.StepVerifier;
  *
  */
 public class EthereumIntegrationTest {
+
+	private static final String TRANSACTION = "transaction";
 
 	private static final String HTTP_LOCALHOST = "http://localhost:";
 
@@ -104,8 +113,6 @@ public class EthereumIntegrationTest {
 
 	private static final String USER2_ADDRESS = "0x627306090abaB3A6e1400e9345bC60c78a8BEf57";
 
-	private static final String USER2_PRIVATE_KEY = "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3";
-
 	private static final String USER3_ADDRESS = "0xf17f52151EbEF6C7334FAD080c5704D77216b732";
 
 	private static final String USER3_PRIVATE_KEY = "0xae6ae8e5ccbfb04590405997ee2d52d2b330726137b875053c36d94e974d162f";
@@ -121,6 +128,14 @@ public class EthereumIntegrationTest {
 	private static final String POSITION = "position";
 
 	private static final String BLOCK_HASH = "blockHash";
+
+	private static final String RETURN_FULL_TRANSACTION_OBJECTS = "returnFullTransactionObjects";
+
+	private static final String TRANSACTION_INDEX = "transactionIndex";
+
+	private static final String FILTER_ID = "filterId";
+
+	private static final ObjectMapper mapper = new ObjectMapper();
 
 	private static Web3j web3j;
 
@@ -149,7 +164,7 @@ public class EthereumIntegrationTest {
 	public static void init() throws InterruptedException, TransactionException, Exception {
 		final Integer port = besuContainer.getMappedPort(8545);
 		web3j = Web3j.build(new HttpService(HTTP_LOCALHOST + port), 500, Async.defaultExecutorService());
-		ethPip = new EthereumPolicyInformationPoint(new HttpService(HTTP_LOCALHOST + port));
+		ethPip = new EthereumPolicyInformationPoint(web3j);
 
 		String path = "src/test/resources";
 		File file = new File(path);
@@ -395,10 +410,9 @@ public class EthereumIntegrationTest {
 
 	@Test
 	public void web3ClientVersionShouldReturnTheClientVersion() throws IOException, AttributeException {
-		String pipClientVersion = ethPip.web3ClientVersion(null, null).blockFirst().asText();
-		String web3jClientVersion = web3j.web3ClientVersion().send().getWeb3ClientVersion();
-		assertEquals("The web3ClientVersion from the PIP was not loaded correctly.", pipClientVersion,
-				web3jClientVersion);
+		String pipResult = ethPip.web3ClientVersion(null, null).blockFirst().asText();
+		String web3jResult = web3j.web3ClientVersion().send().getWeb3ClientVersion();
+		assertEquals("The web3ClientVersion from the PIP was not loaded correctly.", web3jResult, pipResult);
 	}
 
 	// sha3
@@ -407,7 +421,7 @@ public class EthereumIntegrationTest {
 		JsonNode saplObject = JSON.textNode(USER3_PRIVATE_KEY);
 		String pipResult = ethPip.web3Sha3(saplObject, null).blockFirst().textValue();
 		String web3jResult = web3j.web3Sha3(USER3_PRIVATE_KEY).send().getResult();
-		assertEquals("The web3Sha3 method did not work correctly.", pipResult, web3jResult);
+		assertEquals("The web3Sha3 method did not work correctly.", web3jResult, pipResult);
 	}
 
 	// netVersion
@@ -415,7 +429,7 @@ public class EthereumIntegrationTest {
 	public void netVersionShouldReturnCorrectValue() throws IOException, AttributeException {
 		String pipResult = ethPip.netVersion(null, null).blockFirst().textValue();
 		String web3jResult = web3j.netVersion().send().getNetVersion();
-		assertEquals("The netVersion method did not work correctly.", pipResult, web3jResult);
+		assertEquals("The netVersion method did not work correctly.", web3jResult, pipResult);
 
 	}
 
@@ -431,90 +445,90 @@ public class EthereumIntegrationTest {
 	public void netPeerCountShouldReturnTheCorrectNumber() throws IOException, AttributeException {
 		BigInteger pipResult = ethPip.netPeerCount(null, null).blockFirst().bigIntegerValue();
 		BigInteger web3jResult = web3j.netPeerCount().send().getQuantity();
-		assertEquals("The netPeerCount method did not return the correct number.", pipResult, web3jResult);
+		assertEquals("The netPeerCount method did not return the correct number.", web3jResult, pipResult);
 	}
 
 	// protocolVersion
 	@Test
-	public void protocolVersionShouldReturnTheCorrectValue() throws AttributeException, IOException {
+	public void protocolVersionShouldReturnTheCorrectValue() throws IOException {
 		String pipResult = ethPip.ethProtocolVersion(null, null).blockFirst().textValue();
 		String web3jResult = web3j.ethProtocolVersion().send().getProtocolVersion();
-		assertEquals("The ethProtocolVersion method did not return the correct value.", pipResult, web3jResult);
+		assertEquals("The ethProtocolVersion method did not return the correct value.", web3jResult, pipResult);
 	}
 
 	// syncing
 	@Test
-	public void ethSyncingShouldReturnTheCorrectValue() throws AttributeException, IOException {
+	public void ethSyncingShouldReturnTheCorrectValue() throws IOException {
 		boolean pipResult = ethPip.ethSyncing(null, null).blockFirst().asBoolean();
 		boolean web3jResult = web3j.ethSyncing().send().getResult().isSyncing();
-		assertEquals("The ethSyncing method did not return the correct value.", pipResult, web3jResult);
+		assertEquals("The ethSyncing method did not return the correct value.", web3jResult, pipResult);
 	}
 
 	// coinbase
 	@Test
-	public void ethCoinbaseShouldReturnTheCorrectValue() throws AttributeException, IOException {
+	public void ethCoinbaseShouldReturnTheCorrectValue() throws IOException {
 		String pipResult = ethPip.ethCoinbase(null, null).blockFirst().textValue();
 		String web3jResult = web3j.ethCoinbase().send().getResult();
-		assertEquals("The ethCoinbase method did not return the correct value.", pipResult, web3jResult);
+		assertEquals("The ethCoinbase method did not return the correct value.", web3jResult, pipResult);
 	}
 
 	// mining
 	@Test
-	public void ethMiningShouldReturnTheCorrectValue() throws AttributeException, IOException {
+	public void ethMiningShouldReturnTheCorrectValue() throws IOException {
 		boolean pipResult = ethPip.ethMining(null, null).blockFirst().asBoolean();
 		boolean web3jResult = web3j.ethMining().send().getResult();
-		assertEquals("The ethMining method did not return the correct value.", pipResult, web3jResult);
+		assertEquals("The ethMining method did not return the correct value.", web3jResult, pipResult);
 	}
 
 	// hashrate
 	@Test
-	public void ethHashrateShouldReturnTheCorrectValue() throws AttributeException, IOException {
+	public void ethHashrateShouldReturnTheCorrectValue() throws IOException {
 		BigInteger pipResult = ethPip.ethHashrate(null, null).blockFirst().bigIntegerValue();
 		assertTrue("The ethHashrate should be greater than 0.", pipResult.intValue() > 0);
 	}
 
 	// gasPrice
 	@Test
-	public void ethGasPriceShouldReturnTheCorrectValue() throws AttributeException, IOException {
+	public void ethGasPriceShouldReturnTheCorrectValue() throws IOException {
 		BigInteger pipResult = ethPip.ethGasPrice(null, null).blockFirst().bigIntegerValue();
 		BigInteger web3jResult = web3j.ethGasPrice().send().getGasPrice();
-		assertEquals("The ethGasPrice method did not return the correct number.", pipResult, web3jResult);
+		assertEquals("The ethGasPrice method did not return the correct number.", web3jResult, pipResult);
 	}
 
 	// accounts
 	@Test
-	public void ethAccountsShouldReturnTheCorrectValue() throws AttributeException, IOException {
+	public void ethAccountsShouldReturnTheCorrectValue() throws IOException {
 
 		List<JsonNode> result = new ArrayList<JsonNode>();
 		ethPip.ethAccounts(null, null).blockFirst().elements().forEachRemaining(result::add);
 		List<String> pipResult = result.stream().map(s -> s.toString()).collect(Collectors.toList());
 		List<String> web3jResult = web3j.ethAccounts().send().getAccounts();
-		assertEquals("The accounts method did not return the correct accounts.", pipResult, web3jResult);
+		assertEquals("The accounts method did not return the correct accounts.", web3jResult, pipResult);
 	}
 
 	// blockNumber
 	@Test
-	public void ethBlockNumberShouldReturnTheCorrectValue() throws AttributeException, IOException {
+	public void ethBlockNumberShouldReturnTheCorrectValue() throws IOException {
 		BigInteger pipResult = ethPip.ethBlockNumber(null, null).blockFirst().bigIntegerValue();
 		BigInteger web3jResult = web3j.ethBlockNumber().send().getBlockNumber();
-		assertEquals("The ethBlockNumber method did not return the correct value.", pipResult, web3jResult);
+		assertEquals("The ethBlockNumber method did not return the correct value.", web3jResult, pipResult);
 	}
 
 	// balance
 	@Test
-	public void ethGetBalanceShouldReturnTheCorrectValue() throws AttributeException, IOException {
+	public void ethGetBalanceShouldReturnTheCorrectValue() throws IOException {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(ADDRESS, USER1_ADDRESS);
 		saplObject.put(DEFAULT_BLOCK_PARAMETER_STRING, LATEST);
 		BigInteger pipResult = ethPip.ethGetBalance(saplObject, null).blockFirst().bigIntegerValue();
 		BigInteger web3jResult = web3j.ethGetBalance(USER1_ADDRESS, DefaultBlockParameter.valueOf(LATEST)).send()
 				.getBalance();
-		assertEquals("The ethGetBalance method did not return the correct value.", pipResult, web3jResult);
+		assertEquals("The ethGetBalance method did not return the correct value.", web3jResult, pipResult);
 	}
 
 	// storage
 	@Test
-	public void ethGetStorageAtShouldReturnTheCorrectValue() throws AttributeException, IOException {
+	public void ethGetStorageAtShouldReturnTheCorrectValue() throws IOException {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(ADDRESS, authContractAddress);
 		saplObject.put(POSITION, BigInteger.ZERO);
@@ -523,25 +537,25 @@ public class EthereumIntegrationTest {
 		String web3jResult = web3j
 				.ethGetStorageAt(authContractAddress, BigInteger.ZERO, DefaultBlockParameter.valueOf(LATEST)).send()
 				.getData();
-		assertEquals("The ethGetStorageAt method did not return the correct value.", pipResult, web3jResult);
+		assertEquals("The ethGetStorageAt method did not return the correct value.", web3jResult, pipResult);
 	}
 
 	// transactionCount
 	@Test
-	public void ethGetTransactionCountShouldReturnTheCorrectValue() throws AttributeException, IOException {
+	public void ethGetTransactionCountShouldReturnTheCorrectValue() throws IOException {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(ADDRESS, USER1_ADDRESS);
 		saplObject.put(DEFAULT_BLOCK_PARAMETER_STRING, LATEST);
 		BigInteger pipResult = ethPip.ethGetTransactionCount(saplObject, null).blockFirst().bigIntegerValue();
 		BigInteger web3jResult = web3j.ethGetTransactionCount(USER1_ADDRESS, DefaultBlockParameter.valueOf(LATEST))
 				.send().getTransactionCount();
-		assertEquals("The ethGetStorageAt method did not return the correct value.", pipResult, web3jResult);
+		assertEquals("The ethGetStorageAt method did not return the correct value.", web3jResult, pipResult);
 	}
 
 	// blockTransactionCountByHash
 	@Test
 	public void ethGetBlockTransactionCountByHashShouldReturnTheCorrectValue()
-			throws AttributeException, IOException, InterruptedException, ExecutionException {
+			throws IOException, InterruptedException, ExecutionException {
 		String blockhash = web3j.ethGetBlockByNumber(DefaultBlockParameter.valueOf(LATEST), false).send().getBlock()
 				.getHash();
 		ObjectNode saplObject = JSON.objectNode();
@@ -549,14 +563,13 @@ public class EthereumIntegrationTest {
 		BigInteger pipResult = ethPip.ethGetBlockTransactionCountByHash(saplObject, null).blockFirst()
 				.bigIntegerValue();
 		BigInteger web3jResult = web3j.ethGetBlockTransactionCountByHash(blockhash).send().getTransactionCount();
-		assertEquals("The ethGetBlockTransactionCountByHash method did not return the correct value.", pipResult,
-				web3jResult);
+		assertEquals("The ethGetBlockTransactionCountByHash method did not return the correct value.", web3jResult,
+				pipResult);
 	}
 
 	// blockTransactionCountByNumber
 	@Test
-	public void ethGetBlockTransactionCountByNumberShouldReturnTheCorrectValue()
-			throws AttributeException, IOException {
+	public void ethGetBlockTransactionCountByNumberShouldReturnTheCorrectValue() throws IOException {
 		BigInteger blocknumber = web3j.ethBlockNumber().send().getBlockNumber();
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(DEFAULT_BLOCK_PARAMETER_BIG_INT, blocknumber);
@@ -564,45 +577,245 @@ public class EthereumIntegrationTest {
 				.bigIntegerValue();
 		BigInteger web3jResult = web3j.ethGetBlockTransactionCountByNumber(DefaultBlockParameter.valueOf(blocknumber))
 				.send().getTransactionCount();
-		assertEquals("The ethGetBlockTransactionCountByNumber method did not return the correct value.", pipResult,
-				web3jResult);
+		assertEquals("The ethGetBlockTransactionCountByNumber method did not return the correct value.", web3jResult,
+				pipResult);
 	}
 
 	// uncleCountByBlockHash
 	@Test
-	public void ethGetUncleCountByBlockHashShouldReturnTheCorrectValue() throws AttributeException, IOException {
+	public void ethGetUncleCountByBlockHashShouldReturnTheCorrectValue() throws IOException {
 		String blockhash = web3j.ethGetBlockByNumber(DefaultBlockParameter.valueOf(LATEST), false).send().getBlock()
 				.getHash();
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(BLOCK_HASH, blockhash);
 		BigInteger pipResult = ethPip.ethGetUncleCountByBlockHash(saplObject, null).blockFirst().bigIntegerValue();
 		BigInteger web3jResult = web3j.ethGetUncleCountByBlockHash(blockhash).send().getUncleCount();
-		assertEquals("The ethGetUncleCountByBlockHash method did not return the correct value.", pipResult,
-				web3jResult);
+		assertEquals("The ethGetUncleCountByBlockHash method did not return the correct value.", web3jResult,
+				pipResult);
 	}
 
 	// uncleCountByBlockNumber
 	@Test
-	public void uncleCountByBlockNumberShouldReturnTheCorrectValue() throws AttributeException, IOException {
+	public void uncleCountByBlockNumberShouldReturnTheCorrectValue() throws IOException {
 		BigInteger blocknumber = web3j.ethBlockNumber().send().getBlockNumber();
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(DEFAULT_BLOCK_PARAMETER_BIG_INT, blocknumber);
 		BigInteger pipResult = ethPip.ethGetUncleCountByBlockNumber(saplObject, null).blockFirst().bigIntegerValue();
 		BigInteger web3jResult = web3j.ethGetBlockTransactionCountByNumber(DefaultBlockParameter.valueOf(blocknumber))
 				.send().getTransactionCount();
-		assertEquals("The ethGetUncleCountByBlockNumber method did not return the correct value.", pipResult,
-				web3jResult);
+		assertEquals("The ethGetUncleCountByBlockNumber method did not return the correct value.", web3jResult,
+				pipResult);
+
 	}
 
 	// code
 	@Test
-	public void ethGetCodeShouldReturnTheCorrectValue() throws AttributeException, IOException {
+	public void ethGetCodeShouldReturnTheCorrectValue() throws IOException {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(ADDRESS, authContractAddress);
 		String pipResult = ethPip.ethGetCode(saplObject, null).blockFirst().textValue();
 		String web3jResult = web3j.ethGetCode(authContractAddress, DefaultBlockParameter.valueOf(LATEST)).send()
 				.getCode();
-		assertEquals("The ethGetCode method did not return the correct value.", pipResult, web3jResult);
+		assertEquals("The ethGetCode method did not return the correct value.", web3jResult, pipResult);
+	}
+
+	// call
+	@Test
+	public void ethCallCodeShouldReturnTheCorrectValue() throws IOException, ClassNotFoundException {
+		List<TypeReference<?>> outputParameters = new ArrayList<>();
+		outputParameters.add(TypeReference.makeTypeReference(BOOL));
+		List<Type<?>> inputList = new ArrayList<>();
+		inputList.add(new Address(USER2_ADDRESS.substring(2)));
+		Function function = new Function(IS_AUTHORIZED, inputList.stream().collect(Collectors.toList()),
+				outputParameters);
+		String encodedFunction = FunctionEncoder.encode(function);
+		Transaction transaction = Transaction.createEthCallTransaction(USER1_ADDRESS, authContractAddress,
+				encodedFunction);
+
+		ObjectNode saplObject = JSON.objectNode();
+		saplObject.set(TRANSACTION, mapper.convertValue(transaction, JsonNode.class));
+
+		String pipResult = ethPip.ethCall(saplObject, null).blockFirst().textValue();
+		String web3jResult = web3j.ethCall(transaction, DefaultBlockParameter.valueOf(LATEST)).send().getValue();
+		assertEquals("The ethCall method did not return the correct value.", web3jResult, pipResult);
+	}
+
+	// estimateGas
+	@Test
+	public void ethEstimateGasCodeShouldReturnTheCorrectValue() throws IOException, ClassNotFoundException {
+		List<TypeReference<?>> outputParameters = new ArrayList<>();
+		outputParameters.add(TypeReference.makeTypeReference(BOOL));
+		List<Type<?>> inputList = new ArrayList<>();
+		inputList.add(new Address(USER2_ADDRESS.substring(2)));
+		Function function = new Function(IS_AUTHORIZED, inputList.stream().collect(Collectors.toList()),
+				outputParameters);
+		String encodedFunction = FunctionEncoder.encode(function);
+		Transaction transaction = Transaction.createEthCallTransaction(USER1_ADDRESS, authContractAddress,
+				encodedFunction);
+
+		ObjectNode saplObject = JSON.objectNode();
+		saplObject.set(TRANSACTION, mapper.convertValue(transaction, JsonNode.class));
+
+		BigInteger pipResult = ethPip.ethEstimateGas(saplObject, null).blockFirst().bigIntegerValue();
+		BigInteger web3jResult = web3j.ethEstimateGas(transaction).send().getAmountUsed();
+		assertEquals("The ethEstimateGas method did not return the correct value.", web3jResult, pipResult);
+	}
+
+	// blockByHash
+	@Test
+	public void ethGetBlockByHashShouldReturnTheCorrectValue() throws IOException {
+		String blockHash = web3j.ethBlockHashFlowable().blockingFirst();
+
+		ObjectNode saplObject = JSON.objectNode();
+		saplObject.put(BLOCK_HASH, blockHash);
+		saplObject.put(RETURN_FULL_TRANSACTION_OBJECTS, false);
+		String pipResult = ethPip.ethGetBlockByHash(saplObject, null).blockFirst().toString();
+		String web3jResult = mapper
+				.convertValue(web3j.ethGetBlockByHash(blockHash, false).send().getBlock(), JsonNode.class).toString();
+		assertEquals("The ethGetBlockByHash method did not return the correct value.", web3jResult, pipResult);
+	}
+
+	// blockByNumber
+	@Test
+	public void ethGetBlockByNumberShouldReturnTheCorrectValue() throws IOException {
+		BigInteger blockNumber = web3j.ethBlockNumber().send().getBlockNumber();
+
+		ObjectNode saplObject = JSON.objectNode();
+		saplObject.put(DEFAULT_BLOCK_PARAMETER_BIG_INT, blockNumber);
+		saplObject.put(RETURN_FULL_TRANSACTION_OBJECTS, false);
+		String pipResult = ethPip.ethGetBlockByNumber(saplObject, null).blockFirst().toString();
+		String web3jResult = mapper.convertValue(
+				web3j.ethGetBlockByNumber(DefaultBlockParameter.valueOf(blockNumber), false).send().getBlock(),
+				JsonNode.class).toString();
+
+		assertEquals("The ethGetBlockByNumber method did not return the correct value.", web3jResult, pipResult);
+	}
+
+	// transactionByHash
+	@Test
+	public void ethGetTransactionByHashShouldReturnTheCorrectValue() throws IOException {
+
+		String transactionHash = transactionReceiptUser2.getTransactionHash();
+		JsonNode saplObject = JSON.textNode(transactionHash);
+		String pipResult = ethPip.ethGetTransactionByHash(saplObject, null).blockFirst().toString();
+		String web3jResult = mapper
+				.convertValue(web3j.ethGetTransactionByHash(transactionHash).send().getResult(), JsonNode.class)
+				.toString();
+
+		assertEquals("The ethGetTransactionByHash method did not return the correct value.", web3jResult, pipResult);
+	}
+
+	// transactionByBlockHashAndIndex
+	@Test
+	public void ethGetTransactionByBlockHashAndIndexShouldReturnTheCorrectValue() throws IOException {
+
+		String blockHash = transactionReceiptUser2.getBlockHash();
+		BigInteger index = transactionReceiptUser2.getTransactionIndex();
+
+		ObjectNode saplObject = JSON.objectNode();
+		saplObject.put(BLOCK_HASH, blockHash);
+		saplObject.put(TRANSACTION_INDEX, index);
+
+		String pipResult = ethPip.ethGetTransactionByBlockHashAndIndex(saplObject, null).blockFirst().toString();
+		String web3jResult = mapper
+				.convertValue(web3j.ethGetTransactionByBlockHashAndIndex(blockHash, index).send().getResult(),
+						JsonNode.class)
+				.toString();
+
+		assertEquals("The ethGetTransactionByBlockHashAndIndex method did not return the correct value.", web3jResult,
+				pipResult);
+	}
+
+	// transactionByBlockNumberAndIndex
+	@Test
+	public void ethGetTransactionByBlockNumberAndIndexShouldReturnTheCorrectValue() throws IOException {
+
+		BigInteger blockNumber = transactionReceiptUser2.getBlockNumber();
+		BigInteger index = transactionReceiptUser2.getTransactionIndex();
+
+		ObjectNode saplObject = JSON.objectNode();
+		saplObject.put(DEFAULT_BLOCK_PARAMETER_BIG_INT, blockNumber);
+		saplObject.put(TRANSACTION_INDEX, index);
+
+		String pipResult = ethPip.ethGetTransactionByBlockNumberAndIndex(saplObject, null).blockFirst().toString();
+		String web3jResult = mapper.convertValue(
+				web3j.ethGetTransactionByBlockNumberAndIndex(DefaultBlockParameter.valueOf(blockNumber), index).send()
+						.getResult(),
+				JsonNode.class).toString();
+
+		assertEquals("The ethGetTransactionByBlockNumberAndIndex method did not return the correct value.", web3jResult,
+				pipResult);
+	}
+
+	// transactionReceipt
+	@Test
+	public void ethGetTransactionReceiptShouldReturnTheCorrectValue() throws IOException {
+
+		String transactionHash = transactionReceiptUser2.getTransactionHash();
+		JsonNode saplObject = JSON.textNode(transactionHash);
+
+		String pipResult = ethPip.ethGetTransactionReceipt(saplObject, null).blockFirst().toString();
+		String web3jResult = mapper
+				.convertValue(web3j.ethGetTransactionReceipt(transactionHash).send().getResult(), JsonNode.class)
+				.toString();
+
+		assertEquals("The ethGetTransactionReceipt method did not return the correct value.", web3jResult, pipResult);
+	}
+
+	// uncleByBlockHashAndIndex
+	@Test
+	public void ethGetUncleByBlockHashAndIndexShouldReturnTheCorrectValue() throws IOException {
+
+		String blockHash = transactionReceiptUser2.getBlockHash();
+		BigInteger index = BigInteger.ZERO;
+
+		ObjectNode saplObject = JSON.objectNode();
+		saplObject.put(BLOCK_HASH, blockHash);
+		saplObject.put(TRANSACTION_INDEX, index);
+
+		String pipResult = ethPip.ethGetUncleByBlockHashAndIndex(saplObject, null).blockFirst().toString();
+		String web3jResult = mapper
+				.convertValue(web3j.ethGetUncleByBlockHashAndIndex(blockHash, index).send().getResult(), JsonNode.class)
+				.toString();
+
+		assertEquals("The ethGetUncleByBlockHashAndIndex method did not return the correct value.", web3jResult,
+				pipResult);
+	}
+
+	// uncleByBlockNumberAndIndex
+	@Test
+	public void ethGetUncleByBlockNumberAndIndexShouldReturnTheCorrectValue() throws IOException {
+
+		BigInteger blockNumber = transactionReceiptUser2.getBlockNumber();
+		BigInteger index = BigInteger.ZERO;
+
+		ObjectNode saplObject = JSON.objectNode();
+		saplObject.put(DEFAULT_BLOCK_PARAMETER_BIG_INT, blockNumber);
+		saplObject.put(TRANSACTION_INDEX, index);
+
+		String pipResult = ethPip.ethGetUncleByBlockNumberAndIndex(saplObject, null).blockFirst().toString();
+		String web3jResult = mapper
+				.convertValue(web3j.ethGetUncleByBlockNumberAndIndex(DefaultBlockParameter.valueOf(blockNumber), index)
+						.send().getResult(), JsonNode.class)
+				.toString();
+
+		assertEquals("The ethGetUncleByBlockNumberAndIndex method did not return the correct value.", web3jResult,
+				pipResult);
+	}
+
+	// ethFilterChanges
+	@Test
+	public void ethGetFilterChangesShouldReturnTheCorrectValue() throws IOException {
+
+		BigInteger filterId = web3j.ethNewBlockFilter().send().getFilterId();
+
+		ObjectNode saplObject = JSON.objectNode();
+		saplObject.put(FILTER_ID, filterId);
+
+		String pipResult = ethPip.ethGetFilterChanges(saplObject, null).blockFirst().toString();
+		String web3jResult = web3j.ethGetFilterChanges(filterId).send().getResult().toString();
+
+		assertEquals("The ethGetFilterChanges method did not return the correct value.", web3jResult, pipResult);
 	}
 
 }

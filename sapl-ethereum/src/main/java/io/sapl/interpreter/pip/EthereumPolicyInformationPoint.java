@@ -1,6 +1,5 @@
 package io.sapl.interpreter.pip;
 
-import static io.sapl.interpreter.pip.EthereumPipFunctions.convertToType;
 import static io.sapl.interpreter.pip.EthereumPipFunctions.extractDefaultBlockParameter;
 
 import java.io.IOException;
@@ -11,16 +10,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Function;
-import org.web3j.abi.datatypes.Type;
 import org.web3j.protocol.Web3j;
-import org.web3j.protocol.Web3jService;
 import org.web3j.protocol.core.methods.request.EthFilter;
 import org.web3j.protocol.core.methods.response.EthCall;
 import org.web3j.protocol.core.methods.response.Transaction;
@@ -30,9 +26,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 import io.sapl.api.pip.Attribute;
-import io.sapl.api.pip.AttributeException;
 import io.sapl.api.pip.PolicyInformationPoint;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * The Ethereum Policy Information Point gives access to most methods of the JSON-RPC Ethereum API
@@ -52,6 +49,7 @@ import reactor.core.publisher.Flux;
  * to be a more user friendly implementation of the most common use cases.
  */
 
+@Slf4j
 @PolicyInformationPoint(name = "ethereum", description = "Connects to the Ethereum Blockchain.")
 public class EthereumPolicyInformationPoint {
 
@@ -95,19 +93,10 @@ public class EthereumPolicyInformationPoint {
 
 	private static final JsonNodeFactory JSON = JsonNodeFactory.instance;
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(EthereumPolicyInformationPoint.class);
-
-	private final Flux<Long> timer;
-
 	private Web3j web3j;
 
-	public EthereumPolicyInformationPoint(Web3jService web3jService) {
-		this(web3jService, DEFAULT_ETH_POLLING_INTERVAL);
-	}
-
-	public EthereumPolicyInformationPoint(Web3jService web3jService, long ethereumPollingIntervalInMs) {
-		web3j = Web3j.build(web3jService);
-		timer = Flux.interval(Duration.ZERO, Duration.ofMillis(ethereumPollingIntervalInMs));
+	public EthereumPolicyInformationPoint(Web3j web3j) {
+		this.web3j = web3j;
 	}
 
 	/**
@@ -132,10 +121,8 @@ public class EthereumPolicyInformationPoint {
 						.ethGetTransactionByHash(getStringFrom(saplObject, TRANSACTION_HASH)).send().getTransaction();
 				if (optionalTransactionFromChain.isPresent()) {
 					Transaction transactionFromChain = optionalTransactionFromChain.get();
-					if (transactionFromChain.getFrom().toLowerCase()
-							.equals(getStringFrom(saplObject, FROM_ACCOUNT).toLowerCase())
-							&& transactionFromChain.getTo().toLowerCase()
-									.equals(getStringFrom(saplObject, TO_ACCOUNT).toLowerCase())
+					if (transactionFromChain.getFrom().equalsIgnoreCase(getStringFrom(saplObject, FROM_ACCOUNT))
+							&& transactionFromChain.getTo().equalsIgnoreCase(getStringFrom(saplObject, TO_ACCOUNT))
 							&& transactionFromChain.getValue().equals(getBigIntFrom(saplObject, TRANSACTION_VALUE))) {
 						return JSON.booleanNode(true);
 					}
@@ -173,41 +160,22 @@ public class EthereumPolicyInformationPoint {
 		return () -> {
 			String fromAccount = getStringFrom(saplObject, FROM_ACCOUNT);
 			String contractAddress = getStringFrom(saplObject, CONTRACT_ADDRESS);
+			JsonNode inputParams = getJsonFrom(saplObject, INPUT_PARAMS);
+			JsonNode outputParams = getJsonFrom(saplObject, OUTPUT_PARAMS);
 
-			List<Type> inputParameters = new ArrayList<>();
-			JsonNode inputNode = saplObject.get(INPUT_PARAMS);
-			if (inputNode.isArray()) {
-				for (JsonNode inputParam : inputNode) {
-					inputParameters.add(convertToType(inputParam));
-				}
-			}
-			try {
+			Function function = new Function(
+					getStringFrom(saplObject, FUNCTION_NAME), getJsonList(inputParams).stream()
+							.map(EthereumPipFunctions::convertToType).collect(Collectors.toList()),
+					getOutputParameters(outputParams));
+			String encodedFunction = FunctionEncoder.encode(function);
 
-				List<TypeReference<?>> outputParameters = new ArrayList<>();
-				JsonNode outputNode = saplObject.get(OUTPUT_PARAMS);
-				if (outputNode.isArray()) {
-					for (JsonNode solidityType : outputNode) {
-						outputParameters.add(TypeReference.makeTypeReference(solidityType.textValue()));
-					}
-				}
+			EthCall response = web3j
+					.ethCall(org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction(fromAccount,
+							contractAddress, encodedFunction), extractDefaultBlockParameter(saplObject))
+					.send();
 
-				org.web3j.abi.datatypes.Function function = new Function(getStringFrom(saplObject, FUNCTION_NAME),
-						inputParameters, outputParameters);
-				String encodedFunction = FunctionEncoder.encode(function);
-				EthCall response = web3j
-						.ethCall(
-								org.web3j.protocol.core.methods.request.Transaction
-										.createEthCallTransaction(fromAccount, contractAddress, encodedFunction),
-								extractDefaultBlockParameter(saplObject))
-						.send();
-				List<Type> output = FunctionReturnDecoder.decode(response.getValue(), function.getOutputParameters());
+			return convertToJsonNode(FunctionReturnDecoder.decode(response.getValue(), function.getOutputParameters()));
 
-				return convertToJsonNode(output);
-
-			}
-			catch (IOException | ClassNotFoundException e) {
-				throw new AttributeException(e);
-			}
 		};
 	}
 
@@ -456,6 +424,7 @@ public class EthereumPolicyInformationPoint {
 	 * @return Flux of JsonNodes holding the balance in wei as BigInteger.
 	 * @see io.sapl.interpreter.pip.EthereumPipFunctions#extractDefaultBlockParameter(JsonNode)
 	 * extractDefaultBlockParameter
+	 *
 	 */
 	@Attribute(name = "balance", docs = "Returns the balance of the account of given address.")
 	public Flux<JsonNode> ethGetBalance(JsonNode saplObject, Map<String, JsonNode> variables) {
@@ -471,6 +440,20 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 * Method that returns the value of a storage at a certain position. Refer to the
+	 * <a href="https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_getstorageat">Json-RPC</a> to find out how the
+	 * storage position is being calculated.
+	 * @param saplObject needs to hold the following values: <br>
+	 * "address": Address of the contract that the storage belongs to. <br>
+	 * "position": Position of the stored data. <br>
+	 * An optional DefaultBlockParameter. More information on how to provide it can be found in the
+	 * extractDefaultBlockParameter method.
+	 * @param variables is unused here
+	 * @return A Flux of Json Nodes that contain the stored value at the denoted position.
+	 * @see io.sapl.interpreter.pip.EthereumPipFunctions#extractDefaultBlockParameter(JsonNode)
+	 * extractDefaultBlockParameter
+	 */
 	@Attribute(name = "storage", docs = "Returns the value from a storage position at a given address.")
 	public Flux<JsonNode> ethGetStorageAt(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withStorageAt(saplObject));
@@ -484,6 +467,18 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 * Method that returns the amount of transactions that an externally owned account has sent or the number of
+	 * interactions with other contracts in the case of a contract account.
+	 * @param saplObject needs to hold the following values: <br>
+	 * "address": Address of the account that the transactionCount should be returned from. <br>
+	 * An optional DefaultBlockParameter. More information on how to provide it can be found in the
+	 * extractDefaultBlockParameter method.
+	 * @param variables is unused here
+	 * @return A Flux of JsonNodes that contain the transaction count as a BigIntger value.
+	 * @see io.sapl.interpreter.pip.EthereumPipFunctions#extractDefaultBlockParameter(JsonNode)
+	 * extractDefaultBlockParameter
+	 */
 	@Attribute(name = "transactionCount", docs = "Returns the number of transactions sent from an address.")
 	public Flux<JsonNode> ethGetTransactionCount(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withTransactionCount(saplObject));
@@ -498,6 +493,13 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 * Method for querying the number of transactions in a block with a given hash.
+	 * @param saplObject needs to hold the following values: <br>
+	 * "blockHash": The hash of the block in question as String.
+	 * @param variables is unused here
+	 * @return A Flux of JsonNodes holding the transaction count of the block as BigInteger value.
+	 */
 	@Attribute(name = "blockTransactionCountByHash", docs = "Returns the number of transactions in a block from a block matching the given block hash.")
 	public Flux<JsonNode> ethGetBlockTransactionCountByHash(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withBlockTransactionCountByHash(saplObject));
@@ -511,6 +513,15 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 * Method for querying the number of transactions in a block with a given number.
+	 * @param saplObject needs to hold only an optional DefaultBlockParameter. More information on how to provide it can
+	 * be found in the extractDefaultBlockParameter method.
+	 * @param variables is unused here
+	 * @return A Flux of JsonNodes holding the transaction count of the block as BigInteger value.
+	 * @see io.sapl.interpreter.pip.EthereumPipFunctions#extractDefaultBlockParameter(JsonNode)
+	 * extractDefaultBlockParameter
+	 */
 	@Attribute(name = "blockTransactionCountByNumber", docs = "Returns the number of transactions in a block matching the given block number.")
 	public Flux<JsonNode> ethGetBlockTransactionCountByNumber(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withBlockTransactionCountByNumber(saplObject));
@@ -525,6 +536,13 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 * Method for querying the number of uncles in a block with a given hash.
+	 * @param saplObject needs to hold the following values: <br>
+	 * "blockHash": The hash of the block in question as String.
+	 * @param variables is unused here
+	 * @return A Flux of JsonNodes holding the uncle count of the block as BigInteger value.
+	 */
 	@Attribute(name = "uncleCountByBlockHash", docs = "Returns the number of uncles in a block from a block matching the given block hash.")
 	public Flux<JsonNode> ethGetUncleCountByBlockHash(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withUncleCountByBlockHash(saplObject));
@@ -538,6 +556,15 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 * Method for querying the number of uncles in a block with a given number.
+	 * @param saplObject needs to hold only an optional DefaultBlockParameter. More information on how to provide it can
+	 * be found in the extractDefaultBlockParameter method.
+	 * @param variables is unused here
+	 * @return A Flux of JsonNodes holding the uncle count of the block as BigInteger value.
+	 * @see io.sapl.interpreter.pip.EthereumPipFunctions#extractDefaultBlockParameter(JsonNode)
+	 * extractDefaultBlockParameter
+	 */
 	@Attribute(name = "uncleCountByBlockNumber", docs = "Returns the number of uncles in a block from a block matching the given block number.")
 	public Flux<JsonNode> ethGetUncleCountByBlockNumber(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withUncleCountByBlockNumber(saplObject));
@@ -551,6 +578,17 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 * Method for getting the code stored at a certain address.
+	 * @param saplObject needs to hold the following values: <br>
+	 * "address": Address of the contract that the code should be returned from. <br>
+	 * An optional DefaultBlockParameter. More information on how to provide it can be found in the
+	 * extractDefaultBlockParameter method.
+	 * @param variables is unused here
+	 * @return A Flux of JsonNodes containing the code at the address as String.
+	 * @see io.sapl.interpreter.pip.EthereumPipFunctions#extractDefaultBlockParameter(JsonNode)
+	 * extractDefaultBlockParameter
+	 */
 	@Attribute(name = "code", docs = "Returns code at a given address.")
 	public Flux<JsonNode> ethGetCode(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withCode(saplObject));
@@ -565,6 +603,15 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 * Method for calculating the signature needed for Ethereum transactions. The address to sign with mus be unlocked
+	 * in the client.
+	 * @param saplObject needs to hold the following values: <br>
+	 * "address": Address used to sign with. <br>
+	 * "sha3HashOfDataToSign": The message that should be signed.
+	 * @param variables is unused here
+	 * @return A Flux of JsonNodes holding the resulting signature in form of a String.
+	 */
 	@Attribute(name = "sign", docs = "The sign method calculates an Ethereum specific signature.")
 	public Flux<JsonNode> ethSign(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withSignature(saplObject));
@@ -579,6 +626,12 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 *
+	 * @param saplObject needs to hold the following values: <br>
+	 * @param variables is unused here
+	 * @return
+	 */
 	@Attribute(name = "call", docs = "Executes a new message call immediately without creating a transaction on the block chain.")
 	public Flux<JsonNode> ethCall(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withCallResult(saplObject));
@@ -587,13 +640,18 @@ public class EthereumPolicyInformationPoint {
 
 	private Callable<JsonNode> withCallResult(JsonNode saplObject) {
 
-		return () -> convertToJsonNode(web3j.ethCall(
-				mapper.convertValue(saplObject.get(TRANSACTION),
-						org.web3j.protocol.core.methods.request.Transaction.class),
-				extractDefaultBlockParameter(saplObject)).send().getResult());
+		return () -> convertToJsonNode(web3j
+				.ethCall(getTransactionFromJson(saplObject.get(TRANSACTION)), extractDefaultBlockParameter(saplObject))
+				.send().getResult());
 
 	}
 
+	/**
+	 *
+	 * @param saplObject needs to hold the following values: <br>
+	 * @param variables is unused here
+	 * @return
+	 */
 	@Attribute(name = "estimateGas", docs = "Generates and returns an estimate of how much gas is necessary to allow the transaction to complete.")
 	public Flux<JsonNode> ethEstimateGas(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withEstimatedGas(saplObject));
@@ -602,24 +660,36 @@ public class EthereumPolicyInformationPoint {
 
 	private Callable<JsonNode> withEstimatedGas(JsonNode saplObject) {
 
-		return () -> convertToJsonNode(web3j.ethEstimateGas(mapper.convertValue(saplObject.get(TRANSACTION),
-				org.web3j.protocol.core.methods.request.Transaction.class)).send().getAmountUsed());
+		return () -> convertToJsonNode(
+				web3j.ethEstimateGas(getTransactionFromJson(saplObject.get(TRANSACTION))).send().getAmountUsed());
 
 	}
 
+	/**
+	 *
+	 * @param saplObject needs to hold the following values: <br>
+	 * @param variables is unused here
+	 * @return
+	 */
 	@Attribute(name = "blockByHash", docs = "Returns information about a block by hash.")
-	public Flux<JsonNode> ethGetBlockByHash(JsonNode saplObject, Map<String, JsonNode> variables) {
+	public Flux<JsonNode> ethGetBlockByHash(JsonNode saplObject, Map<String, JsonNode> variables)
+			throws IllegalArgumentException, IOException {
 		return scheduledFlux(withBlockByHash(saplObject));
 
 	}
 
 	private Callable<JsonNode> withBlockByHash(JsonNode saplObject) {
-
 		return () -> convertToJsonNode(web3j.ethGetBlockByHash(getStringFrom(saplObject, BLOCK_HASH),
-				saplObject.get(RETURN_FULL_TRANSACTION_OBJECTS).asBoolean(false)).send().getBlock());
+				getBooleanFrom(saplObject, RETURN_FULL_TRANSACTION_OBJECTS)).send().getBlock());
 
 	}
 
+	/**
+	 *
+	 * @param saplObject needs to hold the following values: <br>
+	 * @param variables is unused here
+	 * @return
+	 */
 	@Attribute(name = "blockByNumber", docs = "Returns information about a block by block number.")
 	public Flux<JsonNode> ethGetBlockByNumber(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withBlockByNumber(saplObject));
@@ -629,10 +699,16 @@ public class EthereumPolicyInformationPoint {
 	private Callable<JsonNode> withBlockByNumber(JsonNode saplObject) {
 
 		return () -> convertToJsonNode(web3j.ethGetBlockByNumber(extractDefaultBlockParameter(saplObject),
-				saplObject.get(RETURN_FULL_TRANSACTION_OBJECTS).asBoolean(false)).send().getBlock());
+				getBooleanFrom(saplObject, RETURN_FULL_TRANSACTION_OBJECTS)).send().getBlock());
 
 	}
 
+	/**
+	 *
+	 * @param saplObject needs to hold the following values: <br>
+	 * @param variables is unused here
+	 * @return
+	 */
 	@Attribute(name = "transactionByHash", docs = "Returns the information about a transaction requested by transaction hash.")
 	public Flux<JsonNode> ethGetTransactionByHash(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withTransactionByHash(saplObject));
@@ -641,10 +717,16 @@ public class EthereumPolicyInformationPoint {
 
 	private Callable<JsonNode> withTransactionByHash(JsonNode saplObject) {
 
-		return () -> convertToJsonNode(web3j.ethGetTransactionByHash(saplObject.textValue()).send().getTransaction());
+		return () -> convertToJsonNode(web3j.ethGetTransactionByHash(saplObject.textValue()).send().getResult());
 
 	}
 
+	/**
+	 *
+	 * @param saplObject needs to hold the following values: <br>
+	 * @param variables is unused here
+	 * @return
+	 */
 	@Attribute(name = "transactionByBlockHashAndIndex", docs = "Returns information about a transaction by block hash and transaction index position.")
 	public Flux<JsonNode> ethGetTransactionByBlockHashAndIndex(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withTransactionByBlockHashAndIndex(saplObject));
@@ -654,10 +736,16 @@ public class EthereumPolicyInformationPoint {
 	private Callable<JsonNode> withTransactionByBlockHashAndIndex(JsonNode saplObject) {
 
 		return () -> convertToJsonNode(web3j.ethGetTransactionByBlockHashAndIndex(getStringFrom(saplObject, BLOCK_HASH),
-				getBigIntFrom(saplObject, TRANSACTION_INDEX)).send().getTransaction());
+				getBigIntFrom(saplObject, TRANSACTION_INDEX)).send().getResult());
 
 	}
 
+	/**
+	 *
+	 * @param saplObject needs to hold the following values: <br>
+	 * @param variables is unused here
+	 * @return
+	 */
 	@Attribute(name = "transactionByBlockNumberAndIndex", docs = "Returns information about a transaction by block number and transaction index position.")
 	public Flux<JsonNode> ethGetTransactionByBlockNumberAndIndex(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withTransactionByBlockNumberAndIndex(saplObject));
@@ -668,10 +756,16 @@ public class EthereumPolicyInformationPoint {
 
 		return () -> convertToJsonNode(
 				web3j.ethGetTransactionByBlockNumberAndIndex(extractDefaultBlockParameter(saplObject),
-						getBigIntFrom(saplObject, TRANSACTION_INDEX)).send().getTransaction());
+						getBigIntFrom(saplObject, TRANSACTION_INDEX)).send().getResult());
 
 	}
 
+	/**
+	 *
+	 * @param saplObject needs to hold the following values: <br>
+	 * @param variables is unused here
+	 * @return
+	 */
 	@Attribute(name = "transactionReceipt", docs = "Returns the receipt of a transaction by transaction hash.")
 	public Flux<JsonNode> ethGetTransactionReceipt(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withTransactionReceipt(saplObject));
@@ -680,11 +774,16 @@ public class EthereumPolicyInformationPoint {
 
 	private Callable<JsonNode> withTransactionReceipt(JsonNode saplObject) {
 
-		return () -> convertToJsonNode(
-				web3j.ethGetTransactionReceipt(saplObject.textValue()).send().getTransactionReceipt());
+		return () -> convertToJsonNode(web3j.ethGetTransactionReceipt(saplObject.textValue()).send().getResult());
 
 	}
 
+	/**
+	 *
+	 * @param saplObject needs to hold the following values: <br>
+	 * @param variables is unused here
+	 * @return
+	 */
 	@Attribute(name = "pendingTransactions", docs = "Returns the pending transactions list.")
 	public Flux<JsonNode> ethPendingTransactions(JsonNode saplObject, Map<String, JsonNode> variables) {
 
@@ -692,6 +791,12 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 *
+	 * @param saplObject needs to hold the following values: <br>
+	 * @param variables is unused here
+	 * @return
+	 */
 	@Attribute(name = "uncleByBlockHashAndIndex", docs = "Returns information about a uncle of a block by hash and uncle index position.")
 	public Flux<JsonNode> ethGetUncleByBlockHashAndIndex(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withUncleByBlockHashAndIndex(saplObject));
@@ -705,6 +810,12 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 *
+	 * @param saplObject needs to hold the following values: <br>
+	 * @param variables is unused here
+	 * @return
+	 */
 	@Attribute(name = "uncleByBlockNumberAndIndex", docs = "Returns information about a uncle of a block by number and uncle index position.")
 	public Flux<JsonNode> ethGetUncleByBlockNumberAndIndex(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withUncleByBlockNumberAndIndex(saplObject));
@@ -718,6 +829,12 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 *
+	 * @param saplObject needs to hold the following values: <br>
+	 * @param variables is unused here
+	 * @return
+	 */
 	@Attribute(name = "ethFilterChanges", docs = "Polling method for a filter, which returns an array of logs which occurred since last poll.")
 	public Flux<JsonNode> ethGetFilterChanges(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withFilterChanges(saplObject));
@@ -731,6 +848,12 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 *
+	 * @param saplObject needs to hold the following values: <br>
+	 * @param variables is unused here
+	 * @return
+	 */
 	@Attribute(name = "ethFilterLogs", docs = "Returns an array of all logs matching filter with given id.")
 	public Flux<JsonNode> ethGetFilterLogs(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withFilterLogs(saplObject));
@@ -743,6 +866,12 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 *
+	 * @param saplObject needs to hold the following values: <br>
+	 * @param variables is unused here
+	 * @return
+	 */
 	@Attribute(name = "logs", docs = "Returns an array of all logs matching a given filter object.")
 	public Flux<JsonNode> ethGetLogs(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withLogs(saplObject));
@@ -756,6 +885,12 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 *
+	 * @param saplObject needs to hold the following values: <br>
+	 * @param variables is unused here
+	 * @return
+	 */
 	@Attribute(name = "work", docs = "Returns the hash of the current block, the seedHash, and the boundary condition to be met (\"target\").")
 	public Flux<JsonNode> ethGetWork(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withWork());
@@ -768,6 +903,12 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 *
+	 * @param saplObject needs to hold the following values: <br>
+	 * @param variables is unused here
+	 * @return
+	 */
 	@Attribute(name = "shhVersion", docs = "Returns the current whisper protocol version.")
 	public Flux<JsonNode> shhVersion(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withShhVersion());
@@ -780,6 +921,12 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 *
+	 * @param saplObject needs to hold the following values: <br>
+	 * @param variables is unused here
+	 * @return
+	 */
 	@Attribute(name = "hasIdentity", docs = "Checks if the client hold the private keys for a given identity.")
 	public Flux<JsonNode> shhHasIdentity(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withHasIdentity(saplObject));
@@ -792,6 +939,12 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 *
+	 * @param saplObject needs to hold the following values: <br>
+	 * @param variables is unused here
+	 * @return
+	 */
 	@Attribute(name = "shhFilterChanges", docs = "Polling method for whisper filters. Returns new messages since the last call of this method.")
 	public Flux<JsonNode> shhGetFilterChanges(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withShhFilterChanges(saplObject));
@@ -804,6 +957,12 @@ public class EthereumPolicyInformationPoint {
 
 	}
 
+	/**
+	 *
+	 * @param saplObject needs to hold the following values: <br>
+	 * @param variables is unused here
+	 * @return
+	 */
 	@Attribute(name = "messages", docs = "Get all messages matching a filter. Unlike shh_getFilterChanges this returns all messages.")
 	public Flux<JsonNode> shhGetMessages(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withShhMessages(saplObject));
@@ -817,20 +976,8 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	private Flux<JsonNode> scheduledFlux(Callable<JsonNode> functionToCall) {
-		Flux<JsonNode> returnFlux = timer.map((i) -> {
-			try {
-				return functionToCall.call();
-			}
-			catch (Exception e) {
-				LOGGER.warn(
-						"An error occurred, so by default a Json NullNode is returned. The following exception has been thrown:\n"
-								+ e);
-			}
-			return JSON.nullNode();
-		});
-
-		return returnFlux;
-
+		Flux<Long> timer = Flux.interval(Duration.ZERO, Duration.ofMillis(DEFAULT_ETH_POLLING_INTERVAL));
+		return timer.flatMap(i -> Mono.fromCallable(functionToCall)).onErrorReturn(JSON.nullNode());
 	}
 
 	private static JsonNode convertToJsonNode(Object o) {
@@ -853,6 +1000,56 @@ public class EthereumPolicyInformationPoint {
 		LOGGER.warn("The input JsonNode for the policy didn't contain a field of type " + bigIntegerName
 				+ ", altough this was expected. Ignore this message if the field was optional.");
 		return null;
+	}
+
+	private static boolean getBooleanFrom(JsonNode saplObject, String booleanName) {
+		if (saplObject.has(booleanName)) {
+			return saplObject.get(booleanName).asBoolean();
+		}
+		LOGGER.warn("The input JsonNode for the policy didn't contain a field of type " + booleanName
+				+ ", altough this was expected. Ignore this message if the field was optional.");
+		return false;
+	}
+
+	private static JsonNode getJsonFrom(JsonNode saplObject, String jsonName) {
+		if (saplObject.has(jsonName)) {
+			return saplObject.get(jsonName);
+		}
+		LOGGER.warn("The input JsonNode for the policy didn't contain a field of type " + jsonName
+				+ ", altough this was expected. Ignore this message if the field was optional.");
+		return JSON.nullNode();
+	}
+
+	private List<TypeReference<?>> getOutputParameters(JsonNode outputNode) throws ClassNotFoundException {
+		List<TypeReference<?>> outputParameters = new ArrayList<>();
+		if (outputNode.isArray()) {
+			for (JsonNode solidityType : outputNode) {
+				outputParameters.add(TypeReference.makeTypeReference(solidityType.textValue()));
+			}
+			return outputParameters;
+		}
+		LOGGER.warn("The JsonNode containing the ouput parameters wasn't an array as expected. "
+				+ "An empty list is being returned.");
+		return outputParameters;
+	}
+
+	private List<JsonNode> getJsonList(JsonNode inputParams) {
+		List<JsonNode> inputList = new ArrayList<>();
+		if (inputParams.isArray()) {
+			for (JsonNode inputParam : inputParams) {
+				inputList.add(inputParam);
+			}
+			return inputList;
+		}
+		LOGGER.warn("The JsonNode containing the input parameters wasn't an array as expected. "
+				+ "An empty list is being returned.");
+		return inputList;
+	}
+
+	private org.web3j.protocol.core.methods.request.Transaction getTransactionFromJson(JsonNode jsonTransaction) {
+		return org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction(
+				getStringFrom(jsonTransaction, "from"), getStringFrom(jsonTransaction, "to"),
+				getStringFrom(jsonTransaction, "data"));
 	}
 
 }
