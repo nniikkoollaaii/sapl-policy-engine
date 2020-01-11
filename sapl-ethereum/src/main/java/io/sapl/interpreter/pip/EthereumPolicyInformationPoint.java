@@ -1,6 +1,8 @@
 package io.sapl.interpreter.pip;
 
 import static io.sapl.interpreter.pip.EthereumPipFunctions.extractDefaultBlockParameter;
+import static io.sapl.interpreter.pip.EthereumPipFunctions.getStringFrom;
+import static io.sapl.interpreter.pip.EthereumPipFunctions.getTransactionFromJson;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -391,7 +393,7 @@ public class EthereumPolicyInformationPoint {
 
 	private Callable<JsonNode> withEthAccounts() {
 
-		return () -> convertToJsonNode(web3j.ethAccounts().send().getResult());
+		return () -> convertToJsonNode(web3j.ethAccounts().send().getAccounts());
 
 	}
 
@@ -642,7 +644,7 @@ public class EthereumPolicyInformationPoint {
 
 		return () -> convertToJsonNode(web3j
 				.ethCall(getTransactionFromJson(saplObject.get(TRANSACTION)), extractDefaultBlockParameter(saplObject))
-				.send().getResult());
+				.send().getValue());
 
 	}
 
@@ -679,8 +681,10 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	private Callable<JsonNode> withBlockByHash(JsonNode saplObject) {
-		return () -> convertToJsonNode(web3j.ethGetBlockByHash(getStringFrom(saplObject, BLOCK_HASH),
-				getBooleanFrom(saplObject, RETURN_FULL_TRANSACTION_OBJECTS)).send().getBlock());
+		return () -> {
+			return convertToJsonNode(web3j.ethGetBlockByHash(getStringFrom(saplObject, BLOCK_HASH),
+					getBooleanFrom(saplObject, RETURN_FULL_TRANSACTION_OBJECTS)).send().getBlock());
+		};
 
 	}
 
@@ -980,20 +984,11 @@ public class EthereumPolicyInformationPoint {
 		return timer.flatMap(i -> Mono.fromCallable(functionToCall)).onErrorReturn(JSON.nullNode());
 	}
 
-	private static JsonNode convertToJsonNode(Object o) {
+	protected static JsonNode convertToJsonNode(Object o) {
 		return mapper.convertValue(o, JsonNode.class);
 	}
 
-	private static String getStringFrom(JsonNode saplObject, String stringName) {
-		if (saplObject.has(stringName)) {
-			return saplObject.get(stringName).textValue();
-		}
-		LOGGER.warn("The input JsonNode for the policy didn't contain a field of type " + stringName
-				+ ", altough this was expected. Ignore this message if the field was optional.");
-		return null;
-	}
-
-	private static BigInteger getBigIntFrom(JsonNode saplObject, String bigIntegerName) {
+	protected static BigInteger getBigIntFrom(JsonNode saplObject, String bigIntegerName) {
 		if (saplObject.has(bigIntegerName)) {
 			return saplObject.get(bigIntegerName).bigIntegerValue();
 		}
@@ -1002,7 +997,7 @@ public class EthereumPolicyInformationPoint {
 		return null;
 	}
 
-	private static boolean getBooleanFrom(JsonNode saplObject, String booleanName) {
+	protected static boolean getBooleanFrom(JsonNode saplObject, String booleanName) {
 		if (saplObject.has(booleanName)) {
 			return saplObject.get(booleanName).asBoolean();
 		}
@@ -1011,7 +1006,7 @@ public class EthereumPolicyInformationPoint {
 		return false;
 	}
 
-	private static JsonNode getJsonFrom(JsonNode saplObject, String jsonName) {
+	protected static JsonNode getJsonFrom(JsonNode saplObject, String jsonName) {
 		if (saplObject.has(jsonName)) {
 			return saplObject.get(jsonName);
 		}
@@ -1020,7 +1015,7 @@ public class EthereumPolicyInformationPoint {
 		return JSON.nullNode();
 	}
 
-	private List<TypeReference<?>> getOutputParameters(JsonNode outputNode) throws ClassNotFoundException {
+	protected static List<TypeReference<?>> getOutputParameters(JsonNode outputNode) throws ClassNotFoundException {
 		List<TypeReference<?>> outputParameters = new ArrayList<>();
 		if (outputNode.isArray()) {
 			for (JsonNode solidityType : outputNode) {
@@ -1033,7 +1028,7 @@ public class EthereumPolicyInformationPoint {
 		return outputParameters;
 	}
 
-	private List<JsonNode> getJsonList(JsonNode inputParams) {
+	protected static List<JsonNode> getJsonList(JsonNode inputParams) {
 		List<JsonNode> inputList = new ArrayList<>();
 		if (inputParams.isArray()) {
 			for (JsonNode inputParam : inputParams) {
@@ -1044,12 +1039,6 @@ public class EthereumPolicyInformationPoint {
 		LOGGER.warn("The JsonNode containing the input parameters wasn't an array as expected. "
 				+ "An empty list is being returned.");
 		return inputList;
-	}
-
-	private org.web3j.protocol.core.methods.request.Transaction getTransactionFromJson(JsonNode jsonTransaction) {
-		return org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction(
-				getStringFrom(jsonTransaction, "from"), getStringFrom(jsonTransaction, "to"),
-				getStringFrom(jsonTransaction, "data"));
 	}
 
 }

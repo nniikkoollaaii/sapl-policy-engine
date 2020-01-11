@@ -166,8 +166,7 @@ public class EthereumPipFunctions {
 	protected static DefaultBlockParameter extractDefaultBlockParameter(JsonNode saplObject) {
 		if (saplObject.has(DEFAULT_BLOCK_PARAMETER_BIG_INT)) {
 			JsonNode dbp = saplObject.get(DEFAULT_BLOCK_PARAMETER_BIG_INT);
-			BigInteger dbpValue = dbp.bigIntegerValue();
-			return DefaultBlockParameter.valueOf(dbpValue);
+			return DefaultBlockParameter.valueOf(dbp.bigIntegerValue());
 		}
 		if (saplObject.has(DEFAULT_BLOCK_PARAMETER_STRING)) {
 			String dbpsName = saplObject.get(DEFAULT_BLOCK_PARAMETER_STRING).textValue();
@@ -211,6 +210,22 @@ public class EthereumPipFunctions {
 
 		throw new AttributeException(NO_CREDENTIALS_WARNING);
 
+	}
+
+	protected static org.web3j.protocol.core.methods.request.Transaction getTransactionFromJson(
+			JsonNode jsonTransaction) {
+		return org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction(
+				getStringFrom(jsonTransaction, "from"), getStringFrom(jsonTransaction, "to"),
+				getStringFrom(jsonTransaction, "data"));
+	}
+
+	protected static String getStringFrom(JsonNode saplObject, String stringName) {
+		if (saplObject.has(stringName)) {
+			return saplObject.get(stringName).textValue();
+		}
+		LOGGER.warn("The input JsonNode for the policy didn't contain a field of type " + stringName
+				+ ", altough this was expected. Ignore this message if the field was optional.");
+		return null;
 	}
 
 	protected static Type<?> convertToType(JsonNode inputParam) {

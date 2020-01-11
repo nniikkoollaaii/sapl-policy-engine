@@ -64,6 +64,7 @@ import reactor.test.StepVerifier;
  * (https://besu.hyperledger.org/en/stable/Reference/Accounts-for-Testing/) <br>
  * DO NOT USE THESES ACCOUNTS IN THE MAIN NET. ANY ETHER SENT TO THESE ACCOUNTS WILL BE LOST.
  *
+ * For these tests to be applied automatically, the maven profile integration-tests has to be activated.
  */
 public class EthereumIntegrationTest {
 
@@ -549,7 +550,7 @@ public class EthereumIntegrationTest {
 		BigInteger pipResult = ethPip.ethGetTransactionCount(saplObject, null).blockFirst().bigIntegerValue();
 		BigInteger web3jResult = web3j.ethGetTransactionCount(USER1_ADDRESS, DefaultBlockParameter.valueOf(LATEST))
 				.send().getTransactionCount();
-		assertEquals("The ethGetStorageAt method did not return the correct value.", web3jResult, pipResult);
+		assertEquals("The ethGetTransactionCount method did not return the correct value.", web3jResult, pipResult);
 	}
 
 	// blockTransactionCountByHash
@@ -621,7 +622,7 @@ public class EthereumIntegrationTest {
 
 	// call
 	@Test
-	public void ethCallCodeShouldReturnTheCorrectValue() throws IOException, ClassNotFoundException {
+	public void ethCallShouldReturnTheCorrectValue() throws IOException, ClassNotFoundException {
 		List<TypeReference<?>> outputParameters = new ArrayList<>();
 		outputParameters.add(TypeReference.makeTypeReference(BOOL));
 		List<Type<?>> inputList = new ArrayList<>();
