@@ -164,7 +164,7 @@ public class EthereumPipFunctionsTest {
 	// convertToType
 
 	@Test
-	public void convertToTypeShouldThrowAttributeExceptionIfTypeIsNotPresent() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnNullIfTypeIsNotPresent() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(VALUE, 25);
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
@@ -173,7 +173,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnNullIfValueIsNotPresent() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnNullIfValueIsNotPresent() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "aString");
 		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
@@ -182,14 +182,14 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnNullWithNullInput() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnNullWithNullInput() throws IOException {
 		Type<?> result = EthereumPipFunctions.convertToType(null);
 		assertNull("ConvertToType didn't return null with null input.", result);
 
 	}
 
 	@Test
-	public void convertToTypeShouldReturnAddressTypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnAddressTypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, ADDRESS);
 		inputParam.put(VALUE, TEST_ADDRESS);
@@ -198,7 +198,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBoolTypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBoolTypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, BOOL);
 		inputParam.put(VALUE, true);
@@ -207,7 +207,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnStringTypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnStringTypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, STRING);
 		inputParam.put(VALUE, SOME_STRING);
@@ -216,7 +216,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytesTypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytesTypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "bytes");
 		inputParam.put(VALUE, BYTE_ARRAY);
@@ -225,7 +225,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnByteTypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnByteTypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		byte testByte = 125;
 		inputParam.put(TYPE, "byte");
@@ -236,7 +236,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnCharTypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnCharTypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "char");
 		inputParam.put(VALUE, "a");
@@ -245,7 +245,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeCharShouldReturnNullWithEmptyString() throws IOException, AttributeException {
+	public void convertToTypeCharShouldReturnNullWithEmptyString() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "char");
 		inputParam.put(VALUE, "");
@@ -254,7 +254,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnDoubleTypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnDoubleTypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "double");
 		inputParam.put(VALUE, Double.valueOf(1.789));
@@ -264,7 +264,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnFloatTypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnFloatTypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "float");
 		inputParam.put(VALUE, Float.valueOf("7.654321"));
@@ -274,7 +274,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUintTypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUintTypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint");
 		inputParam.put(VALUE, TEST_BIG_INT);
@@ -283,7 +283,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnIntTypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnIntTypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int");
 		inputParam.put(VALUE, TEST_BIG_INT);
@@ -292,7 +292,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnLongTypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnLongTypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "long");
 		inputParam.put(VALUE, Long.valueOf(9786135));
@@ -302,7 +302,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnShortTypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnShortTypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "short");
 		inputParam.put(VALUE, Short.valueOf("111"));
@@ -312,7 +312,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint8TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint8TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint8");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -321,7 +321,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt8TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt8TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int8");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -330,7 +330,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint16TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint16TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint16");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -339,7 +339,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt16TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt16TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int16");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -348,7 +348,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint24TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint24TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint24");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -357,7 +357,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt24TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt24TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int24");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -366,7 +366,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint32TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint32TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint32");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -375,7 +375,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt32TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt32TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int32");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -384,7 +384,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint40TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint40TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint40");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -393,7 +393,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt40TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt40TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int40");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -402,7 +402,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint48TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint48TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint48");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -411,7 +411,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt48TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt48TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int48");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -420,7 +420,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint56TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint56TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint56");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -429,7 +429,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt56TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt56TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int56");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -438,7 +438,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint64TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint64TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint64");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -447,7 +447,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt64TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt64TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int64");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -456,7 +456,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint72TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint72TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint72");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -465,7 +465,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt72TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt72TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int72");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -474,7 +474,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint80TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint80TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint80");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -483,7 +483,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt80TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt80TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int80");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -492,7 +492,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint88TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint88TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint88");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -501,7 +501,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt88TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt88TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int88");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -510,7 +510,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint96TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint96TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint96");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -519,7 +519,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt96TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt96TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int96");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -528,7 +528,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint104TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint104TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint104");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -537,7 +537,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt104TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt104TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int104");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -546,7 +546,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint112TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint112TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint112");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -555,7 +555,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt112TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt112TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int112");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -564,7 +564,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint120TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint120TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint120");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -573,7 +573,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt120TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt120TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int120");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -582,7 +582,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint128TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint128TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint128");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -591,7 +591,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt128TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt128TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int128");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -600,7 +600,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint136TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint136TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint136");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -609,7 +609,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt136TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt136TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int136");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -618,7 +618,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint144TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint144TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint144");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -627,7 +627,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt144TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt144TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int144");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -636,7 +636,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint152TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint152TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint152");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -645,7 +645,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt152TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt152TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int152");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -654,7 +654,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint160TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint160TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint160");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -663,7 +663,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt160TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt160TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int160");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -672,7 +672,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint168TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint168TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint168");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -681,7 +681,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt168TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt168TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int168");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -690,7 +690,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint176TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint176TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint176");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -699,7 +699,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt176TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt176TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int176");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -708,7 +708,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint184TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint184TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint184");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -717,7 +717,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt184TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt184TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int184");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -726,7 +726,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint192TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint192TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint192");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -735,7 +735,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt192TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt192TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int192");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -744,7 +744,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint200TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint200TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint200");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -753,7 +753,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt200TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt200TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int200");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -762,7 +762,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint208TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint208TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint208");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -771,7 +771,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt208TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt208TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int208");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -780,7 +780,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint216TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint216TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint216");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -789,7 +789,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt216TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt216TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int216");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -798,7 +798,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint224TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint224TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint224");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -807,7 +807,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt224TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt224TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int224");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -816,7 +816,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint232TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint232TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint232");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -825,7 +825,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt232TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt232TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int232");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -834,7 +834,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint240TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint240TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint240");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -843,7 +843,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt240TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt240TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int240");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -852,7 +852,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint248TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint248TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint248");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -861,7 +861,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt248TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt248TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int248");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -870,7 +870,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint256TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnUint256TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint256");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
@@ -879,7 +879,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt256TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnInt256TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int256");
 		inputParam.put(VALUE, INT_TEST_VALUE);
@@ -888,7 +888,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes1TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes1TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[1];
 		bytesArray[0] = 25;
@@ -899,7 +899,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes2TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes2TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[2];
 		bytesArray[1] = 33;
@@ -910,7 +910,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes3TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes3TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[3];
 		inputParam.put(TYPE, "bytes3");
@@ -920,7 +920,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes4TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes4TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[4];
 		inputParam.put(TYPE, "bytes4");
@@ -930,7 +930,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes5TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes5TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[5];
 		inputParam.put(TYPE, "bytes5");
@@ -940,7 +940,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes6TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes6TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[6];
 		inputParam.put(TYPE, "bytes6");
@@ -950,7 +950,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes7TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes7TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[7];
 		inputParam.put(TYPE, "bytes7");
@@ -960,7 +960,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes8TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes8TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[8];
 		inputParam.put(TYPE, "bytes8");
@@ -970,7 +970,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes9TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes9TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[9];
 		inputParam.put(TYPE, "bytes9");
@@ -980,7 +980,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes10TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes10TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[10];
 		inputParam.put(TYPE, "bytes10");
@@ -990,7 +990,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnByte11TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnByte11TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[11];
 		inputParam.put(TYPE, "bytes11");
@@ -1000,7 +1000,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes12TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes12TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[12];
 		inputParam.put(TYPE, "bytes12");
@@ -1010,7 +1010,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes13TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes13TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[13];
 		inputParam.put(TYPE, "bytes13");
@@ -1020,7 +1020,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes14TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes14TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[14];
 		inputParam.put(TYPE, "bytes14");
@@ -1030,7 +1030,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes15TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes15TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[15];
 		inputParam.put(TYPE, "bytes15");
@@ -1040,7 +1040,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes16TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes16TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[16];
 		inputParam.put(TYPE, "bytes16");
@@ -1050,7 +1050,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes17TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes17TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[17];
 		inputParam.put(TYPE, "bytes17");
@@ -1060,7 +1060,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes18TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes18TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[18];
 		inputParam.put(TYPE, "bytes18");
@@ -1070,7 +1070,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes19TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes19TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[19];
 		inputParam.put(TYPE, "bytes19");
@@ -1080,7 +1080,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes20TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes20TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[20];
 		inputParam.put(TYPE, "bytes20");
@@ -1090,7 +1090,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes21TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes21TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[21];
 		inputParam.put(TYPE, "bytes21");
@@ -1100,7 +1100,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnByte22TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnByte22TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[22];
 		inputParam.put(TYPE, "bytes22");
@@ -1110,7 +1110,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes23TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes23TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[23];
 		inputParam.put(TYPE, "bytes23");
@@ -1120,7 +1120,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes24TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes24TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[24];
 		inputParam.put(TYPE, "bytes24");
@@ -1130,7 +1130,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes25TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes25TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[25];
 		inputParam.put(TYPE, "bytes25");
@@ -1140,7 +1140,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes26TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes26TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[26];
 		inputParam.put(TYPE, "bytes26");
@@ -1150,7 +1150,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes27TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes27TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[27];
 		inputParam.put(TYPE, "bytes27");
@@ -1160,7 +1160,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes28TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes28TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[28];
 		inputParam.put(TYPE, "bytes28");
@@ -1170,7 +1170,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes29TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes29TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[29];
 		inputParam.put(TYPE, "bytes29");
@@ -1180,7 +1180,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes30TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes30TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[30];
 		inputParam.put(TYPE, "bytes30");
@@ -1190,7 +1190,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes31TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes31TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[31];
 		inputParam.put(TYPE, "bytes31");
@@ -1200,7 +1200,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes32TypeCorrectly() throws IOException, AttributeException {
+	public void convertToTypeShouldReturnBytes32TypeCorrectly() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[32];
 		inputParam.put(TYPE, "bytes32");
@@ -1210,7 +1210,7 @@ public class EthereumPipFunctionsTest {
 	}
 
 	@Test
-	public void falseSolidityTypeShouldReturnNull() throws AttributeException, IOException {
+	public void falseSolidityTypeShouldReturnNull() throws IOException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "wrongType");
 		inputParam.put(VALUE, "anyValue");

@@ -42,10 +42,13 @@ import org.web3j.protocol.core.methods.response.TransactionReceipt;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-@PrepareForTest({ Web3j.class, EthereumPipFunctions.class })
+import io.reactivex.Flowable;
+
+@PrepareForTest({ Web3j.class, EthereumPipFunctions.class, org.web3j.protocol.core.methods.request.Transaction.class })
 @RunWith(PowerMockRunner.class)
 public class EthereumModuleTest {
 
@@ -73,16 +76,6 @@ public class EthereumModuleTest {
 
 	private static final BigInteger TEST_TRANSACTION_VALUE = new BigInteger("2000000000000000000");
 
-	private static final String HTTP_LOCALHOST = "http://localhost:";
-
-	private static final String CERTIFICATION = "certification";
-
-	private static final String HAS_CERTIFICATE = "hasCertificate";
-
-	private static final String ACCESS = "access";
-
-	private static final String ETHEREUM = "ethereum";
-
 	private static final String OUTPUT_PARAMS = "outputParams";
 
 	private static final String BOOL = "bool";
@@ -103,17 +96,11 @@ public class EthereumModuleTest {
 
 	private static final String USER1_ADDRESS = "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73";
 
-	private static final String USER1_PRIVATE_KEY = "0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63";
-
 	private static final String USER2_ADDRESS = "0x627306090abaB3A6e1400e9345bC60c78a8BEf57";
-
-	private static final String USER2_PRIVATE_KEY = "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3";
 
 	private static final String USER3_ADDRESS = "0xf17f52151EbEF6C7334FAD080c5704D77216b732";
 
 	private static final String USER3_PRIVATE_KEY = "0xae6ae8e5ccbfb04590405997ee2d52d2b330726137b875053c36d94e974d162f";
-
-	private static final BigInteger TRANSACTION1_VALUE = new BigInteger("2000000000000000000");
 
 	private static final String DEFAULT_BLOCK_PARAMETER = "defaultBlockParameter";
 
@@ -153,7 +140,7 @@ public class EthereumModuleTest {
 
 	private static final String TEST_DATA_BLOCKHASH = "0xc34757f3b3e5ee0d4533f2dedfa98925613acd16e1bb99ad1905bdabb37c897a";
 
-	private static final String TEST_DATA_BLOCKHASH_2 = "0x0d75b11b42df31d635730c6a1a26a0b849916cc5e9ceed4bc04a3348fe1f1db3";
+	private static final String TEST_DATA_TRANSACTION_HASH_2 = "0x0d75b11b42df31d635730c6a1a26a0b849916cc5e9ceed4bc04a3348fe1f1db3";
 
 	private static final String TEST_DATA_TRANSACTION_HASH = "0x610a8276014437089ff619136486474322444f0814f224fbbf9e925bb477e1e4";
 
@@ -169,9 +156,11 @@ public class EthereumModuleTest {
 
 	private static final String TEST_DATA_CODE_RETURN = "0x608060405234801561001057600080fd5b50600436106100575760003560e01c8063a87430ba1461005c578063b6a5d7de14610096578063f0b37c04146100be578063f851a440146100e4578063fe9fbb8014610108575b600080fd5b6100826004803603602081101561007257600080fd5b50356001600160a01b031661012e565b604080519115158252519081900360200190f35b6100bc600480360360208110156100ac57600080fd5b50356001600160a01b0316610143565b005b6100bc600480360360208110156100d457600080fd5b50356001600160a01b03166101b3565b6100ec61021d565b604080516001600160a01b039092168252519081900360200190f35b6100826004803603602081101561011e57600080fd5b50356001600160a01b031661022c565b60016020526000908152604090205460ff1681565b6000546001600160a01b0316331461018c5760405162461bcd60e51b815260040180806020018281038252602381526020018061024b6023913960400191505060405180910390fd5b6001600160a01b03166000908152600160208190526040909120805460ff19169091179055565b6000546001600160a01b031633146101fc5760405162461bcd60e51b815260040180806020018281038252602581526020018061026e6025913960400191505060405180910390fd5b6001600160a01b03166000908152600160205260409020805460ff19169055565b6000546001600160a01b031681565b6001600160a01b031660009081526001602052604090205460ff169056fe4f6e6c79207468652061646d696e2063616e20617574686f72697a652075736572732e4f6e6c79207468652061646d696e2063616e20756e617574686f72697a652075736572732ea265627a7a723058205e648b3c949b765bf920a00b4306109e0fdb1a2204a85a0c9ed7cf171576562464736f6c63430005090032";
 
-	private static final String FROM_BLOCK = "fromBlock";
+	private static final String TEST_DATA_LCI_CONTRACT_ADDRESS = "0x9a3dbca554e9f6b9257aaa24010da8377c57c17e";
 
-	private static final String TO_BLOCK = "toBlock";
+	private static final String TEST_DATA_LCI_ENCODED_FUNCTION = "0xfe9fbb80000000000000000000000000627306090abab3a6e1400e9345bc60c78a8bef57";
+
+	private static final String TEST_DATA_LCI_RESULT = "0x0000000000000000000000000000000000000000000000000000000000000001";
 
 	private static final ObjectMapper mapper = new ObjectMapper();
 
@@ -308,6 +297,41 @@ public class EthereumModuleTest {
 	}
 
 	// loadContractInformation
+
+	@Test
+	public void loadContractInformationShouldReturnCorrectValue() throws IOException, ClassNotFoundException {
+		JsonNode saplObject = createSaplObject();
+		org.web3j.protocol.core.methods.request.Transaction transaction = org.web3j.protocol.core.methods.request.Transaction
+				.createEthCallTransaction(null, TEST_DATA_LCI_CONTRACT_ADDRESS, TEST_DATA_LCI_ENCODED_FUNCTION);
+		DefaultBlockParameter dbp = DefaultBlockParameter.valueOf(LATEST);
+
+		mockStatic(org.web3j.protocol.core.methods.request.Transaction.class);
+		when(org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction(null,
+				TEST_DATA_LCI_CONTRACT_ADDRESS, TEST_DATA_LCI_ENCODED_FUNCTION)).thenReturn(transaction);
+		when(web3j.ethCall(transaction, dbp).send().getValue()).thenReturn(TEST_DATA_LCI_RESULT);
+
+		JsonNode result = ethPip.loadContractInformation(saplObject, null).blockFirst();
+
+		assertTrue("False was returned although user2 was authorized and result should have been true.",
+				result.get(0).get(VALUE).asBoolean());
+
+	}
+
+	private static JsonNode createSaplObject() {
+		ObjectNode saplObject = JSON.objectNode();
+		saplObject.put(CONTRACT_ADDRESS, TEST_DATA_LCI_CONTRACT_ADDRESS);
+		saplObject.put(FUNCTION_NAME, IS_AUTHORIZED);
+		ArrayNode inputParams = JSON.arrayNode();
+		ObjectNode input1 = JSON.objectNode();
+		input1.put(TYPE, ADDRESS);
+		input1.put(VALUE, USER2_ADDRESS.substring(2));
+		inputParams.add(input1);
+		saplObject.set(INPUT_PARAMS, inputParams);
+		ArrayNode outputParams = JSON.arrayNode();
+		outputParams.add(BOOL);
+		saplObject.set(OUTPUT_PARAMS, outputParams);
+		return saplObject;
+	}
 
 	// clientVersion
 
@@ -695,6 +719,17 @@ public class EthereumModuleTest {
 				mapper.convertValue(receipt, JsonNode.class), pipResult);
 	}
 
+	// pendingTransactions
+	public void ethPendingTransactionsShouldReturnTheCorrectValue() {
+		when(web3j.ethPendingTransactionHashFlowable())
+				.thenReturn(Flowable.fromArray(TEST_DATA_TRANSACTION_HASH, TEST_DATA_TRANSACTION_HASH_2));
+
+		String pipResult = ethPip.ethPendingTransactions(null, null).blockFirst().textValue();
+
+		assertEquals("The ethPendingTransactions method did not return the correct value.", TEST_DATA_TRANSACTION_HASH,
+				pipResult);
+	}
+
 	// uncleByBlockHashAndIndex
 	@Test
 	public void ethGetUncleByBlockHashAndIndexShouldReturnTheCorrectValue() throws IOException {
@@ -829,6 +864,31 @@ public class EthereumModuleTest {
 			sshStringList.add(mapper.convertValue(sshMessage, JsonNode.class).toString());
 		}
 		assertEquals("The shhGetFilterChanges method did not work correctly.", sshStringList, pipResult);
+
+	}
+
+	// messages
+	@Test
+	public void shhGetMessagesShouldReturnCorrectValue() throws IOException {
+
+		BigInteger filterId = BigInteger.valueOf(7L);
+		List<SshMessage> sshList = new ArrayList<>();
+		sshList.add(createTestMessage());
+
+		when(web3j.shhGetMessages(filterId).send().getMessages()).thenReturn(sshList);
+
+		JsonNode saplObject = JSON.numberNode(filterId);
+		JsonNode pipList = ethPip.shhGetMessages(saplObject, null).blockFirst();
+		List<String> pipResult = new ArrayList<>();
+		for (JsonNode json : pipList) {
+			pipResult.add(json.toString());
+		}
+
+		List<String> sshStringList = new ArrayList<>();
+		for (SshMessage sshMessage : sshList) {
+			sshStringList.add(mapper.convertValue(sshMessage, JsonNode.class).toString());
+		}
+		assertEquals("The shhGetMessages method did not work correctly.", sshStringList, pipResult);
 
 	}
 

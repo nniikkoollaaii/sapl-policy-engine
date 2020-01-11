@@ -1,30 +1,29 @@
 package io.sapl.interpreter.pip;
 
+import static io.sapl.interpreter.pip.EthereumBasicFunctions.convertToJsonNode;
+import static io.sapl.interpreter.pip.EthereumBasicFunctions.createFunction;
+import static io.sapl.interpreter.pip.EthereumBasicFunctions.getBigIntFrom;
+import static io.sapl.interpreter.pip.EthereumBasicFunctions.getBooleanFrom;
+import static io.sapl.interpreter.pip.EthereumBasicFunctions.getJsonFrom;
+import static io.sapl.interpreter.pip.EthereumBasicFunctions.getStringFrom;
 import static io.sapl.interpreter.pip.EthereumPipFunctions.getDefaultBlockParameter;
 import static io.sapl.interpreter.pip.EthereumPipFunctions.getEthFilterFrom;
-import static io.sapl.interpreter.pip.EthereumPipFunctions.getStringFrom;
 import static io.sapl.interpreter.pip.EthereumPipFunctions.getTransactionFromJson;
+import static org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
 
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.FunctionReturnDecoder;
-import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Function;
 import org.web3j.protocol.Web3j;
-import org.web3j.protocol.core.methods.response.EthCall;
 import org.web3j.protocol.core.methods.response.Transaction;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 import io.sapl.api.pip.Attribute;
@@ -94,8 +93,6 @@ public class EthereumPolicyInformationPoint {
 	private static final String DEFAULT_BLOCK_PARAMETER = "defaultBlockParameter";
 
 	private static final String VERIFY_TRANSACTION_WARNING = "There was an error during verifyTransaction. By default false is returned but the transaction could have taken place.";
-
-	private static final ObjectMapper mapper = new ObjectMapper();
 
 	private static final JsonNodeFactory JSON = JsonNodeFactory.instance;
 
@@ -177,12 +174,10 @@ public class EthereumPolicyInformationPoint {
 			Function function = createFunction(functionName, inputParams, outputParams);
 			String encodedFunction = FunctionEncoder.encode(function);
 
-			EthCall response = web3j
-					.ethCall(org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction(fromAccount,
-							contractAddress, encodedFunction), getDefaultBlockParameter(dbp))
-					.send();
+			String response = web3j.ethCall(createEthCallTransaction(fromAccount, contractAddress, encodedFunction),
+					getDefaultBlockParameter(dbp)).send().getValue();
 
-			return convertToJsonNode(FunctionReturnDecoder.decode(response.getValue(), function.getOutputParameters()));
+			return convertToJsonNode(FunctionReturnDecoder.decode(response, function.getOutputParameters()));
 
 		};
 	}
@@ -1008,70 +1003,6 @@ public class EthereumPolicyInformationPoint {
 	private Flux<JsonNode> scheduledFlux(Callable<JsonNode> functionToCall) {
 		Flux<Long> timer = Flux.interval(Duration.ZERO, Duration.ofMillis(DEFAULT_ETH_POLLING_INTERVAL));
 		return timer.flatMap(i -> Mono.fromCallable(functionToCall)).onErrorReturn(JSON.nullNode());
-	}
-
-	protected static JsonNode convertToJsonNode(Object o) {
-		return mapper.convertValue(o, JsonNode.class);
-	}
-
-	protected static BigInteger getBigIntFrom(JsonNode saplObject, String bigIntegerName) {
-		if (saplObject.has(bigIntegerName)) {
-			return saplObject.get(bigIntegerName).bigIntegerValue();
-		}
-		LOGGER.warn("The input JsonNode for the policy didn't contain a field of type " + bigIntegerName
-				+ ", altough this was expected. Ignore this message if the field was optional.");
-		return null;
-	}
-
-	protected static boolean getBooleanFrom(JsonNode saplObject, String booleanName) {
-		if (saplObject.has(booleanName)) {
-			return saplObject.get(booleanName).asBoolean();
-		}
-		LOGGER.warn("The input JsonNode for the policy didn't contain a field of type " + booleanName
-				+ ", altough this was expected. Ignore this message if the field was optional.");
-		return false;
-	}
-
-	protected static JsonNode getJsonFrom(JsonNode saplObject, String jsonName) {
-		if (saplObject.has(jsonName)) {
-			return saplObject.get(jsonName);
-		}
-		LOGGER.warn("The input JsonNode for the policy didn't contain a field of type " + jsonName
-				+ ", altough this was expected. Ignore this message if the field was optional.");
-		return JSON.nullNode();
-	}
-
-	protected static List<TypeReference<?>> getOutputParameters(JsonNode outputNode) throws ClassNotFoundException {
-		List<TypeReference<?>> outputParameters = new ArrayList<>();
-		if (outputNode.isArray()) {
-			for (JsonNode solidityType : outputNode) {
-				outputParameters.add(TypeReference.makeTypeReference(solidityType.textValue()));
-			}
-			return outputParameters;
-		}
-		LOGGER.warn("The JsonNode containing the ouput parameters wasn't an array as expected. "
-				+ "An empty list is being returned.");
-		return outputParameters;
-	}
-
-	protected static List<JsonNode> getJsonList(JsonNode inputParams) {
-		List<JsonNode> inputList = new ArrayList<>();
-		if (inputParams.isArray()) {
-			for (JsonNode inputParam : inputParams) {
-				inputList.add(inputParam);
-			}
-			return inputList;
-		}
-		LOGGER.warn("The JsonNode containing the input parameters wasn't an array as expected. "
-				+ "An empty list is being returned.");
-		return inputList;
-	}
-
-	private static Function createFunction(String functionName, JsonNode inputParams, JsonNode outputParams)
-			throws ClassNotFoundException {
-		return new Function(functionName,
-				getJsonList(inputParams).stream().map(EthereumPipFunctions::convertToType).collect(Collectors.toList()),
-				getOutputParameters(outputParams));
 	}
 
 }

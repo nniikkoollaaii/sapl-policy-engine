@@ -45,7 +45,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.sapl.api.pdp.AuthorizationDecision;
 import io.sapl.api.pdp.AuthorizationSubscription;
 import io.sapl.api.pdp.Decision;
-import io.sapl.api.pip.AttributeException;
 import io.sapl.interpreter.pip.contracts.Authorization;
 import io.sapl.interpreter.pip.contracts.DeviceOperatorCertificate;
 import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint;
@@ -245,7 +244,7 @@ public class EthereumIntegrationTest {
 	// loadContractInformation
 
 	@Test
-	public void loadContractInformationWithAuthorizationShouldReturnCorrectValue() throws AttributeException {
+	public void loadContractInformationWithAuthorizationShouldReturnCorrectValue() {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(CONTRACT_ADDRESS, authContractAddress);
 		saplObject.put(FUNCTION_NAME, IS_AUTHORIZED);
@@ -267,7 +266,7 @@ public class EthereumIntegrationTest {
 
 	@Test
 	@Ignore
-	public void loadContractInformationShouldWorkWithCertificateContract() throws AttributeException {
+	public void loadContractInformationShouldWorkWithCertificateContract() {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(CONTRACT_ADDRESS, certContractAddress);
 		saplObject.put(FUNCTION_NAME, HAS_CERTIFICATE);
@@ -408,7 +407,7 @@ public class EthereumIntegrationTest {
 	// clientVersion
 
 	@Test
-	public void web3ClientVersionShouldReturnTheClientVersion() throws IOException, AttributeException {
+	public void web3ClientVersionShouldReturnTheClientVersion() throws IOException {
 		String pipResult = ethPip.web3ClientVersion(null, null).blockFirst().asText();
 		String web3jResult = web3j.web3ClientVersion().send().getWeb3ClientVersion();
 		assertEquals("The web3ClientVersion from the PIP was not loaded correctly.", web3jResult, pipResult);
@@ -416,7 +415,7 @@ public class EthereumIntegrationTest {
 
 	// sha3
 	@Test
-	public void web3Sha3ShouldReturnCorrectValuer() throws IOException, AttributeException {
+	public void web3Sha3ShouldReturnCorrectValuer() throws IOException {
 		JsonNode saplObject = JSON.textNode(USER3_PRIVATE_KEY);
 		String pipResult = ethPip.web3Sha3(saplObject, null).blockFirst().textValue();
 		String web3jResult = web3j.web3Sha3(USER3_PRIVATE_KEY).send().getResult();
@@ -425,7 +424,7 @@ public class EthereumIntegrationTest {
 
 	// netVersion
 	@Test
-	public void netVersionShouldReturnCorrectValue() throws IOException, AttributeException {
+	public void netVersionShouldReturnCorrectValue() throws IOException {
 		String pipResult = ethPip.netVersion(null, null).blockFirst().textValue();
 		String web3jResult = web3j.netVersion().send().getNetVersion();
 		assertEquals("The netVersion method did not work correctly.", web3jResult, pipResult);
@@ -434,14 +433,14 @@ public class EthereumIntegrationTest {
 
 	// listening
 	@Test
-	public void netListeningShouldReturnTrueWhenListeningToNetworkConnections() throws IOException, AttributeException {
+	public void netListeningShouldReturnTrueWhenListeningToNetworkConnections() throws IOException {
 		assertTrue("The netListening method did not return true although the Client by default is listening.",
 				ethPip.netListening(null, null).blockFirst().asBoolean());
 	}
 
 	// peerCount
 	@Test
-	public void netPeerCountShouldReturnTheCorrectNumber() throws IOException, AttributeException {
+	public void netPeerCountShouldReturnTheCorrectNumber() throws IOException {
 		BigInteger pipResult = ethPip.netPeerCount(null, null).blockFirst().bigIntegerValue();
 		BigInteger web3jResult = web3j.netPeerCount().send().getQuantity();
 		assertEquals("The netPeerCount method did not return the correct number.", web3jResult, pipResult);

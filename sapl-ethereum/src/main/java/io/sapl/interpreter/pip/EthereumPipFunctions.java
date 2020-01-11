@@ -1,9 +1,10 @@
 package io.sapl.interpreter.pip;
 
+import static io.sapl.interpreter.pip.EthereumBasicFunctions.getStringFrom;
+import static io.sapl.interpreter.pip.EthereumBasicFunctions.getStringListFrom;
+
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import org.web3j.abi.datatypes.Address;
@@ -223,48 +224,6 @@ public class EthereumPipFunctions {
 		LOGGER.warn(
 				"The EthFilter was not correctly provided. Please make sure that you used the correct input parameters.");
 		return new EthFilter();
-	}
-
-	private static BigInteger bigIntFromHex(String s) {
-		return new BigInteger(s.substring(2), 16);
-	}
-
-	private static DefaultBlockParameter createDefaultBlockParameter(JsonNode saplObject, String inputName) {
-		if (saplObject.has(inputName)) {
-			JsonNode dbp = saplObject.get(inputName);
-			if (dbp.isTextual()) {
-				String dbpName = dbp.textValue();
-				if (dbpName.equals(EARLIEST) || dbpName.equals(LATEST) || dbpName.equals(PENDING))
-					return DefaultBlockParameter.valueOf(dbpName);
-			}
-			if (dbp.isBigInteger())
-				return DefaultBlockParameter.valueOf(dbp.bigIntegerValue());
-		}
-		LOGGER.info(NO_DBP_INFO);
-		return DefaultBlockParameter.valueOf(LATEST);
-	}
-
-	protected static List<String> getStringListFrom(JsonNode saplObject, String listName) {
-		if (saplObject.has(listName)) {
-			List<String> returnList = new ArrayList<>();
-			JsonNode array = saplObject.get(listName);
-			if (array.isArray()) {
-				array.forEach(s -> returnList.add(s.textValue()));
-			}
-			return returnList;
-		}
-		LOGGER.warn("The input JsonNode for the policy didn't contain a field of type " + listName
-				+ ", altough this was expected. Ignore this message if the field was optional.");
-		return null;
-	}
-
-	protected static String getStringFrom(JsonNode saplObject, String stringName) {
-		if (saplObject.has(stringName)) {
-			return saplObject.get(stringName).textValue();
-		}
-		LOGGER.warn("The input JsonNode for the policy didn't contain a field of type " + stringName
-				+ ", altough this was expected. Ignore this message if the field was optional.");
-		return null;
 	}
 
 	protected static Type<?> convertToType(JsonNode inputParam) {
@@ -516,6 +475,25 @@ public class EthereumPipFunctions {
 		LOGGER.warn("There has been a request to convertToType, but the input didn't have both fields type "
 				+ "and value or was null. By default null is being returned.");
 		return null;
+	}
+
+	private static BigInteger bigIntFromHex(String s) {
+		return new BigInteger(s.substring(2), 16);
+	}
+
+	private static DefaultBlockParameter createDefaultBlockParameter(JsonNode saplObject, String inputName) {
+		if (saplObject != null && saplObject.has(inputName)) {
+			JsonNode dbp = saplObject.get(inputName);
+			if (dbp.isTextual()) {
+				String dbpName = dbp.textValue();
+				if (dbpName.equals(EARLIEST) || dbpName.equals(LATEST) || dbpName.equals(PENDING))
+					return DefaultBlockParameter.valueOf(dbpName);
+			}
+			if (dbp.isBigInteger())
+				return DefaultBlockParameter.valueOf(dbp.bigIntegerValue());
+		}
+		LOGGER.info(NO_DBP_INFO);
+		return DefaultBlockParameter.valueOf(LATEST);
 	}
 
 }
