@@ -120,9 +120,7 @@ public class EthereumIntegrationTest {
 
 	private static final BigInteger TRANSACTION1_VALUE = new BigInteger("2000000000000000000");
 
-	private static final String DEFAULT_BLOCK_PARAMETER_STRING = "defaultBlockParameterString";
-
-	private static final String DEFAULT_BLOCK_PARAMETER_BIG_INT = "defaultBlockParameterBigInt";
+	private static final String DEFAULT_BLOCK_PARAMETER = "defaultBlockParameter";
 
 	private static final String LATEST = "latest";
 
@@ -520,7 +518,7 @@ public class EthereumIntegrationTest {
 	public void ethGetBalanceShouldReturnTheCorrectValue() throws IOException {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(ADDRESS, USER1_ADDRESS);
-		saplObject.put(DEFAULT_BLOCK_PARAMETER_STRING, LATEST);
+		saplObject.put(DEFAULT_BLOCK_PARAMETER, LATEST);
 		BigInteger pipResult = ethPip.ethGetBalance(saplObject, null).blockFirst().bigIntegerValue();
 		BigInteger web3jResult = web3j.ethGetBalance(USER1_ADDRESS, DefaultBlockParameter.valueOf(LATEST)).send()
 				.getBalance();
@@ -533,7 +531,7 @@ public class EthereumIntegrationTest {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(ADDRESS, authContractAddress);
 		saplObject.put(POSITION, BigInteger.ZERO);
-		saplObject.put(DEFAULT_BLOCK_PARAMETER_STRING, LATEST);
+		saplObject.put(DEFAULT_BLOCK_PARAMETER, LATEST);
 		String pipResult = ethPip.ethGetStorageAt(saplObject, null).blockFirst().textValue();
 		String web3jResult = web3j
 				.ethGetStorageAt(authContractAddress, BigInteger.ZERO, DefaultBlockParameter.valueOf(LATEST)).send()
@@ -546,7 +544,7 @@ public class EthereumIntegrationTest {
 	public void ethGetTransactionCountShouldReturnTheCorrectValue() throws IOException {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(ADDRESS, USER1_ADDRESS);
-		saplObject.put(DEFAULT_BLOCK_PARAMETER_STRING, LATEST);
+		saplObject.put(DEFAULT_BLOCK_PARAMETER, LATEST);
 		BigInteger pipResult = ethPip.ethGetTransactionCount(saplObject, null).blockFirst().bigIntegerValue();
 		BigInteger web3jResult = web3j.ethGetTransactionCount(USER1_ADDRESS, DefaultBlockParameter.valueOf(LATEST))
 				.send().getTransactionCount();
@@ -573,7 +571,7 @@ public class EthereumIntegrationTest {
 	public void ethGetBlockTransactionCountByNumberShouldReturnTheCorrectValue() throws IOException {
 		BigInteger blocknumber = web3j.ethBlockNumber().send().getBlockNumber();
 		ObjectNode saplObject = JSON.objectNode();
-		saplObject.put(DEFAULT_BLOCK_PARAMETER_BIG_INT, blocknumber);
+		saplObject.put(DEFAULT_BLOCK_PARAMETER, blocknumber);
 		BigInteger pipResult = ethPip.ethGetBlockTransactionCountByNumber(saplObject, null).blockFirst()
 				.bigIntegerValue();
 		BigInteger web3jResult = web3j.ethGetBlockTransactionCountByNumber(DefaultBlockParameter.valueOf(blocknumber))
@@ -600,7 +598,7 @@ public class EthereumIntegrationTest {
 	public void uncleCountByBlockNumberShouldReturnTheCorrectValue() throws IOException {
 		BigInteger blocknumber = web3j.ethBlockNumber().send().getBlockNumber();
 		ObjectNode saplObject = JSON.objectNode();
-		saplObject.put(DEFAULT_BLOCK_PARAMETER_BIG_INT, blocknumber);
+		saplObject.put(DEFAULT_BLOCK_PARAMETER, blocknumber);
 		BigInteger pipResult = ethPip.ethGetUncleCountByBlockNumber(saplObject, null).blockFirst().bigIntegerValue();
 		BigInteger web3jResult = web3j.ethGetBlockTransactionCountByNumber(DefaultBlockParameter.valueOf(blocknumber))
 				.send().getTransactionCount();
@@ -682,7 +680,7 @@ public class EthereumIntegrationTest {
 		BigInteger blockNumber = web3j.ethBlockNumber().send().getBlockNumber();
 
 		ObjectNode saplObject = JSON.objectNode();
-		saplObject.put(DEFAULT_BLOCK_PARAMETER_BIG_INT, blockNumber);
+		saplObject.put(DEFAULT_BLOCK_PARAMETER, blockNumber);
 		saplObject.put(RETURN_FULL_TRANSACTION_OBJECTS, false);
 		String pipResult = ethPip.ethGetBlockByNumber(saplObject, null).blockFirst().toString();
 		String web3jResult = mapper.convertValue(
@@ -735,7 +733,7 @@ public class EthereumIntegrationTest {
 		BigInteger index = transactionReceiptUser2.getTransactionIndex();
 
 		ObjectNode saplObject = JSON.objectNode();
-		saplObject.put(DEFAULT_BLOCK_PARAMETER_BIG_INT, blockNumber);
+		saplObject.put(DEFAULT_BLOCK_PARAMETER, blockNumber);
 		saplObject.put(TRANSACTION_INDEX, index);
 
 		String pipResult = ethPip.ethGetTransactionByBlockNumberAndIndex(saplObject, null).blockFirst().toString();
@@ -791,7 +789,7 @@ public class EthereumIntegrationTest {
 		BigInteger index = BigInteger.ZERO;
 
 		ObjectNode saplObject = JSON.objectNode();
-		saplObject.put(DEFAULT_BLOCK_PARAMETER_BIG_INT, blockNumber);
+		saplObject.put(DEFAULT_BLOCK_PARAMETER, blockNumber);
 		saplObject.put(TRANSACTION_INDEX, index);
 
 		String pipResult = ethPip.ethGetUncleByBlockNumberAndIndex(saplObject, null).blockFirst().toString();

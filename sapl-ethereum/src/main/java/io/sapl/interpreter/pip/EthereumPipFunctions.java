@@ -2,6 +2,8 @@ package io.sapl.interpreter.pip;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.web3j.abi.datatypes.Address;
@@ -111,6 +113,7 @@ import org.web3j.crypto.CipherException;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.WalletUtils;
 import org.web3j.protocol.core.DefaultBlockParameter;
+import org.web3j.protocol.core.methods.request.EthFilter;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -119,6 +122,10 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class EthereumPipFunctions {
+
+	private static final String TO_BLOCK = "toBlock";
+
+	private static final String FROM_BLOCK = "fromBlock";
 
 	private static final String VALUE = "value";
 
@@ -136,9 +143,7 @@ public class EthereumPipFunctions {
 	private static final String CREDENTIALS_LOADING_ERROR = ETHEREUM_WALLET + " has been found, but the credentials "
 			+ "couldn't be retrieved. Please ensure your Password and Wallet File Path were correct.";
 
-	private static final String DEFAULT_BLOCK_PARAMETER_BIG_INT = "defaultBlockParameterBigInt";
-
-	private static final String DEFAULT_BLOCK_PARAMETER_STRING = "defaultBlockParameterString";
+	private static final String DEFAULT_BLOCK_PARAMETER = "defaultBlockParameter";
 
 	private static final String LATEST = "latest";
 
@@ -146,37 +151,26 @@ public class EthereumPipFunctions {
 
 	private static final String PENDING = "pending";
 
-	private static final String NO_DBP_WARNING = "The DefaultBlockParameter was not correctly provided. By default the latest Block is used.";
+	private static final String ADDRESS = "address";
+
+	private static final String NO_DBP_INFO = "The DefaultBlockParameter was not correctly provided. By default the latest Block is used.";
 
 	private EthereumPipFunctions() {
 
 	}
 
 	/**
-	 * Determines the DefaultBlockParameter needed for some Ethereum API calls. This Parameter can be a BigInteger
-	 * number or one of the Strings "latest", "earliest" or "pending". If the DefaultBlockParameter is not provided in
-	 * the policy, the latest Block is used. In this case there is also a warning.
+	 * Determines the DefaultBlockParameter needed for some Ethereum API calls. This Parameter can be a BigInteger value
+	 * or one of the Strings "latest", "earliest" or "pending". If the DefaultBlockParameter is not provided in the
+	 * policy, the latest Block is used by default. In this case there is also a log message.
 	 *
-	 * @param saplObject should hold one of the following values: <br>
-	 * "defaultBlockParameterBigInt": BigInteger value of the desired block number. <br>
-	 * <b>or</b> <br>
-	 * "defaultBlockParameterString": Holding one of the strings "latest", "earliest", or "pending".
+	 * @param saplObject should hold the following values: <br>
+	 * "defaultBlockParameter": BigInteger value of the desired block number <b>or</b> one of the strings "latest",
+	 * "earliest", or "pending". <br>
 	 * @return The DefaultBlockParameter corresponding to the input.
 	 */
-	protected static DefaultBlockParameter extractDefaultBlockParameter(JsonNode saplObject) {
-		if (saplObject.has(DEFAULT_BLOCK_PARAMETER_BIG_INT)) {
-			JsonNode dbp = saplObject.get(DEFAULT_BLOCK_PARAMETER_BIG_INT);
-			return DefaultBlockParameter.valueOf(dbp.bigIntegerValue());
-		}
-		if (saplObject.has(DEFAULT_BLOCK_PARAMETER_STRING)) {
-			String dbpsName = saplObject.get(DEFAULT_BLOCK_PARAMETER_STRING).textValue();
-			if (dbpsName.equals(EARLIEST) || dbpsName.equals(LATEST) || dbpsName.equals(PENDING))
-				return DefaultBlockParameter.valueOf(dbpsName);
-		}
-
-		LOGGER.warn(NO_DBP_WARNING);
-		return DefaultBlockParameter.valueOf(LATEST);
-
+	protected static DefaultBlockParameter getDefaultBlockParameter(JsonNode saplObject) {
+		return createDefaultBlockParameter(saplObject, DEFAULT_BLOCK_PARAMETER);
 	}
 
 	public static Credentials loadCredentials(JsonNode saplObject, Map<String, JsonNode> variables)
@@ -217,6 +211,51 @@ public class EthereumPipFunctions {
 		return org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction(
 				getStringFrom(jsonTransaction, "from"), getStringFrom(jsonTransaction, "to"),
 				getStringFrom(jsonTransaction, "data"));
+	}
+
+	protected static EthFilter getEthFilterFrom(JsonNode saplObject) {
+		if (saplObject.has(FROM_BLOCK) && saplObject.has(TO_BLOCK) && saplObject.has(ADDRESS)) {
+			String fromBlock = saplObject.get(FROM_BLOCK).textValue();
+			String toBlock = saplObject.get(TO_BLOCK).textValue();
+			return new EthFilter(DefaultBlockParameter.valueOf(bigIntFromHex(fromBlock)),
+					DefaultBlockParameter.valueOf(bigIntFromHex(toBlock)), getStringListFrom(saplObject, ADDRESS));
+		}
+		LOGGER.warn(
+				"The EthFilter was not correctly provided. Please make sure that you used the correct input parameters.");
+		return new EthFilter();
+	}
+
+	private static BigInteger bigIntFromHex(String s) {
+		return new BigInteger(s.substring(2), 16);
+	}
+
+	private static DefaultBlockParameter createDefaultBlockParameter(JsonNode saplObject, String inputName) {
+		if (saplObject.has(inputName)) {
+			JsonNode dbp = saplObject.get(inputName);
+			if (dbp.isTextual()) {
+				String dbpName = dbp.textValue();
+				if (dbpName.equals(EARLIEST) || dbpName.equals(LATEST) || dbpName.equals(PENDING))
+					return DefaultBlockParameter.valueOf(dbpName);
+			}
+			if (dbp.isBigInteger())
+				return DefaultBlockParameter.valueOf(dbp.bigIntegerValue());
+		}
+		LOGGER.info(NO_DBP_INFO);
+		return DefaultBlockParameter.valueOf(LATEST);
+	}
+
+	protected static List<String> getStringListFrom(JsonNode saplObject, String listName) {
+		if (saplObject.has(listName)) {
+			List<String> returnList = new ArrayList<>();
+			JsonNode array = saplObject.get(listName);
+			if (array.isArray()) {
+				array.forEach(s -> returnList.add(s.textValue()));
+			}
+			return returnList;
+		}
+		LOGGER.warn("The input JsonNode for the policy didn't contain a field of type " + listName
+				+ ", altough this was expected. Ignore this message if the field was optional.");
+		return null;
 	}
 
 	protected static String getStringFrom(JsonNode saplObject, String stringName) {

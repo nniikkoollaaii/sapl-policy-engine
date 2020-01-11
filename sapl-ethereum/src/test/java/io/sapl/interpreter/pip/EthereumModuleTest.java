@@ -31,6 +31,7 @@ import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.Type;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
+import org.web3j.protocol.core.methods.request.EthFilter;
 import org.web3j.protocol.core.methods.response.EthBlock.Block;
 import org.web3j.protocol.core.methods.response.EthBlock.TransactionObject;
 import org.web3j.protocol.core.methods.response.EthLog.LogObject;
@@ -114,9 +115,7 @@ public class EthereumModuleTest {
 
 	private static final BigInteger TRANSACTION1_VALUE = new BigInteger("2000000000000000000");
 
-	private static final String DEFAULT_BLOCK_PARAMETER_STRING = "defaultBlockParameterString";
-
-	private static final String DEFAULT_BLOCK_PARAMETER_BIG_INT = "defaultBlockParameterBigInt";
+	private static final String DEFAULT_BLOCK_PARAMETER = "defaultBlockParameter";
 
 	private static final String RETURN_FULL_TRANSACTION_OBJECTS = "returnFullTransactionObjects";
 
@@ -136,6 +135,8 @@ public class EthereumModuleTest {
 
 	private static final String TRANSACTION_INDEX = "transactionIndex";
 
+	private static final String UNCLE_INDEX = "uncleIndex";
+
 	private static final String TEST_DATA_CLIENT_VERSION = "besu/v1.3.5/linux-x86_64/oracle_openjdk-java-11";
 
 	private static final String TEST_DATA_SIGN_ADDRESS = "0x9b2055d370f73ec7d8a03e965129118dc8f5bf83";
@@ -152,6 +153,8 @@ public class EthereumModuleTest {
 
 	private static final String TEST_DATA_BLOCKHASH = "0xc34757f3b3e5ee0d4533f2dedfa98925613acd16e1bb99ad1905bdabb37c897a";
 
+	private static final String TEST_DATA_BLOCKHASH_2 = "0x0d75b11b42df31d635730c6a1a26a0b849916cc5e9ceed4bc04a3348fe1f1db3";
+
 	private static final String TEST_DATA_TRANSACTION_HASH = "0x610a8276014437089ff619136486474322444f0814f224fbbf9e925bb477e1e4";
 
 	private static final String TEST_DATA_STORAGE_ADDRESS = "0x9a3dbca554e9f6b9257aaa24010da8377c57c17e";
@@ -165,6 +168,10 @@ public class EthereumModuleTest {
 	private static final String TEST_DATA_RECEIPT_TRANSACTION_HASH = "0x610a8276014437089ff619136486474322444f0814f224fbbf9e925bb477e1e4";
 
 	private static final String TEST_DATA_CODE_RETURN = "0x608060405234801561001057600080fd5b50600436106100575760003560e01c8063a87430ba1461005c578063b6a5d7de14610096578063f0b37c04146100be578063f851a440146100e4578063fe9fbb8014610108575b600080fd5b6100826004803603602081101561007257600080fd5b50356001600160a01b031661012e565b604080519115158252519081900360200190f35b6100bc600480360360208110156100ac57600080fd5b50356001600160a01b0316610143565b005b6100bc600480360360208110156100d457600080fd5b50356001600160a01b03166101b3565b6100ec61021d565b604080516001600160a01b039092168252519081900360200190f35b6100826004803603602081101561011e57600080fd5b50356001600160a01b031661022c565b60016020526000908152604090205460ff1681565b6000546001600160a01b0316331461018c5760405162461bcd60e51b815260040180806020018281038252602381526020018061024b6023913960400191505060405180910390fd5b6001600160a01b03166000908152600160208190526040909120805460ff19169091179055565b6000546001600160a01b031633146101fc5760405162461bcd60e51b815260040180806020018281038252602581526020018061026e6025913960400191505060405180910390fd5b6001600160a01b03166000908152600160205260409020805460ff19169055565b6000546001600160a01b031681565b6001600160a01b031660009081526001602052604090205460ff169056fe4f6e6c79207468652061646d696e2063616e20617574686f72697a652075736572732e4f6e6c79207468652061646d696e2063616e20756e617574686f72697a652075736572732ea265627a7a723058205e648b3c949b765bf920a00b4306109e0fdb1a2204a85a0c9ed7cf171576562464736f6c63430005090032";
+
+	private static final String FROM_BLOCK = "fromBlock";
+
+	private static final String TO_BLOCK = "toBlock";
 
 	private static final ObjectMapper mapper = new ObjectMapper();
 
@@ -437,7 +444,7 @@ public class EthereumModuleTest {
 
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(ADDRESS, USER1_ADDRESS);
-		saplObject.put(DEFAULT_BLOCK_PARAMETER_STRING, LATEST);
+		saplObject.put(DEFAULT_BLOCK_PARAMETER, LATEST);
 		BigInteger pipResult = ethPip.ethGetBalance(saplObject, null).blockFirst().bigIntegerValue();
 
 		assertEquals("The ethGetBalance method did not return the correct value.", balance, pipResult);
@@ -452,7 +459,7 @@ public class EthereumModuleTest {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(ADDRESS, TEST_DATA_STORAGE_ADDRESS);
 		saplObject.put(POSITION, BigInteger.ZERO);
-		saplObject.put(DEFAULT_BLOCK_PARAMETER_STRING, LATEST);
+		saplObject.put(DEFAULT_BLOCK_PARAMETER, LATEST);
 		String pipResult = ethPip.ethGetStorageAt(saplObject, null).blockFirst().textValue();
 
 		assertEquals("The ethGetStorageAt method did not return the correct value.", TEST_DATA_STORAGE_RETURN_VALUE,
@@ -468,7 +475,7 @@ public class EthereumModuleTest {
 
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(ADDRESS, USER1_ADDRESS);
-		saplObject.put(DEFAULT_BLOCK_PARAMETER_STRING, LATEST);
+		saplObject.put(DEFAULT_BLOCK_PARAMETER, LATEST);
 		BigInteger pipResult = ethPip.ethGetTransactionCount(saplObject, null).blockFirst().bigIntegerValue();
 
 		assertEquals("The ethGetTransactionCount method did not return the correct value.", transactionCount,
@@ -497,11 +504,11 @@ public class EthereumModuleTest {
 		BigInteger blockNumber = BigInteger.valueOf(2314L);
 		BigInteger count = BigInteger.valueOf(77L);
 		ObjectNode saplObject = JSON.objectNode();
-		saplObject.put(DEFAULT_BLOCK_PARAMETER_BIG_INT, blockNumber);
+		saplObject.put(DEFAULT_BLOCK_PARAMETER, blockNumber);
 		DefaultBlockParameter dbp = DefaultBlockParameter.valueOf(blockNumber);
 
 		mockStatic(EthereumPipFunctions.class);
-		when(EthereumPipFunctions.extractDefaultBlockParameter(saplObject)).thenReturn(dbp);
+		when(EthereumPipFunctions.getDefaultBlockParameter(saplObject)).thenReturn(dbp);
 		when(web3j.ethGetBlockTransactionCountByNumber(dbp).send().getTransactionCount()).thenReturn(count);
 
 		BigInteger pipResult = ethPip.ethGetBlockTransactionCountByNumber(saplObject, null).blockFirst()
@@ -531,10 +538,10 @@ public class EthereumModuleTest {
 		BigInteger uncleCount = BigInteger.TEN;
 		DefaultBlockParameter dbp = DefaultBlockParameter.valueOf(blockNumber);
 		ObjectNode saplObject = JSON.objectNode();
-		saplObject.put(DEFAULT_BLOCK_PARAMETER_BIG_INT, blockNumber);
+		saplObject.put(DEFAULT_BLOCK_PARAMETER, blockNumber);
 
 		mockStatic(EthereumPipFunctions.class);
-		when(EthereumPipFunctions.extractDefaultBlockParameter(saplObject)).thenReturn(dbp);
+		when(EthereumPipFunctions.getDefaultBlockParameter(saplObject)).thenReturn(dbp);
 		when(web3j.ethGetUncleCountByBlockNumber(dbp).send().getUncleCount()).thenReturn(uncleCount);
 
 		BigInteger pipResult = ethPip.ethGetUncleCountByBlockNumber(saplObject, null).blockFirst().bigIntegerValue();
@@ -566,7 +573,7 @@ public class EthereumModuleTest {
 		DefaultBlockParameter dbp = DefaultBlockParameter.valueOf(LATEST);
 
 		mockStatic(EthereumPipFunctions.class);
-		when(EthereumPipFunctions.extractDefaultBlockParameter(saplObject)).thenReturn(dbp);
+		when(EthereumPipFunctions.getDefaultBlockParameter(saplObject)).thenReturn(dbp);
 		when(EthereumPipFunctions.getTransactionFromJson(saplObject.get(TRANSACTION))).thenReturn(transaction);
 		when(web3j.ethCall(transaction, dbp).send().getValue()).thenReturn(TEST_DATA_CALL_RETURN_VALUE);
 
@@ -615,7 +622,7 @@ public class EthereumModuleTest {
 				.thenReturn(testBlock);
 
 		ObjectNode saplObject = JSON.objectNode();
-		saplObject.put(DEFAULT_BLOCK_PARAMETER_STRING, EARLIEST);
+		saplObject.put(DEFAULT_BLOCK_PARAMETER, EARLIEST);
 		saplObject.put(RETURN_FULL_TRANSACTION_OBJECTS, false);
 		JsonNode pipResult = ethPip.ethGetBlockByNumber(saplObject, null).blockFirst();
 
@@ -662,11 +669,11 @@ public class EthereumModuleTest {
 		BigInteger index = BigInteger.ONE;
 		DefaultBlockParameter dbp = DefaultBlockParameter.valueOf(blockNumber);
 		ObjectNode saplObject = JSON.objectNode();
-		saplObject.put(DEFAULT_BLOCK_PARAMETER_BIG_INT, blockNumber);
+		saplObject.put(DEFAULT_BLOCK_PARAMETER, blockNumber);
 		saplObject.put(TRANSACTION_INDEX, index);
 
 		mockStatic(EthereumPipFunctions.class);
-		when(EthereumPipFunctions.extractDefaultBlockParameter(saplObject)).thenReturn(dbp);
+		when(EthereumPipFunctions.getDefaultBlockParameter(saplObject)).thenReturn(dbp);
 		when(web3j.ethGetTransactionByBlockNumberAndIndex(dbp, index).send().getResult()).thenReturn(testTransaction);
 
 		JsonNode pipResult = ethPip.ethGetTransactionByBlockNumberAndIndex(saplObject, null).blockFirst();
@@ -697,7 +704,7 @@ public class EthereumModuleTest {
 
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(BLOCK_HASH, TEST_DATA_BLOCKHASH);
-		saplObject.put(TRANSACTION_INDEX, index);
+		saplObject.put(UNCLE_INDEX, index);
 
 		JsonNode pipResult = ethPip.ethGetUncleByBlockHashAndIndex(saplObject, null).blockFirst();
 
@@ -712,11 +719,11 @@ public class EthereumModuleTest {
 		Block testBlock = createTestBlock();
 		DefaultBlockParameter dbp = DefaultBlockParameter.valueOf(PENDING);
 		ObjectNode saplObject = JSON.objectNode();
-		saplObject.put(DEFAULT_BLOCK_PARAMETER_STRING, PENDING);
-		saplObject.put(TRANSACTION_INDEX, index);
+		saplObject.put(DEFAULT_BLOCK_PARAMETER, PENDING);
+		saplObject.put(UNCLE_INDEX, index);
 
 		mockStatic(EthereumPipFunctions.class);
-		when(EthereumPipFunctions.extractDefaultBlockParameter(saplObject)).thenReturn(dbp);
+		when(EthereumPipFunctions.getDefaultBlockParameter(saplObject)).thenReturn(dbp);
 		when(web3j.ethGetUncleByBlockNumberAndIndex(dbp, index).send().getBlock()).thenReturn(testBlock);
 
 		JsonNode pipResult = ethPip.ethGetUncleByBlockNumberAndIndex(saplObject, null).blockFirst();
@@ -756,6 +763,27 @@ public class EthereumModuleTest {
 		when(web3j.ethGetFilterLogs(filterId).send().getLogs()).thenReturn(Arrays.asList(createLogObject()));
 
 		JsonNode pipList = ethPip.ethGetFilterLogs(saplObject, null).blockFirst();
+		List<String> pipResult = new ArrayList<>();
+		for (JsonNode json : pipList) {
+			pipResult.add(json.toString());
+		}
+
+		List<String> logStringList = Arrays.asList(mapper.convertValue(createLogObject(), JsonNode.class).toString());
+
+		assertEquals("The ethGetFilterLogs method did not return the correct value.", logStringList, pipResult);
+	}
+
+	// logs
+	@Test
+	public void ethGetLogsShouldReturnTheCorrectValue() throws IOException {
+		EthFilter filter = getTestFilter();
+		JsonNode saplObject = mapper.convertValue(filter, JsonNode.class);
+
+		mockStatic(EthereumPipFunctions.class);
+		when(EthereumPipFunctions.getEthFilterFrom(saplObject)).thenReturn(filter);
+		when(web3j.ethGetLogs(filter).send().getLogs()).thenReturn(Arrays.asList(createLogObject()));
+
+		JsonNode pipList = ethPip.ethGetLogs(saplObject, null).blockFirst();
 		List<String> pipResult = new ArrayList<>();
 		for (JsonNode json : pipList) {
 			pipResult.add(json.toString());
@@ -911,6 +939,14 @@ public class EthereumModuleTest {
 				null, null, "0x1", "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73",
 				"0x627306090abab3a6e1400e9345bc60c78a8bef57", Arrays.asList(createLogObject()),
 				"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+	}
+
+	private static EthFilter getTestFilter() {
+		BigInteger fromBlock = BigInteger.valueOf(522L);
+		BigInteger toBlock = BigInteger.valueOf(1078L);
+		List<String> addresses = Arrays.asList(USER1_ADDRESS, USER2_ADDRESS);
+		return new EthFilter(DefaultBlockParameter.valueOf(fromBlock), DefaultBlockParameter.valueOf(toBlock),
+				addresses);
 	}
 
 }
