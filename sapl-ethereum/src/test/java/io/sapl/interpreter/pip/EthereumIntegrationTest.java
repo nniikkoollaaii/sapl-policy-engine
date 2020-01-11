@@ -15,7 +15,6 @@ import java.util.stream.Collectors;
 
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -46,7 +45,6 @@ import io.sapl.api.pdp.AuthorizationDecision;
 import io.sapl.api.pdp.AuthorizationSubscription;
 import io.sapl.api.pdp.Decision;
 import io.sapl.interpreter.pip.contracts.Authorization;
-import io.sapl.interpreter.pip.contracts.DeviceOperatorCertificate;
 import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint;
 import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint.Builder.IndexType;
 import reactor.core.publisher.Flux;
@@ -70,10 +68,6 @@ public class EthereumIntegrationTest {
 	private static final String TRANSACTION = "transaction";
 
 	private static final String HTTP_LOCALHOST = "http://localhost:";
-
-	private static final String CERTIFICATION = "certification";
-
-	private static final String HAS_CERTIFICATE = "hasCertificate";
 
 	private static final String WRONG_NAME = "wrongName";
 
@@ -145,8 +139,6 @@ public class EthereumIntegrationTest {
 
 	private static String authContractAddress;
 
-	private static String certContractAddress;
-
 	private static TransactionReceipt transactionReceiptUser2;
 
 	private static TransactionReceipt transactionReceiptUser3;
@@ -182,41 +174,9 @@ public class EthereumIntegrationTest {
 		authContractAddress = authContract.getContractAddress();
 		authContract.authorize(USER2_ADDRESS).send();
 
-		DeviceOperatorCertificate certContract = DeviceOperatorCertificate
-				.deploy(web3j, credentials, new DefaultGasProvider()).send();
-		certContractAddress = certContract.getContractAddress();
-		certContract.addIssuer(USER1_ADDRESS);
-		certContract.issueCertificate(USER2_ADDRESS);
-
 	}
 
 	// Test with Policy
-
-	@Test
-	@Ignore
-	public void loadContractInformationShouldWorkInCertificatePolicy() {
-		ObjectNode saplObject = JSON.objectNode();
-		saplObject.put(CONTRACT_ADDRESS, certContractAddress);
-		saplObject.put(FUNCTION_NAME, HAS_CERTIFICATE);
-
-		ArrayNode inputParams = JSON.arrayNode();
-		ObjectNode input1 = JSON.objectNode();
-		input1.put(TYPE, ADDRESS);
-		input1.put(VALUE, USER2_ADDRESS.substring(2));
-		inputParams.add(input1);
-		saplObject.set(INPUT_PARAMS, inputParams);
-
-		ArrayNode outputParams = JSON.arrayNode();
-		outputParams.add(BOOL);
-		saplObject.set(OUTPUT_PARAMS, outputParams);
-
-		AuthorizationSubscription authzSubscription = new AuthorizationSubscription(saplObject, JSON.textNode(ACCESS),
-				JSON.textNode(CERTIFICATION), null);
-		final Flux<AuthorizationDecision> decision = pdp.decide(authzSubscription);
-		StepVerifier.create(decision).expectNextMatches(authzDecision -> authzDecision.getDecision() == Decision.PERMIT)
-				.thenCancel().verify();
-
-	}
 
 	@Test
 	public void loadContractInformationShouldWorkInAuthorizationPolicy() {
@@ -262,29 +222,6 @@ public class EthereumIntegrationTest {
 		assertTrue("False was returned although user2 was authorized and result should have been true.",
 				result.get(0).get(VALUE).asBoolean());
 
-	}
-
-	@Test
-	@Ignore
-	public void loadContractInformationShouldWorkWithCertificateContract() {
-		ObjectNode saplObject = JSON.objectNode();
-		saplObject.put(CONTRACT_ADDRESS, certContractAddress);
-		saplObject.put(FUNCTION_NAME, HAS_CERTIFICATE);
-
-		ArrayNode inputParams = JSON.arrayNode();
-		ObjectNode input1 = JSON.objectNode();
-		input1.put(TYPE, ADDRESS);
-		input1.put(VALUE, USER2_ADDRESS.substring(2));
-		inputParams.add(input1);
-		saplObject.set(INPUT_PARAMS, inputParams);
-
-		ArrayNode outputParams = JSON.arrayNode();
-		outputParams.add(BOOL);
-		saplObject.set(OUTPUT_PARAMS, outputParams);
-		JsonNode result = ethPip.loadContractInformation(saplObject, null).blockFirst();
-
-		assertTrue("False was returned although user2 was certified and result should have been true.",
-				result.get(0).get(VALUE).asBoolean());
 	}
 
 	// verifyTransaction

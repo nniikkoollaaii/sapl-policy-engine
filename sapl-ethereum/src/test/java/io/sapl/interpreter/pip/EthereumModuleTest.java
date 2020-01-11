@@ -720,6 +720,7 @@ public class EthereumModuleTest {
 	}
 
 	// pendingTransactions
+	@Test
 	public void ethPendingTransactionsShouldReturnTheCorrectValue() {
 		when(web3j.ethPendingTransactionHashFlowable())
 				.thenReturn(Flowable.fromArray(TEST_DATA_TRANSACTION_HASH, TEST_DATA_TRANSACTION_HASH_2));

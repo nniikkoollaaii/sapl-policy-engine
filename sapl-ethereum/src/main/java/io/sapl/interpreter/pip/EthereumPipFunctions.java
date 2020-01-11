@@ -1,15 +1,21 @@
 package io.sapl.interpreter.pip;
 
+import static io.sapl.interpreter.pip.EthereumBasicFunctions.getJsonList;
 import static io.sapl.interpreter.pip.EthereumBasicFunctions.getStringFrom;
 import static io.sapl.interpreter.pip.EthereumBasicFunctions.getStringListFrom;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Address;
 import org.web3j.abi.datatypes.Bool;
 import org.web3j.abi.datatypes.DynamicBytes;
+import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.Uint;
 import org.web3j.abi.datatypes.Utf8String;
@@ -226,6 +232,26 @@ public class EthereumPipFunctions {
 		return new EthFilter();
 	}
 
+	protected static Function createFunction(String functionName, JsonNode inputParams, JsonNode outputParams)
+			throws ClassNotFoundException {
+		return new Function(functionName,
+				getJsonList(inputParams).stream().map(EthereumPipFunctions::convertToType).collect(Collectors.toList()),
+				getOutputParameters(outputParams));
+	}
+
+	private static List<TypeReference<?>> getOutputParameters(JsonNode outputNode) throws ClassNotFoundException {
+		List<TypeReference<?>> outputParameters = new ArrayList<>();
+		if (outputNode.isArray()) {
+			for (JsonNode solidityType : outputNode) {
+				outputParameters.add(TypeReference.makeTypeReference(solidityType.textValue()));
+			}
+			return outputParameters;
+		}
+		LOGGER.warn("The JsonNode containing the ouput parameters wasn't an array as expected. "
+				+ "An empty list is being returned.");
+		return outputParameters;
+	}
+
 	protected static Type<?> convertToType(JsonNode inputParam) {
 
 		if (inputParam != null && inputParam.has(TYPE) && inputParam.has(VALUE)) {
@@ -241,7 +267,7 @@ public class EthereumPipFunctions {
 				}
 
 				switch (solidityType) {
-				case "address":
+				case ADDRESS:
 					return new Address(textValue);
 				case "bool":
 				case "boolean":

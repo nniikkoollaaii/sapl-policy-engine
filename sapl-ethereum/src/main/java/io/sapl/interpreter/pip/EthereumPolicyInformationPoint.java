@@ -1,11 +1,11 @@
 package io.sapl.interpreter.pip;
 
 import static io.sapl.interpreter.pip.EthereumBasicFunctions.convertToJsonNode;
-import static io.sapl.interpreter.pip.EthereumBasicFunctions.createFunction;
 import static io.sapl.interpreter.pip.EthereumBasicFunctions.getBigIntFrom;
 import static io.sapl.interpreter.pip.EthereumBasicFunctions.getBooleanFrom;
 import static io.sapl.interpreter.pip.EthereumBasicFunctions.getJsonFrom;
 import static io.sapl.interpreter.pip.EthereumBasicFunctions.getStringFrom;
+import static io.sapl.interpreter.pip.EthereumPipFunctions.createFunction;
 import static io.sapl.interpreter.pip.EthereumPipFunctions.getDefaultBlockParameter;
 import static io.sapl.interpreter.pip.EthereumPipFunctions.getEthFilterFrom;
 import static io.sapl.interpreter.pip.EthereumPipFunctions.getTransactionFromJson;
@@ -24,6 +24,7 @@ import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.Transaction;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 import io.sapl.api.pip.Attribute;
@@ -95,6 +96,8 @@ public class EthereumPolicyInformationPoint {
 	private static final String VERIFY_TRANSACTION_WARNING = "There was an error during verifyTransaction. By default false is returned but the transaction could have taken place.";
 
 	private static final JsonNodeFactory JSON = JsonNodeFactory.instance;
+
+	private static final ObjectMapper mapper = new ObjectMapper();
 
 	private Web3j web3j;
 
@@ -680,17 +683,14 @@ public class EthereumPolicyInformationPoint {
 	 * @return A Flux of Json nodes containing the returned block mapped to Json.
 	 */
 	@Attribute(name = "blockByHash", docs = "Returns information about a block by hash.")
-	public Flux<JsonNode> ethGetBlockByHash(JsonNode saplObject, Map<String, JsonNode> variables)
-			throws IllegalArgumentException, IOException {
+	public Flux<JsonNode> ethGetBlockByHash(JsonNode saplObject, Map<String, JsonNode> variables) {
 		return scheduledFlux(withBlockByHash(saplObject));
 
 	}
 
 	private Callable<JsonNode> withBlockByHash(JsonNode saplObject) {
-		return () -> {
-			return convertToJsonNode(web3j.ethGetBlockByHash(getStringFrom(saplObject, BLOCK_HASH),
-					getBooleanFrom(saplObject, RETURN_FULL_TRANSACTION_OBJECTS)).send().getBlock());
-		};
+		return () -> convertToJsonNode(web3j.ethGetBlockByHash(getStringFrom(saplObject, BLOCK_HASH),
+				getBooleanFrom(saplObject, RETURN_FULL_TRANSACTION_OBJECTS)).send().getBlock());
 
 	}
 
@@ -807,7 +807,7 @@ public class EthereumPolicyInformationPoint {
 	@Attribute(name = "pendingTransactions", docs = "Returns the pending transactions list.")
 	public Flux<JsonNode> ethPendingTransactions(JsonNode saplObject, Map<String, JsonNode> variables) {
 
-		return Flux.from(web3j.ethPendingTransactionHashFlowable().cast(JsonNode.class));
+		return Flux.from(web3j.ethPendingTransactionHashFlowable().map(s -> mapper.convertValue(s, JsonNode.class)));
 
 	}
 
