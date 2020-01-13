@@ -508,7 +508,7 @@ public class EthereumPipFunctions {
 			catch (IOException | StringIndexOutOfBoundsException e) {
 				LOGGER.warn("The type " + solidityType + " with value " + value
 						+ " coudn't be generated. Please make sure that you used correct spelling and the "
-						+ "value is correctly provided for this type. " + DEFAULT_RETURN_WARNING, e);
+						+ "value is correctly provided for this type. " + DEFAULT_RETURN_WARNING);
 				return DEFAULT_RETURN_TYPE;
 			}
 
