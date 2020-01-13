@@ -5,6 +5,7 @@ import static io.sapl.interpreter.pip.EthereumBasicFunctions.getBigIntFrom;
 import static io.sapl.interpreter.pip.EthereumBasicFunctions.getBooleanFrom;
 import static io.sapl.interpreter.pip.EthereumBasicFunctions.getJsonFrom;
 import static io.sapl.interpreter.pip.EthereumBasicFunctions.getStringFrom;
+import static io.sapl.interpreter.pip.EthereumPipFunctions.createEncodedFunction;
 import static io.sapl.interpreter.pip.EthereumPipFunctions.createFunction;
 import static io.sapl.interpreter.pip.EthereumPipFunctions.getDefaultBlockParameter;
 import static io.sapl.interpreter.pip.EthereumPipFunctions.getEthFilterFrom;
@@ -17,11 +18,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 
-import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.datatypes.Function;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.Transaction;
+import org.web3j.protocol.exceptions.ClientConnectionException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -134,7 +135,7 @@ public class EthereumPolicyInformationPoint {
 					}
 				}
 			}
-			catch (IOException | NullPointerException e) {
+			catch (IOException | NullPointerException | ClientConnectionException e) {
 				LOGGER.warn(VERIFY_TRANSACTION_WARNING);
 			}
 			return JSON.booleanNode(false);
@@ -175,7 +176,7 @@ public class EthereumPolicyInformationPoint {
 			JsonNode dbp = getJsonFrom(saplObject, DEFAULT_BLOCK_PARAMETER);
 
 			Function function = createFunction(functionName, inputParams, outputParams);
-			String encodedFunction = FunctionEncoder.encode(function);
+			String encodedFunction = createEncodedFunction(function);
 
 			String response = web3j.ethCall(createEthCallTransaction(fromAccount, contractAddress, encodedFunction),
 					getDefaultBlockParameter(dbp)).send().getValue();

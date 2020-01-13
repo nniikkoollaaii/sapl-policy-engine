@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Address;
 import org.web3j.abi.datatypes.Bool;
@@ -162,6 +163,10 @@ public class EthereumPipFunctions {
 
 	private static final String NO_DBP_INFO = "The DefaultBlockParameter was not correctly provided. By default the latest Block is used.";
 
+	private static final Bool DEFAULT_RETURN_TYPE = new Bool(false);
+
+	private static final String DEFAULT_RETURN_WARNING = "By default a bool with value false is being returned.";
+
 	private EthereumPipFunctions() {
 
 	}
@@ -232,11 +237,16 @@ public class EthereumPipFunctions {
 		return new EthFilter();
 	}
 
+	protected static String createEncodedFunction(Function function) {
+		return FunctionEncoder.encode(function);
+	}
+
 	protected static Function createFunction(String functionName, JsonNode inputParams, JsonNode outputParams)
 			throws ClassNotFoundException {
 		return new Function(functionName,
 				getJsonList(inputParams).stream().map(EthereumPipFunctions::convertToType).collect(Collectors.toList()),
 				getOutputParameters(outputParams));
+
 	}
 
 	private static List<TypeReference<?>> getOutputParameters(JsonNode outputNode) throws ClassNotFoundException {
@@ -252,7 +262,7 @@ public class EthereumPipFunctions {
 		return outputParameters;
 	}
 
-	protected static Type<?> convertToType(JsonNode inputParam) {
+	private static Type<?> convertToType(JsonNode inputParam) {
 
 		if (inputParam != null && inputParam.has(TYPE) && inputParam.has(VALUE)) {
 			String solidityType = inputParam.get(TYPE).textValue();
@@ -281,9 +291,13 @@ public class EthereumPipFunctions {
 				case "char":
 					return new Char(textValue.charAt(0));
 				case "double":
-					return new org.web3j.abi.datatypes.primitive.Double(value.asDouble());
+					LOGGER.warn("You tried to use a double type but this is not supported as function input. "
+							+ DEFAULT_RETURN_WARNING);
+					return DEFAULT_RETURN_TYPE;
 				case "float":
-					return new org.web3j.abi.datatypes.primitive.Float(value.floatValue());
+					LOGGER.warn("You tried to use a float type but this is not supported as function input. "
+							+ DEFAULT_RETURN_WARNING);
+					return DEFAULT_RETURN_TYPE;
 				case "uint":
 					return new Uint(bigIntegerValue);
 				case "int":
@@ -485,22 +499,23 @@ public class EthereumPipFunctions {
 				case "bytes32":
 					return new Bytes32(binaryValue);
 				default:
-					return null;
+					LOGGER.warn(
+							"The type with the name " + solidityType + " couldn't be found. " + DEFAULT_RETURN_WARNING);
+					return DEFAULT_RETURN_TYPE;
 
 				}
 			}
 			catch (IOException | StringIndexOutOfBoundsException e) {
 				LOGGER.warn("The type " + solidityType + " with value " + value
 						+ " coudn't be generated. Please make sure that you used correct spelling and the "
-						+ "value is correctly provided for this type. By default null is being returned.");
-				return null;
-
+						+ "value is correctly provided for this type. " + DEFAULT_RETURN_WARNING, e);
+				return DEFAULT_RETURN_TYPE;
 			}
 
 		}
 		LOGGER.warn("There has been a request to convertToType, but the input didn't have both fields type "
-				+ "and value or was null. By default null is being returned.");
-		return null;
+				+ "and value or was null. " + DEFAULT_RETURN_WARNING);
+		return DEFAULT_RETURN_TYPE;
 	}
 
 	private static BigInteger bigIntFromHex(String s) {

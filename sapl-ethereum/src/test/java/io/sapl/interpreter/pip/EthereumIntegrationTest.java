@@ -699,7 +699,7 @@ public class EthereumIntegrationTest {
 
 	// uncleByBlockHashAndIndex
 	@Test
-	public void ethGetUncleByBlockHashAndIndexShouldReturnTheCorrectValue() throws IOException {
+	public void ethGetUncleByBlockHashAndIndexShouldThrowAttributeExceptionWithNoUncle() throws IOException {
 
 		String blockHash = transactionReceiptUser2.getBlockHash();
 		BigInteger index = BigInteger.ZERO;
@@ -719,7 +719,7 @@ public class EthereumIntegrationTest {
 
 	// uncleByBlockNumberAndIndex
 	@Test
-	public void ethGetUncleByBlockNumberAndIndexShouldReturnTheCorrectValue() throws IOException {
+	public void ethGetUncleByBlockNumberAndIndexShouldThrowAttributeExceptionWithNoUncle() throws IOException {
 
 		BigInteger blockNumber = transactionReceiptUser2.getBlockNumber();
 		BigInteger index = BigInteger.ZERO;

@@ -1,17 +1,20 @@
 package io.sapl.interpreter.pip;
 
+import static io.sapl.interpreter.pip.EthereumPipFunctions.createEncodedFunction;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Test;
+import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Address;
 import org.web3j.abi.datatypes.Bool;
 import org.web3j.abi.datatypes.DynamicBytes;
+import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.Int;
 import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.Uint;
@@ -118,6 +121,7 @@ import org.web3j.crypto.Credentials;
 import org.web3j.crypto.WalletUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -157,1065 +161,1199 @@ public class EthereumPipFunctionsTest {
 
 	private static final BigInteger TEST_BIG_INT = BigInteger.valueOf(1364961235);
 
+	private static final String TEST_FUNCTION_NAME = "testFunctionName";
+
 	private static byte[] bytesArray;
 
 	private static final JsonNodeFactory JSON = JsonNodeFactory.instance;
 
+	private static final JsonNode TEST_OUTPUT_PARAM = JSON.arrayNode().add(BOOL);
+
 	// convertToType
 
 	@Test
-	public void convertToTypeShouldReturnNullIfTypeIsNotPresent() throws IOException {
+	public void createFunctionShouldUseBoolFalseIfTypeIsNotPresent() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(VALUE, 25);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertNull("ConvertToType didn't return null when type field was not present in input.", result);
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bool(false));
+		assertEquals("ConvertToType didn't return null when type field was not present in input.", encodedTestFunction,
+				encodedFunction);
 
 	}
 
 	@Test
-	public void convertToTypeShouldReturnNullIfValueIsNotPresent() throws IOException {
+	public void createFunctionShouldUseBoolFalseIfValueIsNotPresent() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "aString");
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertNull("ConvertToType didn't return null when field value was not present in input.", result);
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bool(false));
+		assertEquals("ConvertToType didn't return null when field value was not present in input.", encodedTestFunction,
+				encodedFunction);
 
 	}
 
 	@Test
-	public void convertToTypeShouldReturnNullWithNullInput() throws IOException {
-		Type<?> result = EthereumPipFunctions.convertToType(null);
-		assertNull("ConvertToType didn't return null with null input.", result);
-
-	}
-
-	@Test
-	public void convertToTypeShouldReturnAddressTypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithAddressTypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, ADDRESS);
 		inputParam.put(VALUE, TEST_ADDRESS);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Address correctly.", result, new Address(TEST_ADDRESS));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Address(TEST_ADDRESS));
+		assertEquals("ConvertToType didn't return the Address correctly.", encodedTestFunction, encodedFunction);
+	}
+
+//	@Test
+//	public void createEncodedFunctionShouldWorkWithAddressTypeCorrectly() throws IOException, ClassNotFoundException {
+//		ObjectNode inputParam = JSON.objectNode();
+//		inputParam.put(TYPE, ADDRESS);
+//		inputParam.put(VALUE, TEST_ADDRESS);
+//		String encodedFunction = createFunctionFromApi(inputParam);
+//		String encodedTestFunction = createEncodedTestFunction();
+//		assertEquals("ConvertToType didn't return the Address correctly.", encodedTestFunction, encodedFunction);
+//	}
+
+	private static String createFunctionFromApi(JsonNode inputParam) throws ClassNotFoundException {
+		ArrayNode inputParams = JSON.arrayNode().add(inputParam);
+		Function function = EthereumPipFunctions.createFunction(TEST_FUNCTION_NAME, inputParams, TEST_OUTPUT_PARAM);
+		return createEncodedFunction(function);
+	}
+
+	private static String createEncodedTestFunction(Type<?> inputParam) throws ClassNotFoundException {
+		Function testFunction = new Function(TEST_FUNCTION_NAME, Arrays.asList(inputParam),
+				Arrays.asList(TypeReference.makeTypeReference(BOOL)));
+		return createEncodedFunction(testFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBoolTypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBoolTypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, BOOL);
 		inputParam.put(VALUE, true);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bool correctly.", result, new Bool(true));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bool(true));
+		assertEquals("ConvertToType didn't return the Bool correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnStringTypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithStringTypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, STRING);
 		inputParam.put(VALUE, SOME_STRING);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the String correctly.", result, new Utf8String(SOME_STRING));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Utf8String(SOME_STRING));
+		assertEquals("ConvertToType didn't return the String correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytesTypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytesTypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "bytes");
 		inputParam.put(VALUE, BYTE_ARRAY);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the DynamicBytes correctly.", result, new DynamicBytes(BYTE_ARRAY));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new DynamicBytes(BYTE_ARRAY));
+		assertEquals("ConvertToType didn't return the DynamicBytes correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnByteTypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithByteTypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		byte testByte = 125;
 		inputParam.put(TYPE, "byte");
 		inputParam.put(VALUE, testByte);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Byte correctly.", result,
-				new org.web3j.abi.datatypes.primitive.Byte(testByte));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new org.web3j.abi.datatypes.primitive.Byte(testByte));
+		assertEquals("ConvertToType didn't return the Byte correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnCharTypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithCharTypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "char");
 		inputParam.put(VALUE, "a");
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Char correctly.", result, new Char('a'));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Char('a'));
+		assertEquals("ConvertToType didn't return the Char correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeCharShouldReturnNullWithEmptyString() throws IOException {
+	public void creatFunctionShouldUseBoolFalseWhenEmptyCharProvided() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "char");
 		inputParam.put(VALUE, "");
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertNull("ConvertToType didn't return the Char correctly.", result);
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bool(false));
+		assertEquals("ConvertToType didn't return the Char correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnDoubleTypeCorrectly() throws IOException {
+	public void createFunctionShouldUseBoolFalseWhenDoubleProvided() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "double");
 		inputParam.put(VALUE, Double.valueOf(1.789));
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Double correctly.", result,
-				new org.web3j.abi.datatypes.primitive.Double(1.789));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bool(false));
+		assertEquals("ConvertToType didn't return the Double correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnFloatTypeCorrectly() throws IOException {
+	public void createFunctionShouldUseBoolFalseWhenFloatProvided()
+			throws IOException, NumberFormatException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "float");
 		inputParam.put(VALUE, Float.valueOf("7.654321"));
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Float correctly.", result,
-				new org.web3j.abi.datatypes.primitive.Float(Float.valueOf("7.654321")));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bool(false));
+		assertEquals("ConvertToType didn't return the Float correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUintTypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUintTypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint");
 		inputParam.put(VALUE, TEST_BIG_INT);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint correctly.", result, new Uint(TEST_BIG_INT));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint(TEST_BIG_INT));
+		assertEquals("ConvertToType didn't return the Uint correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnIntTypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithIntTypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int");
 		inputParam.put(VALUE, TEST_BIG_INT);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int correctly.", result, new Int(TEST_BIG_INT));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int(TEST_BIG_INT));
+		assertEquals("ConvertToType didn't return the Int correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnLongTypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithLongTypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "long");
 		inputParam.put(VALUE, Long.valueOf(9786135));
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Long correctly.", result,
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(
 				new org.web3j.abi.datatypes.primitive.Long(Long.valueOf(9786135)));
+		assertEquals("ConvertToType didn't return the Long correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnShortTypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithShortTypeCorrectly()
+			throws IOException, NumberFormatException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "short");
 		inputParam.put(VALUE, Short.valueOf("111"));
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Short correctly.", result,
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(
 				new org.web3j.abi.datatypes.primitive.Short(Short.valueOf("111")));
+		assertEquals("ConvertToType didn't return the Short correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint8TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint8TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint8");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint8 correctly.", result, new Uint8(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint8(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint8 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt8TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt8TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int8");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int8 correctly.", result, new Int8(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int8(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int8 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint16TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint16TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint16");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint16 correctly.", result, new Uint16(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint16(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint16 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt16TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt16TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int16");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int16 correctly.", result, new Int16(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int16(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int16 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint24TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint24TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint24");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint24 correctly.", result, new Uint24(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint24(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint24 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt24TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt24TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int24");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int24 correctly.", result, new Int24(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int24(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int24 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint32TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint32TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint32");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint32 correctly.", result, new Uint32(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint32(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint32 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt32TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt32TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int32");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int32 correctly.", result, new Int32(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int32(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int32 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint40TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint40TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint40");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint40 correctly.", result, new Uint40(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint40(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint40 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt40TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt40TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int40");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int40 correctly.", result, new Int40(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int40(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int40 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint48TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint48TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint48");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint48 correctly.", result, new Uint48(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint48(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint48 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt48TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt48TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int48");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int48 correctly.", result, new Int48(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int48(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int48 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint56TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint56TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint56");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint56 correctly.", result, new Uint56(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint56(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint56 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt56TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt56TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int56");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int56 correctly.", result, new Int56(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int56(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int56 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint64TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint64TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint64");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint64 correctly.", result, new Uint64(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint64(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint64 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt64TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt64TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int64");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int64 correctly.", result, new Int64(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int64(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int64 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint72TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint72TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint72");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint72 correctly.", result, new Uint72(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint72(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint72 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt72TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt72TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int72");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int72 correctly.", result, new Int72(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int72(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int72 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint80TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint80TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint80");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint80 correctly.", result, new Uint80(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint80(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint80 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt80TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt80TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int80");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int80 correctly.", result, new Int80(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int80(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int80 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint88TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint88TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint88");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint88 correctly.", result, new Uint88(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint88(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint88 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt88TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt88TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int88");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int88 correctly.", result, new Int88(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int88(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int88 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint96TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint96TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint96");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint96 correctly.", result, new Uint96(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint96(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint96 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt96TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt96TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int96");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int96 correctly.", result, new Int96(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int96(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int96 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint104TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint104TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint104");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint104 correctly.", result, new Uint104(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint104(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint104 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt104TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt104TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int104");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int104 correctly.", result, new Int104(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int104(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int104 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint112TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint112TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint112");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint112 correctly.", result, new Uint112(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint112(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint112 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt112TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt112TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int112");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int112 correctly.", result, new Int112(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int112(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int112 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint120TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint120TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint120");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint120 correctly.", result, new Uint120(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint120(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint120 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt120TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt120TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int120");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int120 correctly.", result, new Int120(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int120(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int120 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint128TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint128TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint128");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint128 correctly.", result, new Uint128(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint128(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint128 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt128TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt128TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int128");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int128 correctly.", result, new Int128(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int128(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int128 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint136TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint136TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint136");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint136 correctly.", result, new Uint136(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint136(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint136 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt136TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt136TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int136");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int136 correctly.", result, new Int136(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int136(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int136 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint144TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint144TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint144");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint144 correctly.", result, new Uint144(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint144(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint144 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt144TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt144TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int144");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int144 correctly.", result, new Int144(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int144(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int144 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint152TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint152TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint152");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint152 correctly.", result, new Uint152(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint152(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint152 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt152TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt152TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int152");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int152 correctly.", result, new Int152(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int152(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int152 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint160TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint160TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint160");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint160 correctly.", result, new Uint160(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint160(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint160 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt160TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt160TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int160");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int160 correctly.", result, new Int160(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int160(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int160 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint168TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint168TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint168");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint168 correctly.", result, new Uint168(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint168(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint168 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt168TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt168TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int168");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int168 correctly.", result, new Int168(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int168(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int168 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint176TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint176TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint176");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint176 correctly.", result, new Uint176(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint176(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint176 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt176TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt176TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int176");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int176 correctly.", result, new Int176(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int176(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int176 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint184TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint184TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint184");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint184 correctly.", result, new Uint184(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint184(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint184 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt184TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt184TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int184");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int184 correctly.", result, new Int184(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int184(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int184 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint192TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint192TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint192");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint192 correctly.", result, new Uint192(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint192(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint192 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt192TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt192TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int192");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int192 correctly.", result, new Int192(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int192(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int192 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint200TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint200TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint200");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint200 correctly.", result, new Uint200(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint200(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint200 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt200TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt200TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int200");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int200 correctly.", result, new Int200(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int200(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int200 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint208TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint208TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint208");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint208 correctly.", result, new Uint208(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint208(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint208 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt208TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt208TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int208");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int208 correctly.", result, new Int208(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int208(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int208 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint216TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint216TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint216");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint216 correctly.", result, new Uint216(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint216(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint216 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt216TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt216TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int216");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int216 correctly.", result, new Int216(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int216(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int216 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint224TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint224TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint224");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint224 correctly.", result, new Uint224(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint224(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint224 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt224TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt224TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int224");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int224 correctly.", result, new Int224(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int224(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int224 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint232TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint232TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint232");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint232 correctly.", result, new Uint232(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint232(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint232 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt232TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt232TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int232");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int232 correctly.", result, new Int232(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int232(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int232 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint240TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint240TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint240");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint240 correctly.", result, new Uint240(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint240(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint240 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt240TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt240TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int240");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int240 correctly.", result, new Int240(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int240(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int240 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint248TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint248TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint248");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint248 correctly.", result, new Uint248(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint248(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint248 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt248TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt248TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int248");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int248 correctly.", result, new Int248(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int248(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int248 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnUint256TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithUint256TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "uint256");
 		inputParam.put(VALUE, UINT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Uint256 correctly.", result, new Uint256(UINT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Uint256(UINT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Uint256 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnInt256TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithInt256TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "int256");
 		inputParam.put(VALUE, INT_TEST_VALUE);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Int256 correctly.", result, new Int256(INT_TEST_VALUE));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Int256(INT_TEST_VALUE));
+		assertEquals("ConvertToType didn't return the Int256 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes1TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes1TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[1];
 		bytesArray[0] = 25;
 		inputParam.put(TYPE, "bytes1");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes1 correctly.", result, new Bytes1(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes1(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes1 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes2TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes2TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[2];
 		bytesArray[1] = 33;
 		inputParam.put(TYPE, "bytes2");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes2 correctly.", result, new Bytes2(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes2(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes2 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes3TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes3TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[3];
 		inputParam.put(TYPE, "bytes3");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes3 correctly.", result, new Bytes3(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes3(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes3 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes4TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes4TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[4];
 		inputParam.put(TYPE, "bytes4");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes4 correctly.", result, new Bytes4(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes4(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes4 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes5TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes5TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[5];
 		inputParam.put(TYPE, "bytes5");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes5 correctly.", result, new Bytes5(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes5(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes5 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes6TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes6TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[6];
 		inputParam.put(TYPE, "bytes6");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes6 correctly.", result, new Bytes6(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes6(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes6 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes7TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes7TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[7];
 		inputParam.put(TYPE, "bytes7");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes7 correctly.", result, new Bytes7(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes7(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes7 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes8TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes8TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[8];
 		inputParam.put(TYPE, "bytes8");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes8 correctly.", result, new Bytes8(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes8(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes8 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes9TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes9TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[9];
 		inputParam.put(TYPE, "bytes9");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes9 correctly.", result, new Bytes9(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes9(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes9 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes10TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes10TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[10];
 		inputParam.put(TYPE, "bytes10");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes10 correctly.", result, new Bytes10(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes10(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes10 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnByte11TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithByte11TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[11];
 		inputParam.put(TYPE, "bytes11");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes11 correctly.", result, new Bytes11(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes11(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes11 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes12TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes12TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[12];
 		inputParam.put(TYPE, "bytes12");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes12 correctly.", result, new Bytes12(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes12(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes12 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes13TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes13TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[13];
 		inputParam.put(TYPE, "bytes13");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes13 correctly.", result, new Bytes13(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes13(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes13 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes14TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes14TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[14];
 		inputParam.put(TYPE, "bytes14");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes14 correctly.", result, new Bytes14(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes14(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes14 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes15TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes15TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[15];
 		inputParam.put(TYPE, "bytes15");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes15 correctly.", result, new Bytes15(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes15(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes15 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes16TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes16TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[16];
 		inputParam.put(TYPE, "bytes16");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes16 correctly.", result, new Bytes16(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes16(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes16 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes17TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes17TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[17];
 		inputParam.put(TYPE, "bytes17");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes17 correctly.", result, new Bytes17(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes17(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes17 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes18TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes18TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[18];
 		inputParam.put(TYPE, "bytes18");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes18 correctly.", result, new Bytes18(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes18(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes18 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes19TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes19TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[19];
 		inputParam.put(TYPE, "bytes19");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes19 correctly.", result, new Bytes19(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes19(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes19 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes20TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes20TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[20];
 		inputParam.put(TYPE, "bytes20");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes20 correctly.", result, new Bytes20(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes20(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes20 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes21TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes21TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[21];
 		inputParam.put(TYPE, "bytes21");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes21 correctly.", result, new Bytes21(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes21(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes21 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnByte22TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithByte22TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[22];
 		inputParam.put(TYPE, "bytes22");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes22 correctly.", result, new Bytes22(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes22(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes22 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes23TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes23TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[23];
 		inputParam.put(TYPE, "bytes23");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes23 correctly.", result, new Bytes23(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes23(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes23 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes24TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes24TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[24];
 		inputParam.put(TYPE, "bytes24");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes24 correctly.", result, new Bytes24(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes24(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes24 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes25TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes25TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[25];
 		inputParam.put(TYPE, "bytes25");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes25 correctly.", result, new Bytes25(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes25(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes25 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes26TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes26TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[26];
 		inputParam.put(TYPE, "bytes26");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes26 correctly.", result, new Bytes26(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes26(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes26 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes27TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes27TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[27];
 		inputParam.put(TYPE, "bytes27");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes27 correctly.", result, new Bytes27(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes27(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes27 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes28TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes28TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[28];
 		inputParam.put(TYPE, "bytes28");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes28 correctly.", result, new Bytes28(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes28(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes28 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes29TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes29TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[29];
 		inputParam.put(TYPE, "bytes29");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes29 correctly.", result, new Bytes29(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes29(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes29 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes30TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes30TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[30];
 		inputParam.put(TYPE, "bytes30");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes30 correctly.", result, new Bytes30(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes30(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes30 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes31TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes31TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[31];
 		inputParam.put(TYPE, "bytes31");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes31 correctly.", result, new Bytes31(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes31(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes31 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void convertToTypeShouldReturnBytes32TypeCorrectly() throws IOException {
+	public void createFunctionShouldWorkWithBytes32TypeCorrectly() throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		bytesArray = new byte[32];
 		inputParam.put(TYPE, "bytes32");
 		inputParam.put(VALUE, bytesArray);
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertEquals("ConvertToType didn't return the Bytes32 correctly.", result, new Bytes32(bytesArray));
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bytes32(bytesArray));
+		assertEquals("ConvertToType didn't return the Bytes32 correctly.", encodedTestFunction, encodedFunction);
 	}
 
 	@Test
-	public void falseSolidityTypeShouldReturnNull() throws IOException {
+	public void createFunctionWithFalseSolidityTypeShouldWorkAsWithBoolFalse()
+			throws IOException, ClassNotFoundException {
 		ObjectNode inputParam = JSON.objectNode();
 		inputParam.put(TYPE, "wrongType");
 		inputParam.put(VALUE, "anyValue");
-		Type<?> result = EthereumPipFunctions.convertToType(inputParam);
-		assertNull("ConvertToType didn't return null when non-existing solidity type was provided.", result);
+		String encodedFunction = createFunctionFromApi(inputParam);
+		String encodedTestFunction = createEncodedTestFunction(new Bool(false));
+		assertEquals("ConvertToType didn't return null when non-existing solidity type was provided.",
+				encodedTestFunction, encodedFunction);
 	}
 
 	// loadCredentials
