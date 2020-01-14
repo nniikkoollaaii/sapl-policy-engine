@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -123,6 +124,8 @@ public class EthereumModuleTest {
 	private static final String TRANSACTION_INDEX = "transactionIndex";
 
 	private static final String UNCLE_INDEX = "uncleIndex";
+
+	private static final String ETH_POLLING_INTERVAL = "ethPollingInterval";
 
 	private static final String TEST_DATA_CLIENT_VERSION = "besu/v1.3.5/linux-x86_64/oracle_openjdk-java-11";
 
@@ -317,22 +320,6 @@ public class EthereumModuleTest {
 
 	}
 
-	private static JsonNode createSaplObject() {
-		ObjectNode saplObject = JSON.objectNode();
-		saplObject.put(CONTRACT_ADDRESS, TEST_DATA_LCI_CONTRACT_ADDRESS);
-		saplObject.put(FUNCTION_NAME, IS_AUTHORIZED);
-		ArrayNode inputParams = JSON.arrayNode();
-		ObjectNode input1 = JSON.objectNode();
-		input1.put(TYPE, ADDRESS);
-		input1.put(VALUE, USER2_ADDRESS.substring(2));
-		inputParams.add(input1);
-		saplObject.set(INPUT_PARAMS, inputParams);
-		ArrayNode outputParams = JSON.arrayNode();
-		outputParams.add(BOOL);
-		saplObject.set(OUTPUT_PARAMS, outputParams);
-		return saplObject;
-	}
-
 	// clientVersion
 
 	@Test
@@ -411,7 +398,7 @@ public class EthereumModuleTest {
 	@Test
 	public void ethMiningShouldReturnTheCorrectValue() throws IOException {
 		when(web3j.ethMining().send().isMining()).thenReturn(true);
-		boolean pipResult = ethPip.ethMining(null, null).blockFirst().asBoolean();
+		boolean pipResult = ethPip.ethMining(null, new HashMap<>()).blockFirst().asBoolean();
 		assertTrue("The ethMining method did not return the correct value.", pipResult);
 	}
 
@@ -419,9 +406,12 @@ public class EthereumModuleTest {
 	@Test
 	public void ethHashrateShouldReturnTheCorrectValue() throws IOException {
 		BigInteger testValue = BigInteger.valueOf(267L);
+		HashMap<String, JsonNode> map = new HashMap<>();
+		map.put(ETH_POLLING_INTERVAL, JSON.numberNode(1000L));
+
 		when(web3j.ethHashrate().send().getHashrate()).thenReturn(testValue);
 
-		BigInteger pipResult = ethPip.ethHashrate(null, null).blockFirst().bigIntegerValue();
+		BigInteger pipResult = ethPip.ethHashrate(null, map).blockFirst().bigIntegerValue();
 
 		assertEquals("The ethHashrate should be returned correctly.", testValue, pipResult);
 	}
@@ -1008,6 +998,22 @@ public class EthereumModuleTest {
 		List<String> addresses = Arrays.asList(USER1_ADDRESS, USER2_ADDRESS);
 		return new EthFilter(DefaultBlockParameter.valueOf(fromBlock), DefaultBlockParameter.valueOf(toBlock),
 				addresses);
+	}
+
+	private static JsonNode createSaplObject() {
+		ObjectNode saplObject = JSON.objectNode();
+		saplObject.put(CONTRACT_ADDRESS, TEST_DATA_LCI_CONTRACT_ADDRESS);
+		saplObject.put(FUNCTION_NAME, IS_AUTHORIZED);
+		ArrayNode inputParams = JSON.arrayNode();
+		ObjectNode input1 = JSON.objectNode();
+		input1.put(TYPE, ADDRESS);
+		input1.put(VALUE, USER2_ADDRESS.substring(2));
+		inputParams.add(input1);
+		saplObject.set(INPUT_PARAMS, inputParams);
+		ArrayNode outputParams = JSON.arrayNode();
+		outputParams.add(BOOL);
+		saplObject.set(OUTPUT_PARAMS, outputParams);
+		return saplObject;
 	}
 
 }
