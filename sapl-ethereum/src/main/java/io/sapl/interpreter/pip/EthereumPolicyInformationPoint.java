@@ -23,6 +23,7 @@ import org.web3j.abi.datatypes.Function;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.Transaction;
 import org.web3j.protocol.exceptions.ClientConnectionException;
+import org.web3j.protocol.http.HttpService;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -103,6 +104,10 @@ public class EthereumPolicyInformationPoint {
 	private static final String ETH_POLLING_INTERVAL = "ethPollingInterval";
 
 	private Web3j web3j;
+
+	public EthereumPolicyInformationPoint() {
+		this(Web3j.build(new HttpService()));
+	}
 
 	public EthereumPolicyInformationPoint(Web3j web3j) {
 		this.web3j = web3j;
@@ -1020,7 +1025,6 @@ public class EthereumPolicyInformationPoint {
 	}
 
 	private Callable<JsonNode> withShhFilterChanges(JsonNode saplObject) {
-
 		return () -> convertToJsonNode(web3j.shhGetFilterChanges(saplObject.bigIntegerValue()).send().getMessages());
 
 	}

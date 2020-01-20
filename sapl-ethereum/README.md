@@ -1,6 +1,63 @@
 # Sapl-Ethereum Documentation
 
-## loadContractInformation
+In this documentation you will find an introduction on how to use the *EthereumPolicyInformationPoint (EthPIP)*. This is a general attribute finder created to facilitate access to information from the Ethereum blockchain environment inside Sapl policies. For more information about using a *Policy Decision Point (PDP)* with an attribute finder in general and on how to access it inside a policy please refer to the [SAPL Documentation](https://github.com/heutelbeck/sapl-policy-engine/blob/master/sapl-documentation/src/asciidoc/sapl-reference.adoc). 
+
+## The EthereumPolicyInformationPoint
+To get started, you have to include the dependency of the *sapl-ethereum* module in the `pom.xml` of your maven project like this:
+
+```xml
+<dependency>
+    <groupId>io.sapl</groupId>
+    <artifactId>sapl-ethereum</artifactId>
+    <version>2.0.0-SNAPSHOT</version>
+</dependency>
+```
+Furthermore you will have to use a PDP to work with. In case you want to use an Embedded PDP you can include the following dependency:
+
+```xml
+<dependency>
+    <groupId>io.sapl</groupId>
+    <artifactId>sapl-pdp-embedded</artifactId>
+    <version>2.0.0-SNAPSHOT</version>
+</dependency>
+```
+
+In case you want to run a Server PDP, use the artifactId `sapl-pdp-server` instead.
+
+Now you can include your attribute finder with your PDP in your application. If you have an Ethereum node running on your system and don't need any additional configuration this could look like that:
+
+```java
+
+EthereumPolicyInformationPoint ethPip = new EthereumPolicyInformationPoint();
+EmbeddedPolicyDecisionPoint pdp = EmbeddedPolicyDecisionPoint.builder()
+				.withFilesystemPDPConfigurationProvider("/PATH/TO/CONFIGURATION")
+				.withFilesystemPolicyRetrievalPoint("/PATH/TO/POLICIES", IndexType.SIMPLE)
+				.withPolicyInformationPoint(ethPip).build();
+```
+
+Please note that you can also provide a `Web3j` which defines the way the EthPIP accesses to the blockchain. If you don't do so, a default `HttpService` is used which should automatically detect a running node on your system. If you have a special situation you might want to do something like this with your own specific setup of the `Web3j`:
+
+```java
+Web3j web3j = Web3j.build(new HttpService("http://localhost:8545"), 500, Async.defaultExecutorService());
+EthereumPolicyInformationPoint ethPip = new EthereumPolicyInformationPoint(web3j);
+
+```
+
+Please note that you can define the interval in which the EthPIP requests information from the blockchain. By default an interval of 5 seconds is used, as by now the intermediate time between new blocks on the Ethereum mainnet is at about 12 seconds, rendering it unnecessary to aim for higher accuracy. If you want to adjust this polling interval you can do so in the PDP configuration file `pdp.json`. Just add a variable with the key `ethPollingInterval` and the time between polls in milliseconds:
+
+```json
+{
+    "algorithm": "DENY_UNLESS_PERMIT",
+    "variables": {"ethPollingInterval":1000}
+}
+```
+
+## User-friendly methods
+Now we will explain how to use the methods included in this policy information point. In this section we will look at the user friendly methods that don't require deep understanding of the *Web3j API* or the Ethereum blockchain. You can use them by just looking at the code of a smart contract or by using basic informations like transaction hashes and addresses. If you have no clue of these things yet, you can start at the official [Ethereum Website](https://ethereum.org/what-is-ethereum/).
+
+If you are already an advanced Ethereum user and want to get even more options to receive information from the blockchain there will be a section with advanced methods later on.
+
+### contract
 
 This function was added to provide a simple, user-friendly way of retreiving information from a contract on the Ethereum Blockchain. It needs to receive a JsonNode with the following information:
 
