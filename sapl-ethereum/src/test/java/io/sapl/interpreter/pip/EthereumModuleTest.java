@@ -459,7 +459,8 @@ public class EthereumModuleTest {
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(ADDRESS, USER1_ADDRESS);
 		saplObject.put(DEFAULT_BLOCK_PARAMETER, LATEST);
-		BigInteger pipResult = ethPip.ethGetBalance(saplObject, null).blockFirst().bigIntegerValue();
+		JsonNode pipRes = ethPip.ethGetBalance(saplObject, null).blockFirst();
+		BigInteger pipResult = pipRes.bigIntegerValue();
 
 		assertEquals("The ethGetBalance method did not return the correct value.", balance, pipResult);
 	}

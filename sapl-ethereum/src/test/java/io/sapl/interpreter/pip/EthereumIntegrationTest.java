@@ -127,6 +127,8 @@ public class EthereumIntegrationTest {
 
 	private static final String FILTER_ID = "filterId";
 
+	private static final String UNCLE_INDEX = "uncleIndex";
+
 	private static final ObjectMapper mapper = new ObjectMapper();
 
 	private static Web3j web3j;
@@ -198,8 +200,6 @@ public class EthereumIntegrationTest {
 		StepVerifier.create(decision).expectNextMatches(authzDecision -> authzDecision.getDecision() == Decision.PERMIT)
 				.thenCancel().verify();
 	}
-
-	// Timed Testing
 
 	// loadContractInformation
 
@@ -706,7 +706,7 @@ public class EthereumIntegrationTest {
 
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(BLOCK_HASH, blockHash);
-		saplObject.put(TRANSACTION_INDEX, index);
+		saplObject.put(UNCLE_INDEX, index);
 
 		String pipResult = ethPip.ethGetUncleByBlockHashAndIndex(saplObject, null).blockFirst().toString();
 		String web3jResult = mapper
@@ -726,7 +726,7 @@ public class EthereumIntegrationTest {
 
 		ObjectNode saplObject = JSON.objectNode();
 		saplObject.put(DEFAULT_BLOCK_PARAMETER, blockNumber);
-		saplObject.put(TRANSACTION_INDEX, index);
+		saplObject.put(UNCLE_INDEX, index);
 
 		String pipResult = ethPip.ethGetUncleByBlockNumberAndIndex(saplObject, null).blockFirst().toString();
 		String web3jResult = mapper

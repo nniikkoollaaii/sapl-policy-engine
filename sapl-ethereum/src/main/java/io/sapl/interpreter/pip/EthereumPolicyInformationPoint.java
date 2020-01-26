@@ -132,13 +132,14 @@ public class EthereumPolicyInformationPoint {
 	private Callable<JsonNode> withVerifiedTransaction(JsonNode saplObject) {
 		return () -> {
 			try {
-				Optional<Transaction> optionalTransactionFromChain = web3j
+				web3j.ethAccounts().flowable();
+				Optional<Transaction> optionalTransaction = web3j
 						.ethGetTransactionByHash(getStringFrom(saplObject, TRANSACTION_HASH)).send().getTransaction();
-				if (optionalTransactionFromChain.isPresent()) {
-					Transaction transactionFromChain = optionalTransactionFromChain.get();
-					if (transactionFromChain.getFrom().equalsIgnoreCase(getStringFrom(saplObject, FROM_ACCOUNT))
-							&& transactionFromChain.getTo().equalsIgnoreCase(getStringFrom(saplObject, TO_ACCOUNT))
-							&& transactionFromChain.getValue().equals(getBigIntFrom(saplObject, TRANSACTION_VALUE))) {
+				if (optionalTransaction.isPresent()) {
+					Transaction transaction = optionalTransaction.get();
+					if (transaction.getFrom().equalsIgnoreCase(getStringFrom(saplObject, FROM_ACCOUNT))
+							&& transaction.getTo().equalsIgnoreCase(getStringFrom(saplObject, TO_ACCOUNT))
+							&& transaction.getValue().equals(getBigIntFrom(saplObject, TRANSACTION_VALUE))) {
 						return JSON.booleanNode(true);
 					}
 				}
@@ -1050,7 +1051,8 @@ public class EthereumPolicyInformationPoint {
 
 	private Flux<JsonNode> scheduledFlux(Callable<JsonNode> functionToCall, Map<String, JsonNode> variables) {
 		Flux<Long> timer = Flux.interval(Duration.ZERO, getPollingInterval(variables));
-		return timer.flatMap(i -> Mono.fromCallable(functionToCall)).onErrorReturn(JSON.nullNode());
+		return timer.flatMap(i -> Mono.fromCallable(functionToCall)).distinctUntilChanged()
+				.onErrorReturn(JSON.nullNode());
 	}
 
 	private static Duration getPollingInterval(Map<String, JsonNode> variables) {
