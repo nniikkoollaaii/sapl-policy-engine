@@ -22,6 +22,7 @@ import io.sapl.functions.FilterFunctionLibrary;
 import io.sapl.functions.StandardFunctionLibrary;
 import io.sapl.functions.TemporalFunctionLibrary;
 import io.sapl.interpreter.DefaultSAPLInterpreter;
+import io.sapl.interpreter.UnitTestSAPLInterpreter;
 import io.sapl.interpreter.functions.AnnotationFunctionContext;
 import io.sapl.interpreter.functions.FunctionContext;
 import io.sapl.interpreter.pip.AnnotationAttributeContext;
@@ -67,6 +68,32 @@ public class PolicyDecisionPointFactory {
 		var configurationProvider = constructConfigurationProvider(fileSource, policyInformationPoints,
 				functionLibraries);
 		var policyRetrievalPoint = constructFilesystemPolicyRetrievalPoint(path);
+		return new EmbeddedPolicyDecisionPoint(configurationProvider, policyRetrievalPoint);
+	}
+	
+	public static EmbeddedPolicyDecisionPoint filesystemUnitTestPolicyDecisionPoint(String policyIdUnderTest) throws InitializationException {
+		return filesystemUnitTestPolicyDecisionPoint(DEFAILT_FILE_LOCATION, policyIdUnderTest);
+	}
+
+	public static EmbeddedPolicyDecisionPoint filesystemUnitTestPolicyDecisionPoint(String path, 
+			String policyIdUnderTest)
+			throws InitializationException {
+		return filesystemUnitTestPolicyDecisionPoint(path, new ArrayList<>(1), new ArrayList<>(1), policyIdUnderTest);
+	}
+
+	public static EmbeddedPolicyDecisionPoint filesystemUnitTestPolicyDecisionPoint(Collection<Object> policyInformationPoints,
+			Collection<Object> functionLibraries, String policyIdUnderTest) throws InitializationException {
+		return filesystemUnitTestPolicyDecisionPoint(DEFAILT_FILE_LOCATION, policyInformationPoints, functionLibraries, policyIdUnderTest);
+	}
+
+	public static EmbeddedPolicyDecisionPoint filesystemUnitTestPolicyDecisionPoint(String path,
+			Collection<Object> policyInformationPoints, Collection<Object> functionLibraries, 
+			String policyIdUnderTest)
+			throws InitializationException {
+		var fileSource = new FileSystemVariablesAndCombinatorSource(path);
+		var configurationProvider = constructConfigurationProvider(fileSource, policyInformationPoints,
+				functionLibraries);
+		var policyRetrievalPoint = constructUnitTestFilesystemPolicyRetrievalPoint(path, policyIdUnderTest);
 		return new EmbeddedPolicyDecisionPoint(configurationProvider, policyRetrievalPoint);
 	}
 
@@ -134,6 +161,12 @@ public class PolicyDecisionPointFactory {
 		return new GenericInMemoryIndexedPolicyRetrievalPoint(seedIndex, source);
 	}
 
+	private static PolicyRetrievalPoint constructUnitTestFilesystemPolicyRetrievalPoint(String policiesFolder, String policyIdUnderTest) {
+		var seedIndex = constructDocumentIndex();
+		var source = new FileSystemPrpUpdateEventSource(policiesFolder, new UnitTestSAPLInterpreter(policyIdUnderTest));
+		return new GenericInMemoryIndexedPolicyRetrievalPoint(seedIndex, source);
+	}
+	
 	private static ImmutableParsedDocumentIndex constructDocumentIndex() {
 		return new NaiveImmutableParsedDocumentIndex();
 	}
