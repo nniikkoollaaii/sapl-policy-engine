@@ -24,7 +24,7 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class PolicyElementImplCustom extends PolicyElementImpl {
 
-	private static final String CONDITION_NOT_BOOLEAN = "Evaluation error: Target condition must evaluate to a boolean value, but was: '%s'.";
+	protected static final String CONDITION_NOT_BOOLEAN = "Evaluation error: Target condition must evaluate to a boolean value, but was: '%s'.";
 
 	/**
 	 * Checks whether the policy element (policy set or policy) matches an
