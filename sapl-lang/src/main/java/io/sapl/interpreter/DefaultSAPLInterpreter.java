@@ -48,10 +48,10 @@ import reactor.core.publisher.Flux;
 @Slf4j
 public class DefaultSAPLInterpreter implements SAPLInterpreter {
 
-	private static final String DUMMY_RESOURCE_URI = "policy:/apolicy.sapl";
-	private static final String PARSING_ERRORS = "Parsing errors: %s";
+	protected static final String DUMMY_RESOURCE_URI = "policy:/apolicy.sapl";
+	protected static final String PARSING_ERRORS = "Parsing errors: %s";
 
-	private static final Injector INJECTOR = new SAPLStandaloneSetup().createInjectorAndDoEMFRegistration();
+	protected static final Injector INJECTOR = new SAPLStandaloneSetup().createInjectorAndDoEMFRegistration();
 
 	@Override
 	public SAPL parse(String saplDefinition) {
@@ -107,7 +107,7 @@ public class DefaultSAPLInterpreter implements SAPLInterpreter {
 		return saplDocument.getPolicyElement() instanceof PolicySet ? DocumentType.POLICY_SET : DocumentType.POLICY;
 	}
 
-	private static SAPL loadAsResource(InputStream policyInputStream) {
+	protected SAPL loadAsResource(InputStream policyInputStream) {
 		final XtextResourceSet resourceSet = INJECTOR.getInstance(XtextResourceSet.class);
 		final Resource resource = resourceSet.createResource(URI.createFileURI(DUMMY_RESOURCE_URI));
 
