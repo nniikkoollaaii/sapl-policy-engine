@@ -1,4 +1,4 @@
-package io.sapl.testrunner.junit;
+package io.sapl.test.unit.runner;
 
 import static org.junit.Assert.assertEquals;
 
@@ -13,6 +13,11 @@ import io.sapl.api.interpreter.InitializationException;
 import io.sapl.api.pdp.AuthorizationDecision;
 import io.sapl.api.pdp.AuthorizationSubscription;
 import io.sapl.api.pdp.Decision;
+import io.sapl.test.unit.runner.PolicyId;
+import io.sapl.test.unit.runner.PolicyPIP;
+import io.sapl.test.unit.runner.PolicyPath;
+import io.sapl.test.unit.runner.SaplTestrunnerJUnit;
+import io.sapl.test.unit.runner.SaplUnitTestRunnerHelper;
 
 @RunWith(SaplTestrunnerJUnit.class)
 @PolicyId("policy 1")

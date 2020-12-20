@@ -1,15 +1,15 @@
-package io.sapl.testrunner.junit;
+package io.sapl.test.unit.runner;
 
 import static java.lang.annotation.ElementType.TYPE;
 
 import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.annotation.RetentionPolicy;
 
 @Target(TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface PolicyPath {
+public @interface PolicyPIP {
 
-	String value();
+	Class<?>[] value();
 
 }

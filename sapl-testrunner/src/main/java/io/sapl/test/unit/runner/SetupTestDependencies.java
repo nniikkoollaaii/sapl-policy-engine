@@ -1,4 +1,4 @@
-package io.sapl.testrunner.junit;
+package io.sapl.test.unit.runner;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedList;
