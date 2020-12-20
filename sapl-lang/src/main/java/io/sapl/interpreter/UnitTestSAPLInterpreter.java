@@ -24,17 +24,6 @@ public class UnitTestSAPLInterpreter extends DefaultSAPLInterpreter {
 	}
 	
 	@Override
-	public SAPL parse(String saplDefinition) {
-		return parse(new ByteArrayInputStream(saplDefinition.getBytes(StandardCharsets.UTF_8)));
-	}
-
-	@Override
-	public SAPL parse(InputStream saplInputStream) {
-		return loadAsResource(saplInputStream);
-	}
-
-
-	@Override
 	protected SAPL loadAsResource(InputStream policyInputStream) {
 		final XtextResourceSet resourceSet = INJECTOR.getInstance(XtextResourceSet.class);
 		//hier kann eigene SaplFactory eingeschleust werden
