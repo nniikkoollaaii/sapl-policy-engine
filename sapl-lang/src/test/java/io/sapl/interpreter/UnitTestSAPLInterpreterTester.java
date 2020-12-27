@@ -50,7 +50,7 @@ public class UnitTestSAPLInterpreterTester {
 	private static final ObjectMapper MAPPER = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
 	private static final String POLICY_ID = "test";
 	private static final String POLICY_ID_NOT_MATCHING = "not_matching";
-	private static final UnitTestSAPLInterpreter INTERPRETER = new UnitTestSAPLInterpreter(POLICY_ID);
+	private static final UnitTestSAPLInterpreter INTERPRETER = new UnitTestSAPLInterpreter(POLICY_ID, false);
 
 	private EvaluationContext evaluationCtx;
 	private AuthorizationSubscription authzSubscription;

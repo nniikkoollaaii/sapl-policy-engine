@@ -1,9 +1,7 @@
 package io.sapl.interpreter;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.common.util.WrappedException;
@@ -18,16 +16,24 @@ import io.sapl.grammar.sapl.impl.SaplFactoryImplCustomUnitTest;
 public class UnitTestSAPLInterpreter extends DefaultSAPLInterpreter {
 	
 	private final String policyId;
+	private final boolean shouldCollectCoverageHits;
 	
-	public UnitTestSAPLInterpreter(String policyId) {
+	/**
+	 * Constructor for {@link io.sapl.interpreter.UnitTestSAPLInterpreter}
+	 * @param policyId PolicyId of Policy under Unit Test. Null if no specific policy is under test.
+	 * @param shouldCollectCoverageHits boolean
+	 */
+	public UnitTestSAPLInterpreter(String policyId, boolean shouldCollectCoverageHits) {
 		this.policyId = policyId;
+		this.shouldCollectCoverageHits = shouldCollectCoverageHits;
 	}
 	
 	@Override
 	protected SAPL loadAsResource(InputStream policyInputStream) {
 		final XtextResourceSet resourceSet = INJECTOR.getInstance(XtextResourceSet.class);
 		//hier kann eigene SaplFactory eingeschleust werden
-		resourceSet.getPackageRegistry().getEPackage(SaplPackage.eNS_URI).setEFactoryInstance(new SaplFactoryImplCustomUnitTest(this.policyId));
+		resourceSet.getPackageRegistry().getEPackage(SaplPackage.eNS_URI)
+			.setEFactoryInstance(new SaplFactoryImplCustomUnitTest(this.policyId, this.shouldCollectCoverageHits));
 		final Resource resource = resourceSet.createResource(URI.createFileURI(DUMMY_RESOURCE_URI));
 
 		try {
