@@ -65,4 +65,41 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+	
+	
+	<build>
+		<plugins>
+			<plugin>
+			     <groupId>org.apache.maven.plugins</groupId>
+			     <artifactId>maven-surefire-plugin</artifactId>
+			     <configuration>
+			        <systemProperties>
+			          <property>
+			             <name>io.sapl.test.coverage.collect</name>
+			             <value>${io.sapl.test.coverage.collect}</value>
+			          </property>
+			        </systemProperties>
+			     </configuration>
+			</plugin>
+			<plugin>
+				<groupId>${project.groupId}</groupId>
+		        <artifactId>sapl-maven-plugin</artifactId>
+		        <version>${project.version}</version>
+		        <configuration>
+					<policyPath>src\test\resources\policies</policyPath>
+					<policySetHitRatio>100</policySetHitRatio>
+					<policyHitRatio>100</policyHitRatio>
+					<policyConditionHitRatio>100</policyConditionHitRatio>
+				</configuration>
+		        <executions>
+					<execution>
+						<goals>
+							<goal>enable-coverage-collection</goal>
+							<goal>report-coverage-information</goal>
+						</goals>
+					</execution>
+		        </executions>
+			</plugin>
+		</plugins>
+	</build>
 </project>

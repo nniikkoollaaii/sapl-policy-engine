@@ -3,11 +3,11 @@ package io.sapl.test.unit.runner;
 import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedList;
 import java.util.List;
+
 import org.junit.runners.model.TestClass;
 import io.sapl.api.interpreter.InitializationException;
 import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint;
 import io.sapl.pdp.embedded.PolicyDecisionPointFactory;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -15,7 +15,7 @@ class SetupTestDependencies {
 
 
     private static String defaultPath = "~/sapl/policies";
-    
+        
 	/**
 	 * Setup up an embedded PDP for evaluating policies.
 	 * @param TestClass Test Class
@@ -24,11 +24,18 @@ class SetupTestDependencies {
 	 */
 	//TODO Custom SetupSaplTestRunnerException for related exceptions
 	static EmbeddedPolicyDecisionPoint setupEmbeddedPDP(TestClass testClass) throws InitializationException {
+		Object shouldCollectCoverageHitsObject = System.getProperties().get("io.sapl.test.coverage.collect");
+		boolean shouldCollectCoverageHits = false;
+		if ( shouldCollectCoverageHitsObject != null) {
+			shouldCollectCoverageHits = Boolean.parseBoolean(shouldCollectCoverageHitsObject.toString());
+			log.debug("Collecting Coverage Information: " + shouldCollectCoverageHits);
+		}
 		return PolicyDecisionPointFactory.filesystemUnitTestPolicyDecisionPoint(
 					readPathFromAnnotation(testClass), 
 					readPIPs(testClass), 
 					readFunctions(testClass),
-					readPolicyIdFromAnnotation(testClass));
+					readPolicyIdFromAnnotation(testClass),
+					shouldCollectCoverageHits);
 	}
 	
 	private static String readPathFromAnnotation(TestClass testClass) {
