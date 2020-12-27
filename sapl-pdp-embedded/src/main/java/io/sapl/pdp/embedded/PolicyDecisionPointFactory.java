@@ -71,29 +71,29 @@ public class PolicyDecisionPointFactory {
 		return new EmbeddedPolicyDecisionPoint(configurationProvider, policyRetrievalPoint);
 	}
 	
-	public static EmbeddedPolicyDecisionPoint filesystemUnitTestPolicyDecisionPoint(String policyIdUnderTest) throws InitializationException {
-		return filesystemUnitTestPolicyDecisionPoint(DEFAILT_FILE_LOCATION, policyIdUnderTest);
+	public static EmbeddedPolicyDecisionPoint filesystemUnitTestPolicyDecisionPoint(String policyIdUnderTest, boolean shouldCollectCoverageHits) throws InitializationException {
+		return filesystemUnitTestPolicyDecisionPoint(DEFAILT_FILE_LOCATION, policyIdUnderTest, shouldCollectCoverageHits);
 	}
 
 	public static EmbeddedPolicyDecisionPoint filesystemUnitTestPolicyDecisionPoint(String path, 
-			String policyIdUnderTest)
+			String policyIdUnderTest, boolean shouldCollectCoverageHits)
 			throws InitializationException {
-		return filesystemUnitTestPolicyDecisionPoint(path, new ArrayList<>(1), new ArrayList<>(1), policyIdUnderTest);
+		return filesystemUnitTestPolicyDecisionPoint(path, new ArrayList<>(1), new ArrayList<>(1), policyIdUnderTest, shouldCollectCoverageHits);
 	}
 
 	public static EmbeddedPolicyDecisionPoint filesystemUnitTestPolicyDecisionPoint(Collection<Object> policyInformationPoints,
-			Collection<Object> functionLibraries, String policyIdUnderTest) throws InitializationException {
-		return filesystemUnitTestPolicyDecisionPoint(DEFAILT_FILE_LOCATION, policyInformationPoints, functionLibraries, policyIdUnderTest);
+			Collection<Object> functionLibraries, String policyIdUnderTest, boolean shouldCollectCoverageHits) throws InitializationException {
+		return filesystemUnitTestPolicyDecisionPoint(DEFAILT_FILE_LOCATION, policyInformationPoints, functionLibraries, policyIdUnderTest, shouldCollectCoverageHits);
 	}
 
 	public static EmbeddedPolicyDecisionPoint filesystemUnitTestPolicyDecisionPoint(String path,
 			Collection<Object> policyInformationPoints, Collection<Object> functionLibraries, 
-			String policyIdUnderTest)
+			String policyIdUnderTest, boolean shouldCollectCoverageHits)
 			throws InitializationException {
 		var fileSource = new FileSystemVariablesAndCombinatorSource(path);
 		var configurationProvider = constructConfigurationProvider(fileSource, policyInformationPoints,
 				functionLibraries);
-		var policyRetrievalPoint = constructUnitTestFilesystemPolicyRetrievalPoint(path, policyIdUnderTest);
+		var policyRetrievalPoint = constructUnitTestFilesystemPolicyRetrievalPoint(path, policyIdUnderTest, shouldCollectCoverageHits);
 		return new EmbeddedPolicyDecisionPoint(configurationProvider, policyRetrievalPoint);
 	}
 
@@ -161,9 +161,9 @@ public class PolicyDecisionPointFactory {
 		return new GenericInMemoryIndexedPolicyRetrievalPoint(seedIndex, source);
 	}
 
-	private static PolicyRetrievalPoint constructUnitTestFilesystemPolicyRetrievalPoint(String policiesFolder, String policyIdUnderTest) {
+	private static PolicyRetrievalPoint constructUnitTestFilesystemPolicyRetrievalPoint(String policiesFolder, String policyIdUnderTest, boolean shouldCollectCoverageHits) {
 		var seedIndex = constructDocumentIndex();
-		var source = new FileSystemPrpUpdateEventSource(policiesFolder, new UnitTestSAPLInterpreter(policyIdUnderTest));
+		var source = new FileSystemPrpUpdateEventSource(policiesFolder, new UnitTestSAPLInterpreter(policyIdUnderTest, shouldCollectCoverageHits));
 		return new GenericInMemoryIndexedPolicyRetrievalPoint(seedIndex, source);
 	}
 	
