@@ -33,13 +33,11 @@
 
 	<dependencies>
 
-		<!--
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>sapl-lang</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		-->
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>sapl-pdp-embedded</artifactId>
@@ -52,10 +50,25 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
+		    <groupId>org.slf4j</groupId>
+		    <artifactId>slf4j-api</artifactId>
+		</dependency>
+		<dependency>
+		    <groupId>org.slf4j</groupId>
+		    <artifactId>slf4j-simple</artifactId>
+		    <scope>test</scope>
+		</dependency>		
+		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<scope>compile</scope>
 			<!-- <scope>test</scope> -->
+		</dependency>
+		
+		<dependency>
+		    <groupId>org.aspectj</groupId>
+		    <artifactId>aspectjrt</artifactId>
+		    <version>1.9.5</version>
 		</dependency>
 		
 		<!-- Testing -->
@@ -65,4 +78,68 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+	
+	<build>
+		<sourceDirectory>${project.build.directory}/generated-sources/delombok</sourceDirectory>
+		<plugins>
+			<plugin>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok-maven-plugin</artifactId>
+    			<version>1.18.16.0</version>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>delombok</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <addOutputDirectory>false</addOutputDirectory>
+                    <sourceDirectory>src/main/java</sourceDirectory>
+                </configuration>
+            </plugin>
+			<plugin>
+				<!-- use original source org.codehaus.mojo when supporting java 11, till then -->
+				<!-- https://github.com/mojohaus/aspectj-maven-plugin/issues/24#issuecomment-419077658 -->
+			    <!-- <groupId>org.codehaus.mojo</groupId> -->    
+			  	<groupId>com.nickwongdev</groupId>
+			  	<artifactId>aspectj-maven-plugin</artifactId>
+			  	<version>1.12.6</version>
+
+			    <configuration>
+					<complianceLevel>${java.version}</complianceLevel>
+					<source>1.8</source>
+					<target>1.8</target>
+					<showWeaveInfo>true</showWeaveInfo>
+					<verbose>true</verbose>
+					<Xlint>ignore</Xlint>
+					<encoding>UTF-8 </encoding>
+					<weaveDependencies>
+					    <weaveDependency>  
+					        <groupId>${project.groupId}</groupId>
+					        <artifactId>sapl-lang</artifactId>
+					    </weaveDependency>
+					</weaveDependencies>
+			    </configuration>
+			    <executions>
+			    <!-- do NOT fix with surounding <pluginManagement> as it only configures but not applies the plugin -->
+			        <execution>
+			        	<!-- 
+			        	<configuration>
+		       				<weaveMainSourceFolder>true</weaveMainSourceFolder>
+			        	</configuration>
+			        	 -->
+			            <goals>
+			                <!-- use this goal to weave all your main classes -->
+			                <goal>compile</goal>
+			                <!-- use this goal to weave all your test classes -->
+			                <goal>test-compile</goal>
+			            </goals>
+			        </execution>
+			    </executions>
+			</plugin>
+		</plugins>
+	</build>
+	
 </project>

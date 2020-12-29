@@ -24,11 +24,11 @@ class SetupTestDependencies {
 	 */
 	//TODO Custom SetupSaplTestRunnerException for related exceptions
 	static EmbeddedPolicyDecisionPoint setupEmbeddedPDP(TestClass testClass) throws InitializationException {
-		return PolicyDecisionPointFactory.filesystemUnitTestPolicyDecisionPoint(
+		log.trace("Setting up embedded PDP for Unit Test");
+		return PolicyDecisionPointFactory.filesystemPolicyDecisionPoint(
 					readPathFromAnnotation(testClass), 
 					readPIPs(testClass), 
-					readFunctions(testClass),
-					readPolicyIdFromAnnotation(testClass));
+					readFunctions(testClass));
 	}
 	
 	private static String readPathFromAnnotation(TestClass testClass) {
