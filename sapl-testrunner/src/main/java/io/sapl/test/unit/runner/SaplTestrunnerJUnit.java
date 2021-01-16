@@ -1,10 +1,27 @@
 package io.sapl.test.unit.runner;
 
 
+import static org.junit.Assert.fail;
+
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.InitializationError;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
+import io.sapl.api.interpreter.InitializationException;
+import io.sapl.api.interpreter.Val;
+import io.sapl.functions.FilterFunctionLibrary;
+import io.sapl.grammar.sapl.SAPL;
+import io.sapl.grammar.sapl.impl.util.MockUtil.TestFunctionLibrary;
+import io.sapl.grammar.sapl.impl.util.MockUtil.TestPolicyInformationPoint;
+import io.sapl.interpreter.EvaluationContext;
+import io.sapl.interpreter.SimpleFunctionLibrary;
+import io.sapl.interpreter.functions.AnnotationFunctionContext;
+import io.sapl.interpreter.pip.AnnotationAttributeContext;
 
 
 /**
@@ -17,18 +34,33 @@ import org.junit.runners.model.InitializationError;
 public class SaplTestrunnerJUnit extends BlockJUnit4ClassRunner   {
 	
 	private SaplUnitTestRunnerHelper helper;
+	private Collection<SAPL> saplDocuments;
     
 	public SaplTestrunnerJUnit(Class<?> testClass) throws InitializationError {
 		super(testClass);
 		try {
-			this.helper = new SaplUnitTestRunnerHelper(SetupTestDependencies.setupEmbeddedPDP(getTestClass()));
+			this.saplDocuments = SetupTestDependencies.readPoliciesFromFilesystem(getTestClass());
 		} catch (Exception e) {
 			throw new InitializationError(e);
 		}
 	}
 	
     @Override
-    public Object createTest() throws Exception {	
+    public Object createTest() throws Exception {
+
+    	var attributeCtx = new AnnotationAttributeContext();
+		var functionCtx = new AnnotationFunctionContext();
+		try {
+			SetupTestDependencies.readPIPs(getTestClass()).stream().forEach(pip -> {attributeCtx.loadPolicyInformationPoint(pip);});
+			SetupTestDependencies.readFunctions(getTestClass()).stream().forEach(function -> {functionCtx.loadLibrary(function);});
+		} catch (InitializationException e) {
+			fail("The loading of function libraries or PIP's for the test environemnt failed: " + e.getMessage());
+		}
+		var variables = new HashMap<String, JsonNode>(1);
+
+		var evaluationCtx = new EvaluationContext(attributeCtx, functionCtx, variables);
+    	
+		this.helper = new SaplUnitTestRunnerHelper(evaluationCtx);
 	    return getTestClass().getOnlyConstructor().newInstance(helper);
     }
     

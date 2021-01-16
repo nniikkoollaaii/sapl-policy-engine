@@ -1,12 +1,19 @@
 package io.sapl.test.unit.runner;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
+
 import org.junit.runners.model.TestClass;
 import io.sapl.api.interpreter.InitializationException;
+import io.sapl.grammar.sapl.SAPL;
+import io.sapl.interpreter.DefaultSAPLInterpreter;
 import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint;
 import io.sapl.pdp.embedded.PolicyDecisionPointFactory;
+import io.sapl.prp.filesystem.FileSystemPrpUpdateEventSource;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,22 +23,12 @@ class SetupTestDependencies {
 
     private static String defaultPath = "~/sapl/policies";
     
-	/**
-	 * Setup up an embedded PDP for evaluating policies.
-	 * @param TestClass Test Class
-	 * @return EmbeddedPDP to use in helper methods of this class
-	 * @throws Exception
-	 */
-	//TODO Custom SetupSaplTestRunnerException for related exceptions
-	static EmbeddedPolicyDecisionPoint setupEmbeddedPDP(TestClass testClass) throws InitializationException {
-		return PolicyDecisionPointFactory.filesystemUnitTestPolicyDecisionPoint(
-					readPathFromAnnotation(testClass), 
-					readPIPs(testClass), 
-					readFunctions(testClass),
-					readPolicyIdFromAnnotation(testClass));
-	}
+    static Collection<SAPL> readPoliciesFromFilesystem(TestClass testClass){
+    	var eventSource = new FileSystemPrpUpdateEventSource(readPathFromAnnotation(testClass), new DefaultSAPLInterpreter());
+		return Arrays.stream(eventSource.getUpdates().blockFirst().getUpdates()).map(update -> update.getDocument()).collect(Collectors.toList());
+    }
 	
-	private static String readPathFromAnnotation(TestClass testClass) {
+	static String readPathFromAnnotation(TestClass testClass) {
 		PolicyPath annotationPolicyPath = testClass.getAnnotation(PolicyPath.class);
 		if(annotationPolicyPath == null) {
 			// log.info(PolicyPath.class.getName()  + " is missing on Class " + testClass.getName() + " using default path: " + defaultPath);
@@ -42,7 +39,7 @@ class SetupTestDependencies {
 	}
 
 	//TODO Custom SetupSaplTestRunnerException for related exceptions
-	private static String readPolicyIdFromAnnotation(TestClass testClass) throws InitializationException  {
+	static String readPolicyIdFromAnnotation(TestClass testClass) throws InitializationException  {
 		PolicyId annotationPolicyId = testClass.getAnnotation(PolicyId.class);
 		if(annotationPolicyId == null) {
 			throw new InitializationException("Annotation " + PolicyId.class.getName() + " is missing on Class " + testClass.getName());
@@ -52,7 +49,7 @@ class SetupTestDependencies {
 	}
 
 	//TODO Custom SetupSaplTestRunnerException for related exceptions
-	private static List<Object> readPIPs(TestClass testClass) throws InitializationException {
+	static List<Object> readPIPs(TestClass testClass) throws InitializationException {
 		PolicyPIP policyPIP = testClass.getAnnotation(PolicyPIP.class);
 		List<Object> pips = new LinkedList<>();
 		if(policyPIP != null) {
@@ -73,7 +70,7 @@ class SetupTestDependencies {
 	}
 	
 	//TODO Custom SetupSaplTestRunnerException for related exceptions
-	private static List<Object> readFunctions(TestClass testClass) throws InitializationException {
+	static List<Object> readFunctions(TestClass testClass) throws InitializationException {
 		PolicyFunction policyFunctions = testClass.getAnnotation(PolicyFunction.class);
 		List<Object> functions = new LinkedList<>();
 		if(policyFunctions != null) {

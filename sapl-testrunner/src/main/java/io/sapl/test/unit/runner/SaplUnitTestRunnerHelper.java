@@ -7,19 +7,23 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.sapl.api.interpreter.InitializationException;
 import io.sapl.api.pdp.AuthorizationDecision;
 import io.sapl.api.pdp.AuthorizationSubscription;
+import io.sapl.grammar.sapl.Policy;
+import io.sapl.interpreter.EvaluationContext;
 import io.sapl.pdp.embedded.EmbeddedPolicyDecisionPoint;
 
 public class SaplUnitTestRunnerHelper {
 	
-	private EmbeddedPolicyDecisionPoint embeddedPDP;	
+	private Policy policy;
+	private EvaluationContext ctx;
     
     /**
      * Constructor to instantiate SaplUnitTestRunnerHelper
      * @param policyId Id of Policy to test
      * @throws Exception
      */
-	public SaplUnitTestRunnerHelper(EmbeddedPolicyDecisionPoint embeddedPDP) throws Exception {
-		this.embeddedPDP = embeddedPDP;
+	public SaplUnitTestRunnerHelper(Policy policy, EvaluationContext ctx) throws Exception {
+		this.policy = policy;
+		this.ctx = ctx;
 	}	
 	
 	/**
@@ -28,7 +32,7 @@ public class SaplUnitTestRunnerHelper {
 	 * @return An AuthorizationDecision object
 	 */
 	public AuthorizationDecision decide(AuthorizationSubscription authorizationSubscription) {
-		return this.embeddedPDP.decide(authorizationSubscription).blockFirst();
+		return this.policy.evaluate(ctx.forAuthorizationSubscription(authorizationSubscription)).blockFirst();
 	}
 		
 	/**
@@ -54,7 +58,7 @@ public class SaplUnitTestRunnerHelper {
 					authSubJsonNode.findValue("resource"), 
 					authSubJsonNode.findValue("environment")
 					);	
-			return this.embeddedPDP.decide(authSub).blockFirst();
+			return this.policy.evaluate(ctx.forAuthorizationSubscription(authSub)).blockFirst();
 		}
 		return null;
 	}	
@@ -73,16 +77,8 @@ public class SaplUnitTestRunnerHelper {
 					jsonNode.findValue("resource"), 
 					jsonNode.findValue("environment")
 					);	
-			return this.embeddedPDP.decide(authSub).blockFirst();
+			return this.policy.evaluate(ctx.forAuthorizationSubscription(authSub)).blockFirst();
 		}
 		return null;
 	}
-		
-	/**
-	 * Disposing all resources
-	 */
-	protected void disposeResources() {
-		this.embeddedPDP.dispose();
-	}
-
 }
