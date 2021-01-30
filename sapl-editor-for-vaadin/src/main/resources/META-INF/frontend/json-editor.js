@@ -514,6 +514,7 @@ li.CodeMirror-hint-active {
 	left: 0;
 	right: 0;
 	border: 1px solid #aaa;
+	height: 100%;
 }
 
 div.CodeMirror span.CodeMirror-matchingbracket {
