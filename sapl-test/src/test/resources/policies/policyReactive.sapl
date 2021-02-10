@@ -1,0 +1,11 @@
+import io.sapl.pip.ClockPolicyInformationPoint as clock
+import io.sapl.functions.TemporalFunctionLibrary as time
+
+
+policy "permit doctor and nurse read time restricted heart beat data"
+permit
+  resource == "heartBeatData"
+where
+  "ROLE_DOCTOR" in subject..authority || "ROLE_NURSE" in subject..authority;
+  var interval = 1;
+  time.localSecond(interval.<clock.ticker>) > 4;
