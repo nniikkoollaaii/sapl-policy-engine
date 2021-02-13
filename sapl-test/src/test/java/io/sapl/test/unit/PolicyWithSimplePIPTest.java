@@ -3,11 +3,11 @@ package io.sapl.test.unit;
 import org.junit.Before;
 import org.junit.Test;
 
+import io.sapl.api.interpreter.Val;
 import io.sapl.api.pdp.AuthorizationSubscription;
 import io.sapl.test.SaplTestFixture;
 import io.sapl.test.SaplUnitTestFixture;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 public class PolicyWithSimplePIPTest {
 
@@ -22,9 +22,18 @@ public class PolicyWithSimplePIPTest {
 	public void test_policyWithSimpleMockedPIP() {
 		
 		fixture.constructTestCaseWithMocks()
-			.given("test.upper", Mono.just("WILLI"))
-			//.given(TestPIP.class,  Mono.just("WILLI"))
-			//.given(new TestPIP(),  Mono.just("WILLI"))
+			.givenPIP("test.upper", Flux.just(Val.of("WILLI")))
+			.when(AuthorizationSubscription.of("willi", "read", "something"))
+			.expectPermit()
+			.verify();
+		
+	}
+	
+	@Test
+	public void test_policyWithSimplePIP() {
+		
+		fixture.registerPIP(new TestPIP())
+			.constructTestCase()
 			.when(AuthorizationSubscription.of("willi", "read", "something"))
 			.expectPermit()
 			.verify();

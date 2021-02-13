@@ -1,8 +1,8 @@
 package io.sapl.test;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -10,13 +10,18 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import io.sapl.api.interpreter.InitializationException;
+import io.sapl.api.interpreter.Val;
 import io.sapl.api.pdp.AuthorizationDecision;
 import io.sapl.api.pdp.AuthorizationSubscription;
 import io.sapl.api.pdp.Decision;
-import io.sapl.api.pip.PolicyInformationPoint;
 import io.sapl.grammar.sapl.SAPL;
 import io.sapl.interpreter.EvaluationContext;
-import reactor.core.CorePublisher;
+import io.sapl.interpreter.functions.FunctionContext;
+import io.sapl.interpreter.pip.AttributeContext;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
+import reactor.test.StepVerifier.Step;
 
 /**
  * Implementing a Step Builder Pattern to construct test cases.
@@ -29,8 +34,8 @@ class StepBuilder {
 	 * @param document containing the {@link SAPL} policy to evaluate
 	 * @return {@link GivenStep} to start constructing the test case.
 	 */
-	static GivenStep newBuilderAtGivenStep(SAPL document) {
-        return new Steps(document);
+	static GivenStep newBuilderAtGivenStep(SAPL document, AttributeContext attrCtx, FunctionContext funcCtx, Map<String, JsonNode> variables) {
+        return new Steps(document, attrCtx, funcCtx, variables);
 	}
 	
 	/**
@@ -38,8 +43,8 @@ class StepBuilder {
 	 * @param document containing the {@link SAPL} policy to evaluate
 	 * @return {@link WhenStep} to start constructing the test case.
 	 */
-	static WhenStep newBuilderAtWhenStep(SAPL document) {
-        return new Steps(document);
+	static WhenStep newBuilderAtWhenStep(SAPL document, AttributeContext attrCtx, FunctionContext funcCtx, Map<String, JsonNode> variables) {
+        return new Steps(document, attrCtx, funcCtx, variables);
 	}
 	
 	//disable default constructor
@@ -52,29 +57,23 @@ class StepBuilder {
     public static interface GivenStep {
     	
     		/**
-    		 * Mock the return value of a PIP or Function in the SAPL policy
-    		 * @param importName the reference in the SAPL policy to the PIP or Function
-    		 * @param publisher the mocked return value
+    		 * Mock the return value of a Function in the SAPL policy
+    		 * @param importName the reference in the SAPL policy to Function
+    		 * @param returns the mocked return value
 	         * @return {@link GivenOrWhenStep} to define another {@link GivenStep} or {@link WhenStep}
     		 */
-            GivenOrWhenStep given(String importName, CorePublisher<?> publisher);
+            GivenOrWhenStep givenFunction(String importName, Val returns);
+            
     		/**
-    		 * Mock the return value of a PIP or Function in the SAPL policy
-    		 * @param obj Object of the PIP or Function
-    		 * @param publisher the mocked return value
+    		 * Mock the return value of a PIP in the SAPL policy
+    		 * @param importName the reference in the SAPL policy to the PIP
+    		 * @param returns the mocked return value
 	         * @return {@link GivenOrWhenStep} to define another {@link GivenStep} or {@link WhenStep}
     		 */
-            GivenOrWhenStep given(Object obj, CorePublisher<?> publisher);
-    		/**
-    		 * Mock the return value of a PIP or Function in the SAPL policy
-    		 * @param clazz Class reference of the PIP or Function
-    		 * @param publisher the mocked return value
-	         * @return {@link GivenOrWhenStep} to define another {@link GivenStep} or {@link WhenStep}
-    		 */
-            GivenOrWhenStep given(Class<?> clazz, CorePublisher<?> publisher);
+            GivenOrWhenStep givenPIP(String importName, Flux<Val> returns);
             
             /**
-             * Allows control of virtual time for time-based streams
+             * Allow control of virtual time for time-based streams
 	         * @return {@link GivenOrWhenStep} to define another {@link GivenStep} or {@link WhenStep}
              */
             GivenOrWhenStep withVirtualTime();
@@ -252,40 +251,41 @@ class StepBuilder {
      */
     private static class Steps implements GivenStep, WhenStep, GivenOrWhenStep, ExpectStep, ExpectOrVerifyStep {
 
-    	AuthorizationSubscription authSub;
-    	AuthorizationDecision authDec;
     	SAPL document;
-    	EvaluationContext ctx;
+    	MockingAttributeContext mockingAttributeContext;
+    	MockingFunctionContext mockingFunctionContext;
+    	Map<String, JsonNode> variables;
+    	Step<AuthorizationDecision> steps;
     	
-    	Steps(SAPL document) {
+    	Steps(SAPL document, AttributeContext attrCtx, FunctionContext funcCtx, Map<String, JsonNode> variables) {
     		this.document = document;
-    		
+    		this.mockingFunctionContext = new MockingFunctionContext(funcCtx);
+    		this.mockingAttributeContext = new MockingAttributeContext(attrCtx);
+    		this.variables = variables;
     	}
 
 		
 
 		@Override
-		public GivenOrWhenStep given(String importName, CorePublisher<?> publisher) {
-			// TODO Auto-generated method stub
-			return null;
+		public GivenOrWhenStep givenPIP(String importName, Flux<Val> returns) {
+			try {
+				this.mockingAttributeContext.loadPolicyInformationPoint(new PIPMockDTO(importName, returns));
+			} catch (InitializationException e) {
+				throw new SaplTextException("Could not initialize mock for PIP \"" + importName + "\"", e);
+			}
+			return this;
 		}
-
 
 
 		@Override
-		public GivenOrWhenStep given(Object obj, CorePublisher<?> publisher) {
-			// TODO Auto-generated method stub
-			return null;
+		public GivenOrWhenStep givenFunction(String importName, Val returns) {
+			try {
+				this.mockingFunctionContext.loadLibrary(new FunctionMockDTO(importName, returns));
+			} catch (InitializationException e) {
+				throw new SaplTextException("Could not initialize mock for Function \"" + importName + "\"", e);
+			}
+			return this;
 		}
-
-
-
-		@Override
-		public GivenOrWhenStep given(Class<?> clazz, CorePublisher<?> publisher) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
 
 
 		@Override
@@ -299,7 +299,7 @@ class StepBuilder {
 			
 			
 			
-			return null;
+			return this;
 		}
 
     	
@@ -307,7 +307,7 @@ class StepBuilder {
 		
 		@Override
 		public ExpectStep when(AuthorizationSubscription authSub) {
-			this.authSub = authSub;
+			createStepVerifier(authSub);
 			return this;
 		}
 
@@ -327,7 +327,7 @@ class StepBuilder {
 						authSubJsonNode.findValue("resource"), 
 						authSubJsonNode.findValue("environment")
 						);
-				this.authSub = authSub;
+				createStepVerifier(authSub);
 				return this;
 			}
 			throw new SaplTextException("Could not read Json Tree!");
@@ -342,34 +342,38 @@ class StepBuilder {
 					jsonNode.findValue("resource"), 
 					jsonNode.findValue("environment")
 					);
-				this.authSub = authSub;
+				createStepVerifier(authSub);
 				return this;
 			}
 			throw new SaplTextException("Could not read AuthorizationSubscription");
 		}
+		
+		private void createStepVerifier(AuthorizationSubscription authSub) {
+			EvaluationContext ctx = new EvaluationContext(this.mockingAttributeContext, this.mockingFunctionContext, this.variables);
+			this.steps = StepVerifier.create(this.document.evaluate(ctx.forAuthorizationSubscription(authSub)));
+		}
 
 		@Override
-		public ExpectOrVerifyStep expect(AuthorizationDecision authDec) {
-			this.authDec = authDec;
+		public VerifyStep expect(AuthorizationDecision authDec) {
+			//TODO
 			return this;
 		}
 
 		@Override
-		public ExpectOrVerifyStep expectPermit() {
-			this.authDec = AuthorizationDecision.PERMIT;
+		public VerifyStep expectPermit() {
+			this.steps = this.steps.expectNextMatches((AuthorizationDecision dec) -> dec.getDecision().equals(Decision.PERMIT)).as("Expecting Decision.PERMIT");
 			return this;
 		}
 
 		@Override
-		public ExpectOrVerifyStep expectDeny() {
-			this.authDec = AuthorizationDecision.DENY;
+		public VerifyStep expectDeny() {
 			return this;
 		}
 
 		@Override
 		public VerifyStep expect(Consumer<AuthorizationDecision> func) {
 			// TODO Auto-generated method stub
-			return null;
+			return this;
 		}
 
 
@@ -377,7 +381,7 @@ class StepBuilder {
 		@Override
 		public VerifyStep expect(Predicate<AuthorizationDecision> pred) {
 			// TODO Auto-generated method stub
-			return null;
+			return this;
 		}
 
 
@@ -385,7 +389,7 @@ class StepBuilder {
 		@Override
 		public VerifyStep expectIndeterminate() {
 			// TODO Auto-generated method stub
-			return null;
+			return this;
 		}
 
 
@@ -393,7 +397,7 @@ class StepBuilder {
 		@Override
 		public VerifyStep expectNotApplicable() {
 			// TODO Auto-generated method stub
-			return null;
+			return this;
 		}
 
 
@@ -401,7 +405,7 @@ class StepBuilder {
 		@Override
 		public ExpectOrVerifyStep expectNext(AuthorizationDecision authDec) {
 			// TODO Auto-generated method stub
-			return null;
+			return this;
 		}
 
 
@@ -409,7 +413,7 @@ class StepBuilder {
 		@Override
 		public ExpectOrVerifyStep expectNext(Consumer<AuthorizationDecision> func) {
 			// TODO Auto-generated method stub
-			return null;
+			return this;
 		}
 
 
@@ -417,7 +421,7 @@ class StepBuilder {
 		@Override
 		public ExpectOrVerifyStep expectNextPermit() {
 			// TODO Auto-generated method stub
-			return null;
+			return this;
 		}
 
 
@@ -425,7 +429,7 @@ class StepBuilder {
 		@Override
 		public ExpectOrVerifyStep expectNextPermit(Integer count) {
 			// TODO Auto-generated method stub
-			return null;
+			return this;
 		}
 
 
@@ -433,7 +437,7 @@ class StepBuilder {
 		@Override
 		public ExpectOrVerifyStep expectNextDeny() {
 			// TODO Auto-generated method stub
-			return null;
+			return this;
 		}
 
 
@@ -441,7 +445,7 @@ class StepBuilder {
 		@Override
 		public ExpectOrVerifyStep expectNextDeny(Integer count) {
 			// TODO Auto-generated method stub
-			return null;
+			return this;
 		}
 
 
@@ -449,7 +453,7 @@ class StepBuilder {
 		@Override
 		public ExpectOrVerifyStep expectNextIndeterminate() {
 			// TODO Auto-generated method stub
-			return null;
+			return this;
 		}
 
 
@@ -457,7 +461,7 @@ class StepBuilder {
 		@Override
 		public ExpectOrVerifyStep expectNextIndeterminate(Integer count) {
 			// TODO Auto-generated method stub
-			return null;
+			return this;
 		}
 
 
@@ -465,7 +469,7 @@ class StepBuilder {
 		@Override
 		public ExpectOrVerifyStep expectNextNotApplicable() {
 			// TODO Auto-generated method stub
-			return null;
+			return this;
 		}
 
 
@@ -473,7 +477,7 @@ class StepBuilder {
 		@Override
 		public ExpectOrVerifyStep expectNextNotApplicable(Integer count) {
 			// TODO Auto-generated method stub
-			return null;
+			return this;
 		}
 
 
@@ -481,7 +485,7 @@ class StepBuilder {
 		@Override
 		public ExpectOrVerifyStep thenAwait(Duration duration) {
 			// TODO Auto-generated method stub
-			return null;
+			return this;
 		}
 
 
@@ -489,15 +493,14 @@ class StepBuilder {
 		@Override
 		public ExpectOrVerifyStep expectNoEvent(Duration duration) {
 			// TODO Auto-generated method stub
-			return null;
+			return this;
 		}
 
 		
 		
 		@Override
 		public void verify() {
-			this.document.evaluate(this.ctx);
-			// TODO Auto-generated method stub
+			this.steps.verifyComplete();
 			
 		}
     }

@@ -1,8 +1,5 @@
 package io.sapl.test.unit;
 
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -12,8 +9,6 @@ import io.sapl.api.pdp.AuthorizationSubscription;
 import io.sapl.functions.TemporalFunctionLibrary;
 import io.sapl.test.SaplTestFixture;
 import io.sapl.test.SaplUnitTestFixture;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 public class PolicyWithSimpleFunctionTest {
 	
@@ -44,7 +39,7 @@ public class PolicyWithSimpleFunctionTest {
 	public void test_policyWithSimpleMockedFunction() {
 		
 		fixture.constructTestCaseWithMocks()
-			.given("time.dayOfWeekFrom", Mono.just("SATURDAY"))
+			.givenFunction("time.dayOfWeekFrom", Val.of("SATURDAY"))
 			.when(AuthorizationSubscription.of("willi", "read", "something"))
 			.expectPermit()
 			.verify();

@@ -37,7 +37,7 @@ public class PolicyReactiveTest {
 		Flux<Val> mockValue = Flux.just(timestamp0, timestamp1, timestamp2, timestamp3, timestamp4, timestamp5);
 			
 		fixture.constructTestCaseWithMocks()
-			.given("clock.ticker", mockValue)
+			.givenPIP("clock.ticker", mockValue)
 			.when(AuthorizationSubscription.of("ROLE_DOCTOR", "read", "heartBeatData"))
 			.expectNextDeny()
 			.expectNextDeny()
